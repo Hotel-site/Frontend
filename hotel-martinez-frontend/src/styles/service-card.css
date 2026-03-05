@@ -1,0 +1,33 @@
+﻿.service-card{
+  background: linear-gradient(180deg,#16213fdd,#121a31dd);
+  border:1px solid #ffffff1d;
+  border-radius:20px;
+  padding:16px;
+  transition: .28s;
+  animation: cardIn .45s ease both;
+}
+.service-card:hover{
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: 0 16px 28px #00000036;
+  border-color:#80d4ff66;
+}
+.service-card__top{ display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:8px; }
+.service-card__icon-wrap{
+  width:56px; height:56px; border-radius:16px;
+  display:grid; place-items:center;
+  background: linear-gradient(135deg,#80d4ff2e,#f6d58d2e);
+  border:1px solid #ffffff2b;
+  margin-bottom:10px;
+}
+.service-card__icon{ font-size:28px; }
+.service-card__category{
+  font-size:12px; color:#b9c5df;
+  background:#ffffff14; border-radius:999px; padding:5px 10px;
+}
+.service-card__badge{
+  font-size:11px; color:#1c2438; background:var(--gold);
+  border-radius:999px; padding:5px 9px; font-weight:700;
+}
+.service-card h3{ margin-bottom:8px; }
+.service-card p{ color:#d2d9e9; line-height:1.55; }
+@keyframes cardIn{ from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:translateY(0)} }

@@ -1,0 +1,22 @@
+﻿.navbar { position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--panel) 90%, transparent); border-bottom: 1px solid var(--line); backdrop-filter: blur(10px); }
+.navbar__inner { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; }
+.brand { font-weight: 700; color: #f7d27a; }
+
+.nav { display: flex; gap: 8px; }
+.nav__link {
+  padding: 8px 12px;
+  border-radius: 999px;
+  color: #f8fbff;
+  font-weight: 600;
+}
+.nav__link:hover {
+  background: var(--line);
+  color: #ffffff;
+}
+.nav__link.active {
+  background: #f7d27a;
+  color: #1b2437;
+}
+
+.badge { margin-left: 6px; font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--accent); color: #001022; font-weight: 700; }
+.theme-btn { border: 1px solid var(--line); background: var(--panel); color: var(--text); border-radius: 12px; padding: 8px 12px; cursor: pointer; }

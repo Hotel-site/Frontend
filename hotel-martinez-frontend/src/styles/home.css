@@ -1,0 +1,9 @@
+﻿.hero {
+  min-height: 64vh; display: grid; place-items: center;
+  background: linear-gradient(120deg, #0000007d, #00000044), url('https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=1600&auto=format&fit=crop') center/cover no-repeat;
+}
+.hero__content { text-align: center; animation: fadeUp .6s ease both; }
+.hero h1 { font-size: clamp(30px, 5vw, 52px); margin-bottom: 10px; }
+.hero p { max-width: 760px; margin: 0 auto 18px; color: #f5f8ff; line-height: 1.6; }
+.hero__btn { display: inline-block; padding: 12px 18px; border-radius: 14px; background: #0ea5e9; color: white; font-weight: 700; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
