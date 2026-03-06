@@ -51,7 +51,6 @@ export default function App() {
             <Route path="/favorites" element={<Favorites favorites={favorites} onToggleFavorite={onToggleFavorite} />} />
             <Route path="/cart" element={<Cart cartItems={cart} onRemoveFromCart={onRemoveFromCart} />} />
             <Route path="/about" element={<About />} />
-            <Route path="/services" element={<Navigate to="/catalog" replace />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
