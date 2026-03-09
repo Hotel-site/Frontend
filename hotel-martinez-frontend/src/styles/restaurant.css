@@ -1,0 +1,73 @@
+.day-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.day-tab {
+  padding: 8px 20px;
+  border: 2px solid var(--accent, #c9a84c);
+  background: transparent;
+  color: var(--accent, #c9a84c);
+  border-radius: 24px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background 0.2s, color 0.2s;
+}
+
+.day-tab:hover {
+  background: var(--accent, #c9a84c);
+  color: #fff;
+}
+
+.day-tab--active {
+  background: var(--accent, #c9a84c);
+  color: #fff;
+}
+
+.restaurant-hero {
+  padding: 24px 0;
+  border-bottom: 1px solid var(--muted-200, #eee);
+  margin-bottom: 16px;
+}
+.restaurant-hero h1 {
+  margin: 0 0 8px;
+  font-size: 28px;
+}
+.restaurant-page .menu {
+  display: block;
+  gap: 24px;
+}
+.menu-section {
+  margin: 20px 0;
+}
+.menu-section h2 {
+  font-size: 20px;
+  margin-bottom: 8px;
+}
+.menu-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 8px;
+  border-bottom: 1px dashed rgba(0,0,0,0.06);
+}
+.menu-item__name {
+  font-weight: 600;
+}
+.menu-item__desc {
+  font-size: 13px;
+  color: var(--muted-600, #666);
+}
+.menu-item__price {
+  min-width: 70px;
+  text-align: right;
+  font-weight: 600;
+}
+
+.container {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 0 16px;
+}

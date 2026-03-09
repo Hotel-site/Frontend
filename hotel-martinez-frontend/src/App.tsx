@@ -7,6 +7,7 @@ import Catalog from './pages/Catalog'
 import Favorites from './pages/Favorites'
 import Cart from './pages/Cart'
 import About from './pages/About'
+import Restaurant from './pages/Restaurant'
 import './styles/app.css'
 
 export default function App() {
@@ -51,6 +52,7 @@ export default function App() {
             <Route path="/favorites" element={<Favorites favorites={favorites} onToggleFavorite={onToggleFavorite} />} />
             <Route path="/cart" element={<Cart cartItems={cart} onRemoveFromCart={onRemoveFromCart} />} />
             <Route path="/about" element={<About />} />
+            <Route path="/restaurant" element={<Restaurant />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
