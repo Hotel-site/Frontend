@@ -1,0 +1,21 @@
+.mapContainer {
+  width: 100%;
+  height: 420px;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid #d9ccba;
+}
+
+.infoWindow {
+  font-size: 0.9rem;
+  max-width: 220px;
+}
+
+.fallback {
+  min-height: 240px;
+  display: grid;
+  place-items: center;
+  border: 1px dashed #ccb89a;
+  border-radius: 16px;
+  background: #fff9f1;
+}

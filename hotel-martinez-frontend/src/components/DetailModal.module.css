@@ -1,0 +1,139 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 12, 20, 0.7);
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  z-index: 60;
+}
+
+.modal {
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--line);
+  width: min(860px, 100%);
+  border-radius: 20px;
+  padding: 1.1rem;
+  max-height: 90vh;
+  overflow: auto;
+  position: relative;
+  box-shadow: 0 22px 44px rgba(0, 0, 0, 0.4);
+}
+
+.modal h2 {
+  color: var(--text);
+}
+
+.modal p {
+  color: var(--muted);
+}
+
+.closeBtn {
+  position: absolute;
+  right: 0.8rem;
+  top: 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  width: 2.2rem;
+  height: 2.2rem;
+  color: var(--text);
+  background: transparent;
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.gallery {
+  margin: 0.8rem 0;
+}
+
+.mainImage {
+  width: 100%;
+  height: 320px;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+.thumbs {
+  margin-top: 0.5rem;
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+}
+
+.thumb,
+.thumbActive {
+  border: 2px solid transparent;
+  background: transparent;
+  padding: 0;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.thumbActive {
+  border-color: var(--accent);
+}
+
+.thumb img,
+.thumbActive img {
+  width: 86px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.bookBtn {
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  background: var(--accent);
+  color: #001022;
+  padding: 0.7rem 1rem;
+  font-weight: 700;
+}
+
+.bookingMessage {
+  margin-top: 0.7rem;
+  color: var(--text);
+  font-size: 0.92rem;
+}
+
+.partnerLink {
+  margin-top: 0.4rem;
+  display: inline-block;
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.partnerLink:hover {
+  text-decoration: underline;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .overlay {
+    animation: fadeIn 180ms ease;
+  }
+
+  .modal {
+    animation: rise 220ms ease;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes rise {
+  from {
+    transform: translateY(8px);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
