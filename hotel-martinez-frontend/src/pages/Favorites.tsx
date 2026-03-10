@@ -1,6 +1,7 @@
 ﻿import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import ProductCard from '../components/ProductCard'
+import ErrorState from '../components/ErrorState'
 import { products } from '../data/products'
 import { fetchAttractionById } from '../services/localApi'
 import type { Attraction } from '../types/local'
@@ -31,15 +32,22 @@ function readLocalFavoriteIds(): string[] {
 export default function Favorites({ favorites, onToggleFavorite }: Props) {
   const favProducts = products.filter((p) => favorites.includes(p.id))
   const [localItems, setLocalItems] = useState<Attraction[]>([])
+  const [loadError, setLoadError] = useState<string | null>(null)
 
   const localCount = localItems.length
   const totalCount = favProducts.length + localCount
 
   useEffect(() => {
     const loadLocalFavorites = async () => {
-      const ids = readLocalFavoriteIds()
-      const result = await Promise.all(ids.map((id) => fetchAttractionById(id)))
-      setLocalItems(result.filter((item): item is Attraction => item !== null))
+      setLoadError(null)
+
+      try {
+        const ids = readLocalFavoriteIds()
+        const result = await Promise.all(ids.map((id) => fetchAttractionById(id)))
+        setLocalItems(result.filter((item): item is Attraction => item !== null))
+      } catch {
+        setLoadError('Не удалось загрузить локальное избранное. Попробуйте позже.')
+      }
     }
 
     void loadLocalFavorites()
@@ -59,6 +67,8 @@ export default function Favorites({ favorites, onToggleFavorite }: Props) {
       <div className="container">
         <h1>Избранное</h1>
         <p className="counter">Всего в избранном: {totalCount}</p>
+
+        {loadError && <ErrorState emoji="(T_T)" title="Ошибка загрузки избранного" message={loadError} />}
 
         {totalCount === 0 ? (
           <div className="empty-state">

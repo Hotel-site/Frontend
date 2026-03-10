@@ -1,7 +1,8 @@
 ﻿import { useEffect, useState } from 'react'
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
+import ErrorState from './components/ErrorState'
 import Home from './pages/Home'
 import Catalog from './pages/Catalog'
 import Favorites from './pages/Favorites'
@@ -9,6 +10,7 @@ import Cart from './pages/Cart'
 import About from './pages/About'
 import Restaurant from './pages/Restaurant'
 import LocalPage from './pages/LocalPage'
+import PageErrorBoundary from './components/PageErrorBoundary'
 import './styles/app.css'
 
 const LOCAL_FAVORITES_KEY = 'local-favorites'
@@ -77,16 +79,21 @@ export default function App() {
       <div className="app">
         <Navbar favoritesCount={favorites.length + localFavoritesCount} cartCount={cart.length} theme={theme} onToggleTheme={() => setTheme(theme === 'dark' ? 'light' : 'dark')} />
         <main className="app-main">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/catalog" element={<Catalog favorites={favorites} onToggleFavorite={onToggleFavorite} onAddToCart={onAddToCart} />} />
-            <Route path="/favorites" element={<Favorites favorites={favorites} onToggleFavorite={onToggleFavorite} />} />
-            <Route path="/cart" element={<Cart cartItems={cart} onRemoveFromCart={onRemoveFromCart} />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/restaurant" element={<Restaurant />} />
-            <Route path="/local" element={<LocalPage />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+          <PageErrorBoundary>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/catalog" element={<Catalog favorites={favorites} onToggleFavorite={onToggleFavorite} onAddToCart={onAddToCart} />} />
+              <Route path="/favorites" element={<Favorites favorites={favorites} onToggleFavorite={onToggleFavorite} />} />
+              <Route path="/cart" element={<Cart cartItems={cart} onRemoveFromCart={onRemoveFromCart} />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/restaurant" element={<Restaurant />} />
+              <Route path="/local" element={<LocalPage />} />
+              <Route
+                path="*"
+                element={<ErrorState imageUrl="/cry.gif" title="Страница не найдена" message="Путь указан неверно. Проверьте адрес и попробуйте снова." />}
+              />
+            </Routes>
+          </PageErrorBoundary>
         </main>
         <Footer />
       </div>

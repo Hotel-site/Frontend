@@ -5,6 +5,7 @@ import DetailModal from '../components/DetailModal'
 import FiltersPanel from '../components/FiltersPanel'
 import Pagination from '../components/Pagination'
 import SearchBar from '../components/SearchBar'
+import ErrorState from '../components/ErrorState'
 import { useAttractions } from '../hooks/useAttractions'
 import { fetchAttractionById } from '../services/localApi'
 import type { Attraction } from '../types/local'
@@ -32,6 +33,7 @@ export default function LocalPage() {
     updateOpenNow,
     updateSortBy,
     toggleFavorite,
+    reload,
   } = useAttractions()
 
   const [selectedAttractionId, setSelectedAttractionId] = useState<string | null>(null)
@@ -100,7 +102,14 @@ export default function LocalPage() {
           <p className={styles.resultsInfo}>Найдено: {total}</p>
 
           {loading && <p>Загрузка...</p>}
-          {error && <p role="alert">{error}</p>}
+          {error && (
+            <ErrorState
+              emoji="(>_<)"
+              title="Ошибка загрузки развлечений"
+              message={error}
+              onRetry={() => void reload()}
+            />
+          )}
 
           {!loading && !error && renderedItems.length === 0 && (
             <div className={styles.emptyState} role="status" aria-live="polite">
