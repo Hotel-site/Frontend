@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Сравнение безопасности Windows 11 25H2 — Лаб. №3</title>
+  <style>
+    body {
+      font-family: Calibri, Arial, sans-serif;
+      font-size: 11pt;
+      margin: 20px;
+      color: #000;
+    }
+    h1 {
+      font-size: 14pt;
+      margin-bottom: 6px;
+    }
+    .instructions {
+      border: 1px solid #888;
+      background: #f5f5f5;
+      padding: 10px 14px;
+      margin-bottom: 18px;
+      font-size: 10pt;
+    }
+    .instructions b { color: #333; }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 10pt;
+    }
+    th {
+      background-color: #1F3864;
+      color: #ffffff;
+      text-align: left;
+      padding: 6px 8px;
+      border: 1px solid #333;
+    }
+    td {
+      border: 1px solid #999;
+      padding: 5px 8px;
+      vertical-align: top;
+    }
+    tr:nth-child(even) td {
+      background-color: #f0f4fa;
+    }
+    tr:nth-child(odd) td {
+      background-color: #ffffff;
+    }
+    .section-header td {
+      background-color: #d6e4f0;
+      font-weight: bold;
+      font-size: 10pt;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Лабораторная работа №3 — Windows 11 25H2: Сравнение состояния безопасности ДО / ПОСЛЕ</h1>
+
+<div class="instructions">
+  <b>Как открыть в Microsoft Word:</b><br>
+  <b>Способ 1 (рекомендуется):</b> Откройте Word → <b>Файл → Открыть</b> → выберите этот файл
+  (<code>security-comparison-windows11-25h2.html</code>). Word автоматически отобразит таблицу.<br>
+  <b>Способ 2:</b> Перетащите файл на значок Word — он откроется напрямую как документ с таблицей.<br>
+  <b>Способ 3:</b> Откройте файл в браузере → выделите всю таблицу (<kbd>Ctrl+A</kbd>) → скопируйте
+  (<kbd>Ctrl+C</kbd>) → вставьте в Word (<kbd>Ctrl+V</kbd>). Форматирование таблицы сохранится.<br>
+  <br>
+  После открытия: <b>Файл → Сохранить как → Word Document (.docx)</b>, чтобы сохранить в формате Word.
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Контроль/мера</th>
+      <th>ДО применения мер (шаблонно)</th>
+      <th>ПОСЛЕ применения мер</th>
+      <th>Где проверить (для скриншота)</th>
+    </tr>
+  </thead>
+  <tbody>
+
+    <!-- Обновления -->
+    <tr class="section-header">
+      <td colspan="4">Обновления Windows</td>
+    </tr>
+    <tr>
+      <td>Обновления безопасности Windows</td>
+      <td>Были доступны обновления; система не была полностью актуальной</td>
+      <td>Установлены все доступные обновления; система «Up to date»</td>
+      <td>Settings → Windows Update → Update history</td>
+    </tr>
+
+    <!-- Defender -->
+    <tr class="section-header">
+      <td colspan="4">Microsoft Defender</td>
+    </tr>
+    <tr>
+      <td>Защита в реальном времени</td>
+      <td>Включено по умолчанию; настройки не проверялись</td>
+      <td><b>On</b> (включено)</td>
+      <td>Windows Security → Virus &amp; threat protection → Manage settings</td>
+    </tr>
+    <tr>
+      <td>Актуальность сигнатур (баз)</td>
+      <td>Актуальность баз не проверялась</td>
+      <td>Обновлено до актуальных баз</td>
+      <td>Windows Security → Virus &amp; threat protection → Protection updates</td>
+    </tr>
+    <tr>
+      <td>Дополнительные функции Defender (облачная защита, защита от несанкционированного изменения и др.)</td>
+      <td>Настройки по умолчанию; не контролировались</td>
+      <td>Включены все доступные функции защиты</td>
+      <td>Windows Security → Virus &amp; threat protection → Manage settings</td>
+    </tr>
+
+    <!-- Автозагрузка -->
+    <tr class="section-header">
+      <td colspan="4">Управление автозагрузкой (неиспользуемые приложения)</td>
+    </tr>
+    <tr>
+      <td>Автозагрузка приложений (общее)</td>
+      <td>В автозагрузке присутствовали лишние приложения</td>
+      <td>Лишние автозагрузки отключены через Диспетчер задач</td>
+      <td>Task Manager → Startup apps</td>
+    </tr>
+    <tr>
+      <td>EarTrumpet</td>
+      <td>Был установлен и мог запускаться в фоне/при старте</td>
+      <td>Отключено (не используется; стандартных средств Windows достаточно)</td>
+      <td>Task Manager → Startup apps / Settings → Apps</td>
+    </tr>
+    <tr>
+      <td>Phone Link</td>
+      <td>Установлено по умолчанию в Windows 11; работало в фоне</td>
+      <td>Отключено (не используется; снижение поверхности атаки)</td>
+      <td>Settings → Apps → Installed apps и/или Startup apps</td>
+    </tr>
+    <tr>
+      <td>Discord</td>
+      <td>Был установлен и находился в автозагрузке; работал в фоне</td>
+      <td>Отключено (не используется; снижение риска фонового сетевого приложения)</td>
+      <td>Task Manager → Startup apps / Settings → Apps</td>
+    </tr>
+
+    <!-- Политики паролей -->
+    <tr class="section-header">
+      <td colspan="4">Политики паролей (secpol.msc → Account Policies → Password Policy)</td>
+    </tr>
+    <tr>
+      <td>Минимальная длина пароля</td>
+      <td>По умолчанию / менее строго (значение не задавалось явно)</td>
+      <td><b>5</b> символов</td>
+      <td>secpol.msc → Account Policies → Password Policy</td>
+    </tr>
+    <tr>
+      <td>Требования к сложности пароля</td>
+      <td>По умолчанию / не проверялась</td>
+      <td><b>Enabled</b> (включено)</td>
+      <td>secpol.msc → Account Policies → Password Policy</td>
+    </tr>
+
+    <!-- Блокировка учётной записи -->
+    <tr class="section-header">
+      <td colspan="4">Политика блокировки учётной записи (secpol.msc → Account Lockout Policy)</td>
+    </tr>
+    <tr>
+      <td>Порог блокировки (неудачных попыток входа)</td>
+      <td>Не настроено (или значение по умолчанию)</td>
+      <td><b>10 попыток</b></td>
+      <td>secpol.msc → Account Policies → Account Lockout Policy</td>
+    </tr>
+    <tr>
+      <td>Длительность блокировки</td>
+      <td>Не настроено</td>
+      <td><b>10 минут</b></td>
+      <td>secpol.msc → Account Lockout Policy</td>
+    </tr>
+    <tr>
+      <td>Сброс счётчика блокировки</td>
+      <td>Не настроено</td>
+      <td><b>10 минут</b></td>
+      <td>secpol.msc → Account Lockout Policy</td>
+    </tr>
+
+    <!-- Привилегии и UAC -->
+    <tr class="section-header">
+      <td colspan="4">Принцип минимальных привилегий и UAC</td>
+    </tr>
+    <tr>
+      <td>Тип учётной записи для повседневной работы (наименьшие привилегии)</td>
+      <td>Использовалась учётная запись администратора для повседневных задач</td>
+      <td>Повседневная работа под <b>Standard user</b>; учётная запись администратора — только для административных задач</td>
+      <td>Settings → Accounts → Your info</td>
+    </tr>
+    <tr>
+      <td>UAC (контроль учётных записей пользователей)</td>
+      <td>Включён по умолчанию, но использование не акцентировалось</td>
+      <td>Включён; подтверждение повышения прав требуется</td>
+      <td>Control Panel → User Accounts → Change UAC settings</td>
+    </tr>
+
+    <!-- Специфичные для Windows 11 -->
+    <tr class="section-header">
+      <td colspan="4">Функции безопасности, специфичные для Windows 11</td>
+    </tr>
+    <tr>
+      <td>Целостность памяти — Memory integrity (HVCI)</td>
+      <td>Выключено / не включалось вручную</td>
+      <td>(On/Off — указать фактическое значение после настройки)</td>
+      <td>Windows Security → Device security → Core isolation details</td>
+    </tr>
+    <tr>
+      <td>Брандмауэр Microsoft Defender (Firewall)</td>
+      <td>Включён по умолчанию</td>
+      <td>(On/Off — указать фактическое значение после настройки)</td>
+      <td>Windows Security → Firewall &amp; network protection</td>
+    </tr>
+
+  </tbody>
+</table>
+
+<p style="font-size:9pt; color:#555; margin-top:14px;">
+  <i>Примечание: значения в колонке «ДО» являются шаблонными. Уточните их при необходимости по
+  фактическим скриншотам, сделанным до применения мер. Значения в колонке «ПОСЛЕ», отмеченные
+  как «(указать фактически)», необходимо заполнить на основе скриншотов после настройки.</i>
+</p>
+
+</body>
+</html>
