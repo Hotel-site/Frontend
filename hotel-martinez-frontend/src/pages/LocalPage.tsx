@@ -6,6 +6,7 @@ import FiltersPanel from '../components/FiltersPanel'
 import Pagination from '../components/Pagination'
 import SearchBar from '../components/SearchBar'
 import ErrorState from '../components/ErrorState'
+import LoadingState from '../components/LoadingState'
 import { useAttractions } from '../hooks/useAttractions'
 import { fetchAttractionById } from '../services/localApi'
 import type { Attraction } from '../types/local'
@@ -101,7 +102,7 @@ export default function LocalPage() {
         <div>
           <p className={styles.resultsInfo}>Найдено: {total}</p>
 
-          {loading && <p>Загрузка...</p>}
+          {loading && <LoadingState title="Загружаем развлечения" message="Формируем подборку активностей рядом с отелем." />}
           {error && (
             <ErrorState
               emoji="(>_<)"
@@ -121,23 +122,27 @@ export default function LocalPage() {
             </div>
           )}
 
-          <ul className={clsx(styles.list, viewMode === 'grid' ? styles.grid : styles.listMode)}>
-            {renderedItems.map((attraction) => (
-              <AttractionCard
-                key={attraction.id}
-                attraction={attraction}
-                viewMode={viewMode}
-                isFavorite={favoriteSet.has(attraction.id)}
-                onToggleFavorite={toggleFavorite}
-                onOpenDetails={(id) => void openDetails(id)}
-                cardRef={(node) => {
-                  cardRefs.current[attraction.id] = node
-                }}
-              />
-            ))}
-          </ul>
+          {!loading && !error && (
+            <>
+              <ul className={clsx(styles.list, viewMode === 'grid' ? styles.grid : styles.listMode)}>
+                {renderedItems.map((attraction) => (
+                  <AttractionCard
+                    key={attraction.id}
+                    attraction={attraction}
+                    viewMode={viewMode}
+                    isFavorite={favoriteSet.has(attraction.id)}
+                    onToggleFavorite={toggleFavorite}
+                    onOpenDetails={(id) => void openDetails(id)}
+                    cardRef={(node) => {
+                      cardRefs.current[attraction.id] = node
+                    }}
+                  />
+                ))}
+              </ul>
 
-          <Pagination page={query.page} totalPages={totalPages} onPageChange={setPage} />
+              <Pagination page={query.page} totalPages={totalPages} onPageChange={setPage} />
+            </>
+          )}
         </div>
       </div>
 

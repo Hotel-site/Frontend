@@ -2,6 +2,7 @@
 import { Link } from 'react-router-dom'
 import ProductCard from '../components/ProductCard'
 import ErrorState from '../components/ErrorState'
+import LoadingState from '../components/LoadingState'
 import { products } from '../data/products'
 import { fetchAttractionById } from '../services/localApi'
 import type { Attraction } from '../types/local'
@@ -32,6 +33,7 @@ function readLocalFavoriteIds(): string[] {
 export default function Favorites({ favorites, onToggleFavorite }: Props) {
   const favProducts = products.filter((p) => favorites.includes(p.id))
   const [localItems, setLocalItems] = useState<Attraction[]>([])
+  const [isLoadingLocal, setIsLoadingLocal] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
 
   const localCount = localItems.length
@@ -39,6 +41,7 @@ export default function Favorites({ favorites, onToggleFavorite }: Props) {
 
   useEffect(() => {
     const loadLocalFavorites = async () => {
+      setIsLoadingLocal(true)
       setLoadError(null)
 
       try {
@@ -47,6 +50,8 @@ export default function Favorites({ favorites, onToggleFavorite }: Props) {
         setLocalItems(result.filter((item): item is Attraction => item !== null))
       } catch {
         setLoadError('Не удалось загрузить локальное избранное. Попробуйте позже.')
+      } finally {
+        setIsLoadingLocal(false)
       }
     }
 
@@ -68,9 +73,16 @@ export default function Favorites({ favorites, onToggleFavorite }: Props) {
         <h1>Избранное</h1>
         <p className="counter">Всего в избранном: {totalCount}</p>
 
-        {loadError && <ErrorState emoji="(T_T)" title="Ошибка загрузки избранного" message={loadError} />}
+        {isLoadingLocal && (
+          <LoadingState
+            title="Загружаем избранное"
+            message="Проверяем сохраненные локации и подготавливаем список." 
+          />
+        )}
 
-        {totalCount === 0 ? (
+        {!isLoadingLocal && loadError && <ErrorState emoji="(T_T)" title="Ошибка загрузки избранного" message={loadError} />}
+
+        {!isLoadingLocal && totalCount === 0 ? (
           <div className="empty-state">
             <p className="empty-emoji">💔</p>
             <p className="empty-title">Избранное пока пусто</p>
@@ -84,7 +96,7 @@ export default function Favorites({ favorites, onToggleFavorite }: Props) {
               </Link>
             </div>
           </div>
-        ) : (
+        ) : !isLoadingLocal ? (
           <>
             {favProducts.length > 0 && (
               <>
@@ -129,7 +141,7 @@ export default function Favorites({ favorites, onToggleFavorite }: Props) {
               </>
             )}
           </>
-        )}
+        ) : null}
       </div>
     </section>
   )
