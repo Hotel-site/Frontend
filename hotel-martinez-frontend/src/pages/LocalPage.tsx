@@ -8,7 +8,7 @@ import SearchBar from '../components/SearchBar'
 import { useAttractions } from '../hooks/useAttractions'
 import { fetchAttractionById } from '../services/localApi'
 import type { Attraction } from '../types/local'
-import styles from './LocalPage.module.css'
+import styles from '../styles/LocalPage.module.css'
 import { translate } from '../utils/i18n'
 
 const MapView = lazy(() => import('../components/MapView'))

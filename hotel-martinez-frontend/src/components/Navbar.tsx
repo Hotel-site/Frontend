@@ -17,7 +17,7 @@ export default function Navbar({ favoritesCount, cartCount, theme, onToggleTheme
         <nav className="nav">
           <NavLink to="/" className={({ isActive }) => `nav__link ${isActive ? 'active' : ''}`}>Главная</NavLink>
           <NavLink to="/catalog" className={({ isActive }) => `nav__link ${isActive ? 'active' : ''}`}>Каталог</NavLink>
-          <NavLink to="/restaurant" className={({ isActive }) => `nav__link ${isActive ? 'active' : ''}`}>Рестораны</NavLink>
+          <NavLink to="/restaurant" className={({ isActive }) => `nav__link ${isActive ? 'active' : ''}`}>Ресторан</NavLink>
           <NavLink to="/local" className={({ isActive }) => `nav__link ${isActive ? 'active' : ''}`}>Гид по городу</NavLink>
           <NavLink to="/favorites" className={({ isActive }) => `nav__link ${isActive ? 'active' : ''}`}>
             Избранное <span className="badge">{favoritesCount}</span>
@@ -27,6 +27,8 @@ export default function Navbar({ favoritesCount, cartCount, theme, onToggleTheme
           </NavLink>
           <NavLink to="/about" className={({ isActive }) => `nav__link ${isActive ? 'active' : ''}`}>О нас</NavLink>
         </nav>
+      </div>
+      <div className="theme-outer">
         <button className="theme-btn" onClick={onToggleTheme}>
           {theme === 'dark' ? '☀️ Светлая' : '🌙 Тёмная'}
         </button>

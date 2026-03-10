@@ -1,9 +1,11 @@
 ﻿* { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
   --bg: #0b1220; --text: #ecf1ff; --muted: #b8c3df; --panel: #121b2f; --line: #26324f; --accent: #7cc6ff;
+  --brand: #f7d27a;
 }
 :root[data-theme='light'] {
   --bg: #f2f5fb; --text: #1b2437; --muted: #5c6a85; --panel: #ffffff; --line: #d9e0ef; --accent: #0ea5e9;
+  --brand: #f7d27a;
 }
 body { font-family: Segoe UI, Arial, sans-serif; background: var(--bg); color: var(--text); }
 .container { width: min(1120px, 92%); margin: 0 auto; }

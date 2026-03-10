@@ -1,22 +1,39 @@
 ﻿.navbar { position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--panel) 90%, transparent); border-bottom: 1px solid var(--line); backdrop-filter: blur(10px); }
-.navbar__inner { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; }
-.brand { font-weight: 700; color: #f7d27a; }
+.navbar__inner { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; padding: 12px 0; }
+.brand { font-weight: 700; color: var(--brand); white-space: nowrap; flex-shrink: 0; }
 
-.nav { display: flex; gap: 8px; }
+.nav { display: flex; gap: 8px; justify-content: space-between; align-items: center; flex-wrap: nowrap; overflow: hidden; min-width: 0; justify-self: center; width: 100%; padding: 0 8px 0 12px; max-width: 1100px; padding-right: calc(var(--theme-btn-w, 120px) + 12px); }
 .nav__link {
   padding: 8px 12px;
   border-radius: 999px;
-  color: #f8fbff;
+  color: var(--text);
   font-weight: 600;
+  white-space: nowrap;
 }
 .nav__link:hover {
   background: var(--line);
-  color: #ffffff;
+  color: var(--text);
 }
 .nav__link.active {
-  background: #f7d27a;
-  color: #1b2437;
+  background: var(--accent);
+  color: var(--panel);
 }
 
 .badge { margin-left: 6px; font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--accent); color: #001022; font-weight: 700; }
-.theme-btn { border: 1px solid var(--line); background: var(--panel); color: var(--text); border-radius: 12px; padding: 8px 12px; cursor: pointer; }
+.theme-btn { --theme-btn-w: 120px; border: 1px solid var(--line); background: var(--panel); color: var(--text); border-radius: 12px; padding: 8px 12px; cursor: pointer; flex-shrink: 0; position: relative; z-index: 2; }
+
+.theme-outer { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); display: flex; align-items: center; }
+
+/* ensure the button doesn't cover content on very small screens */
+@media (max-width: 480px) {
+  .theme-outer { right: 8px; }
+}
+
+@media (max-width: 640px) {
+  .nav__link { padding: 6px 8px; font-size: 14px; }
+  .brand { font-size: 14px; }
+}
+
+@media (max-width: 480px) {
+  .nav { justify-content: flex-start; overflow-x: auto; padding-left: 8px; gap: 6px; }
+}
