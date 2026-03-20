@@ -1,4 +1,4 @@
-﻿import type { Service } from '../types/service'
+﻿import type { Service } from '../../types/service'
 import '../styles/service-card.css'
 
 type Props = { service: Service }

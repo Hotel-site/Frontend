@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { GoogleMap, InfoWindowF, MarkerF, useJsApiLoader } from '@react-google-maps/api'
-import type { Attraction } from '../types/local'
+import type { Attraction } from '../../types/local'
 import styles from './MapView.module.css'
 
 type MapViewProps = {

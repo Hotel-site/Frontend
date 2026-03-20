@@ -2,7 +2,7 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
-import ErrorState from './components/ErrorState'
+import ErrorState from './components/ErrorState/ErrorState'
 import Home from './pages/Home'
 import Catalog from './pages/Catalog'
 import Favorites from './pages/Favorites'

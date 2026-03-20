@@ -7,7 +7,7 @@ import Home from './pages/Home'
 import LocalPage from './pages/LocalPage'
 import Restaurant from './pages/Restaurant'
 
-// Example route config for createBrowserRouter/useRoutes.
+//END-points ued Navbar 
 export const appRoutes: RouteObject[] = [
   { path: '/', element: <Home /> },
   { path: '/catalog', element: <Catalog favorites={[]} onToggleFavorite={() => undefined} onAddToCart={() => undefined} /> },

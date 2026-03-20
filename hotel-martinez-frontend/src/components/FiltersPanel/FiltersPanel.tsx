@@ -1,6 +1,6 @@
-import type { Category, PriceType, SortBy } from '../types/local'
+import type { Category, PriceType, SortBy } from '../../types/local'
 import styles from './FiltersPanel.module.css'
-import { translate } from '../utils/i18n'
+import { translate } from '../../utils/i18n'
 
 type FiltersPanelProps = {
   category: Category | 'all'

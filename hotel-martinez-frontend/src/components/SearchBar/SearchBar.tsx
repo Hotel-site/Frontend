@@ -1,6 +1,6 @@
 import type { ChangeEvent } from 'react'
 import styles from './SearchBar.module.css'
-import { translate } from '../utils/i18n'
+import { translate } from '../../utils/i18n'
 
 type SearchBarProps = {
   value: string

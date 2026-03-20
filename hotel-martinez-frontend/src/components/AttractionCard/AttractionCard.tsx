@@ -1,7 +1,7 @@
 import clsx from 'clsx'
-import type { Attraction, ViewMode } from '../types/local'
+import type { Attraction, ViewMode } from '../../types/local'
 import styles from './AttractionCard.module.css'
-import { translate } from '../utils/i18n'
+import { translate } from '../../utils/i18n'
 
 type AttractionCardProps = {
   attraction: Attraction

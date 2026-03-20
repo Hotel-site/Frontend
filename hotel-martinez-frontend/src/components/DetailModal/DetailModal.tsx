@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
-import { submitBookingRequest } from '../services/localApi'
-import type { Attraction } from '../types/local'
+import { submitBookingRequest } from '../../services/localApi'
+import type { Attraction } from '../../types/local'
 import styles from './DetailModal.module.css'
-import { translate } from '../utils/i18n'
+import { translate } from '../../utils/i18n'
 
 type DetailModalProps = {
   attraction: Attraction | null

@@ -1,19 +1,19 @@
 import { lazy, Suspense, useMemo, useRef, useState } from 'react'
 import clsx from 'clsx'
-import AttractionCard from '../components/AttractionCard'
-import DetailModal from '../components/DetailModal'
-import FiltersPanel from '../components/FiltersPanel'
-import Pagination from '../components/Pagination'
-import SearchBar from '../components/SearchBar'
-import ErrorState from '../components/ErrorState'
-import LoadingState from '../components/LoadingState'
+import AttractionCard from '../components/AttractionCard/AttractionCard'
+import DetailModal from '../components/DetailModal/DetailModal'
+import FiltersPanel from '../components/FiltersPanel/FiltersPanel'
+import Pagination from '../components/Pagination/Pagination'
+import SearchBar from '../components/SearchBar/SearchBar'
+import ErrorState from '../components/ErrorState/ErrorState'
+import LoadingState from '../components/LoadingState/LoadingState'
 import { useAttractions } from '../hooks/useAttractions'
 import { fetchAttractionById } from '../services/localApi'
 import type { Attraction } from '../types/local'
 import styles from '../styles/LocalPage.module.css'
 import { translate } from '../utils/i18n'
 
-const MapView = lazy(() => import('../components/MapView'))
+const MapView = lazy(() => import('../components/MapView/MapView'))
 
 export default function LocalPage() {
   const {

@@ -1,6 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
 import { useLocation } from 'react-router-dom'
-import ErrorState from './ErrorState'
+import ErrorState from './ErrorState/ErrorState.tsx'
 
 type BoundaryProps = {
   children: ReactNode
