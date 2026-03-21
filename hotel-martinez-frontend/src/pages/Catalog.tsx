@@ -1,6 +1,8 @@
 ﻿import { useMemo, useState } from 'react'
 import ProductCard from '../components/Cards/ProductCard'
+import ProductDetailModal from '../components/DetailModal/ProductDetailModal'
 import { products } from '../data/products'
+import type { Product } from '../types/product'
 import '../styles/catalog.css'
 
 type Props = {
@@ -13,6 +15,7 @@ export default function Catalog({ favorites, onToggleFavorite, onAddToCart }: Pr
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('Все')
   const [likes, setLikes] = useState<Record<number, number>>({})
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
 
   const categories = useMemo(
     () => ['Все', ...Array.from(new Set(products.map((p) => p.category)))],
@@ -38,6 +41,7 @@ export default function Catalog({ favorites, onToggleFavorite, onAddToCart }: Pr
 
   return (
     <section className="catalog">
+      <ProductDetailModal product={selectedProduct} onClose={() => setSelectedProduct(null)} />
       <div className="container">
         <h1>Каталог услуг и предложений</h1>
 
@@ -79,6 +83,7 @@ export default function Catalog({ favorites, onToggleFavorite, onAddToCart }: Pr
                 isFavorite={favorites.includes(p.id)}
                 onToggleFavorite={onToggleFavorite}
                 likes={likes[p.id] || 0}
+                onViewDetails={() => setSelectedProduct(p)}
                 onLike={() => handleLike(p.id)}
                 onAddToCart={() => onAddToCart(p.id)}
               />

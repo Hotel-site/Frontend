@@ -1,5 +1,5 @@
 ﻿import type { Product } from '../../types/product'
-import '../styles/product-card.css'
+import '../../styles/product-card.css'
 
 type Props = {
   product: Product
@@ -8,6 +8,7 @@ type Props = {
   likes?: number
   onLike?: (id: number) => void
   onAddToCart?: (id: number) => void
+  onViewDetails?: (product: Product) => void
 }
 
 export default function ProductCard({
@@ -17,9 +18,10 @@ export default function ProductCard({
   likes = 0,
   onLike,
   onAddToCart,
+  onViewDetails,
 }: Props) {
   return (
-    <article className="card">
+    <article className="card" onClick={() => onViewDetails?.(product)} style={{ cursor: 'pointer' }}>
       <img src={product.image} alt={product.title} className="card__img" />
       <div className="card__body">
         <div className="card__cat">{product.category}</div>
@@ -31,7 +33,10 @@ export default function ProductCard({
         <div className="card__stats">
           <button
             className="like-stat"
-            onClick={() => onLike?.(product.id)}
+            onClick={(e) => {
+              e.stopPropagation()
+              onLike?.(product.id)
+            }}
             title="Лайки"
           >
             <span className="like-icon">👍</span>
@@ -43,7 +48,10 @@ export default function ProductCard({
         <div className="card__actions">
           <button
             className={`like-btn ${isFavorite ? 'active' : ''}`}
-            onClick={() => onToggleFavorite(product.id)}
+            onClick={(e) => {
+              e.stopPropagation()
+              onToggleFavorite(product.id)
+            }}
             title="Добавить в избранное"
           >
             <span className="like-icon">{isFavorite ? '♥' : '♡'}</span>
@@ -51,7 +59,10 @@ export default function ProductCard({
           </button>
           <button
             className="cart-btn"
-            onClick={() => onAddToCart?.(product.id)}
+            onClick={(e) => {
+              e.stopPropagation()
+              onAddToCart?.(product.id)
+            }}
             title="Добавить в корзину"
           >
             <span>🛒</span>

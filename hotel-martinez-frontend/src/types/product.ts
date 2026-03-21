@@ -11,6 +11,8 @@ export interface Product {
   title: string
   price: number
   image: string
+  images?: string[]
   category: HotelCategory
   unit?: string
+  description?: string
 }
