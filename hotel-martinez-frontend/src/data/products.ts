@@ -1,10 +1,6 @@
 ﻿import type { Product } from '../types/product'
 
 export const products: Product[] = [
-  { id: 1, title: 'Deluxe Room', price: 520, unit: '€ / ночь', image: 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?q=80&w=1200&auto=format&fit=crop', category: 'Номера' },
-  { id: 2, title: 'Sea View Suite', price: 890, unit: '€ / ночь', image: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?q=80&w=1200&auto=format&fit=crop', category: 'Номера' },
-  { id: 3, title: 'Penthouse Martinez', price: 1650, unit: '€ / ночь', image: 'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?q=80&w=1200&auto=format&fit=crop', category: 'Номера' },
-
   { id: 4, title: 'Signature Massage', price: 210, unit: '€ / сеанс', image: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?q=80&w=1200&auto=format&fit=crop', category: 'SPA & Wellness' },
   { id: 5, title: 'Wellness Day Pass', price: 260, unit: '€ / день', image: 'https://images.unsplash.com/photo-1519823551278-64ac92734fb1?q=80&w=1200&auto=format&fit=crop', category: 'SPA & Wellness' },
 
