@@ -1,6 +1,7 @@
-﻿import { useMemo, useState } from 'react'
+﻿import { useMemo, useState, useEffect, useRef } from 'react'
 import ProductCard from '../components/Cards/ProductCard'
 import ProductDetailModal from '../components/DetailModal/ProductDetailModal'
+import CatalogFiltersPanel, { BUDGET_RANGES, type BudgetType } from '../components/CatalogFiltersPanel/CatalogFiltersPanel'
 import { products } from '../data/products'
 import type { Product } from '../types/product'
 import '../styles/catalog.css'
@@ -14,23 +15,120 @@ type Props = {
 export default function Catalog({ favorites, onToggleFavorite, onAddToCart }: Props) {
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('Все')
+  const [minPrice, setMinPrice] = useState(0)
+  const [maxPrice, setMaxPrice] = useState(0) // Будет установлено через useEffect
+  const [budget, setBudget] = useState<BudgetType>('all')
+  const [sortBy, setSortBy] = useState('default')
   const [likes, setLikes] = useState<Record<number, number>>({})
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+
+  // Флаг для отслеживания автоматических изменений цены
+  const isAutomaticPriceChange = useRef(false)
 
   const categories = useMemo(
     () => ['Все', ...Array.from(new Set(products.map((p) => p.category)))],
     []
   )
 
+  const maxProductPrice = useMemo(
+    () => Math.max(...products.map((p) => p.price)),
+    []
+  )
+
+  // Инициализация максимальной цены при загрузке
+  useEffect(() => {
+    setMaxPrice(maxProductPrice)
+  }, [maxProductPrice])
+
+  // Синхронизация ползунков с выбранной категорией бюджета
+  useEffect(() => {
+    isAutomaticPriceChange.current = true
+    
+    if (budget === 'all') {
+      // Когда выбран 'Любой' - устанавливаем полный диапазон
+      setMinPrice(0)
+      setMaxPrice(maxProductPrice)
+    } else {
+      // Когда выбрана конкретная категория - устанавливаем её диапазон
+      const range = BUDGET_RANGES[budget]
+      if (range) {
+        setMinPrice(range.min)
+        // Для премиума используем актуальную максимальную цену
+        if (budget === 'premium') {
+          setMaxPrice(maxProductPrice)
+        } else {
+          setMaxPrice(range.max)
+        }
+      }
+    }
+  }, [budget, maxProductPrice])
+
+  // Сброс категории бюджета при ручном изменении ползунков
+  useEffect(() => {
+    // Пропускаем проверку, если это была автоматическая смена
+    if (isAutomaticPriceChange.current) {
+      isAutomaticPriceChange.current = false
+      return
+    }
+
+    // Если выбран какой-то конкретный бюджет и ползунки не совпадают - сбрасываем
+    if (budget !== 'all') {
+      const range = BUDGET_RANGES[budget]
+      if (range) {
+        let expectedMax = range.max
+        // Для премиума максимум равен максимальной цене товара
+        if (budget === 'premium') {
+          expectedMax = maxProductPrice
+        }
+        
+        if (minPrice !== range.min || maxPrice !== expectedMax) {
+          setBudget('all')
+        }
+      }
+    }
+  }, [minPrice, maxPrice, budget, maxProductPrice])
+
   const filtered = useMemo(() => {
-    return products.filter((p) => {
+    let result = products.filter((p) => {
       const byCategory = category === 'Все' || p.category === category
       const byQuery =
         p.title.toLowerCase().includes(query.toLowerCase()) ||
         p.category.toLowerCase().includes(query.toLowerCase())
-      return byCategory && byQuery
+      const byPrice = p.price >= minPrice && p.price <= maxPrice
+
+      // Применить фильтр по бюджету
+      let byBudget = true
+      if (budget !== 'all') {
+        const range = BUDGET_RANGES[budget]
+        if (range) {
+          byBudget = p.price >= range.min && p.price <= range.max
+        }
+      }
+
+      return byCategory && byQuery && byPrice && byBudget
     })
-  }, [query, category])
+
+    // Применить сортировку
+    switch (sortBy) {
+      case 'price-asc':
+        result.sort((a, b) => a.price - b.price)
+        break
+      case 'price-desc':
+        result.sort((a, b) => b.price - a.price)
+        break
+      case 'title-asc':
+        result.sort((a, b) => a.title.localeCompare(b.title, 'ru'))
+        break
+      case 'title-desc':
+        result.sort((a, b) => b.title.localeCompare(a.title, 'ru'))
+        break
+      default:
+        // Keep original order
+        break
+    }
+
+    return result
+  }, [query, category, minPrice, maxPrice, budget, sortBy])
 
   const handleLike = (id: number) => {
     setLikes((prev) => ({
@@ -39,57 +137,76 @@ export default function Catalog({ favorites, onToggleFavorite, onAddToCart }: Pr
     }))
   }
 
+  const handleResetFilters = () => {
+    setQuery('')
+    setCategory('Все')
+    setMinPrice(0)
+    setMaxPrice(maxProductPrice)
+    setBudget('all')
+    setSortBy('default')
+  }
+
   return (
     <section className="catalog">
       <ProductDetailModal product={selectedProduct} onClose={() => setSelectedProduct(null)} />
-      <div className="container">
-        <h1>Каталог услуг и предложений</h1>
+      <div className="catalog-container">
+        <div className="catalog-main">
+          <div className="catalog-header">
+            <h1>Каталог услуг и предложений</h1>
+            <p className="catalog-counter">
+              Найдено: <strong>{filtered.length}</strong> | В избранном: <strong>{favorites.length}</strong>
+            </p>
+          </div>
 
-        <input
-          className="search"
-          placeholder="Поиск по каталогу..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
+          <input
+            className="catalog-search"
+            placeholder="🔍 Поиск по каталогу..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
 
-        <div className="filters">
-          {categories.map((c) => (
-            <button
-              key={c}
-              className={`filter-btn ${category === c ? 'active' : ''}`}
-              onClick={() => setCategory(c)}
-            >
-              {c}
-            </button>
-          ))}
+          {filtered.length === 0 ? (
+            <div className="catalog-empty-state">
+              <p className="empty-emoji">😢</p>
+              <p className="empty-title">Ничего не найдено</p>
+              <p className="empty-hint">Попробуйте изменить фильтры или поисковый запрос</p>
+              <button className="empty-reset-btn" onClick={handleResetFilters}>
+                Очистить все фильтры
+              </button>
+            </div>
+          ) : (
+            <div className="catalog-grid">
+              {filtered.map((p) => (
+                <ProductCard
+                  key={p.id}
+                  product={p}
+                  isFavorite={favorites.includes(p.id)}
+                  onToggleFavorite={onToggleFavorite}
+                  likes={likes[p.id] || 0}
+                  onViewDetails={() => setSelectedProduct(p)}
+                  onLike={() => handleLike(p.id)}
+                  onAddToCart={() => onAddToCart(p.id)}
+                />
+              ))}
+            </div>
+          )}
         </div>
 
-        <p className="counter">
-          Найдено: {filtered.length} | В избранном: {favorites.length}
-        </p>
-
-        {filtered.length === 0 ? (
-          <div className="empty-state">
-            <p className="empty-emoji">😢</p>
-            <p className="empty-title">Ничего не найдено</p>
-            <p className="empty-hint">Попробуйте изменить фильтр или поисковый запрос</p>
-          </div>
-        ) : (
-          <div className="grid">
-            {filtered.map((p) => (
-              <ProductCard
-                key={p.id}
-                product={p}
-                isFavorite={favorites.includes(p.id)}
-                onToggleFavorite={onToggleFavorite}
-                likes={likes[p.id] || 0}
-                onViewDetails={() => setSelectedProduct(p)}
-                onLike={() => handleLike(p.id)}
-                onAddToCart={() => onAddToCart(p.id)}
-              />
-            ))}
-          </div>
-        )}
+        <CatalogFiltersPanel
+          category={category}
+          minPrice={minPrice}
+          maxPrice={maxPrice}
+          budget={budget}
+          sortBy={sortBy}
+          onCategoryChange={setCategory}
+          onMinPriceChange={setMinPrice}
+          onMaxPriceChange={setMaxPrice}
+          onBudgetChange={setBudget}
+          onSortByChange={setSortBy}
+          onResetFilters={handleResetFilters}
+          categories={categories}
+          maxProductPrice={maxProductPrice}
+        />
       </div>
     </section>
   )
