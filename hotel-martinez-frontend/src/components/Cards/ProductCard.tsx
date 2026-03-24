@@ -1,5 +1,5 @@
 ﻿import type { Product } from '../../types/product'
-import '../styles/product-card.css'
+import '../../styles/product-card.css'
 
 type Props = {
   product: Product

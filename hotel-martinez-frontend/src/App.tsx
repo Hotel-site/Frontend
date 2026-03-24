@@ -4,6 +4,7 @@ import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import ErrorState from './components/ErrorState/ErrorState'
 import Home from './pages/Home'
+import Rooms from './pages/Rooms'
 import Catalog from './pages/Catalog'
 import Favorites from './pages/Favorites'
 import Cart from './pages/Cart'
@@ -82,6 +83,7 @@ export default function App() {
           <PageErrorBoundary>
             <Routes>
               <Route path="/" element={<Home />} />
+              <Route path="/rooms" element={<Rooms />} />
               <Route path="/catalog" element={<Catalog favorites={favorites} onToggleFavorite={onToggleFavorite} onAddToCart={onAddToCart} />} />
               <Route path="/favorites" element={<Favorites favorites={favorites} onToggleFavorite={onToggleFavorite} />} />
               <Route path="/cart" element={<Cart cartItems={cart} onRemoveFromCart={onRemoveFromCart} />} />
