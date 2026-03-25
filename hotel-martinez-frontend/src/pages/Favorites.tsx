@@ -66,7 +66,7 @@ export default function Favorites({ favorites, onToggleFavorite }: Props) {
     window.dispatchEvent(new Event('local-favorites-updated'))
     setLocalItems((prev) => prev.filter((item) => item.id !== id))
   }
-
+  
   return (
     <section className="catalog">
       <div className="container">
@@ -87,11 +87,11 @@ export default function Favorites({ favorites, onToggleFavorite }: Props) {
             <p className="empty-emoji">💔</p>
             <p className="empty-title">Избранное пока пусто</p>
             <p className="empty-hint">Добавьте понравившиеся товары и развлечения из гида</p>
-            <div className="filters" style={{ marginTop: '16px' }}>
-              <Link to="/catalog" className="filter-btn active" style={{ textDecoration: 'none' }}>
+            <div className="empty-actions">
+              <Link to="/catalog" className="empty-action-btn">
                 Перейти в каталог
               </Link>
-              <Link to="/local" className="filter-btn" style={{ textDecoration: 'none' }}>
+              <Link to="/local" className="empty-action-btn">
                 Перейти в гид
               </Link>
             </div>
@@ -100,7 +100,7 @@ export default function Favorites({ favorites, onToggleFavorite }: Props) {
           <>
             {favProducts.length > 0 && (
               <>
-                <h2 style={{ margin: '8px 0 12px' }}>Товары</h2>
+                <h2 style={{ margin: '24px 0 16px' }}>Товары</h2>
                 <div className="grid">
                   {favProducts.map((p) => (
                     <ProductCard key={p.id} product={p} isFavorite={true} onToggleFavorite={onToggleFavorite} />
@@ -111,7 +111,7 @@ export default function Favorites({ favorites, onToggleFavorite }: Props) {
 
             {localItems.length > 0 && (
               <>
-                <h2 style={{ margin: '18px 0 12px' }}>Развлечения и поездки с гидом</h2>
+                <h2 style={{ margin: '24px 0 16px' }}>Развлечения и поездки с гидом</h2>
                 <div className="grid">
                   {localItems.map((item) => (
                     <article key={item.id} className="card">
