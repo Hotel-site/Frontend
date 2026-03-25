@@ -55,7 +55,7 @@ export default function ProductCard({
             title="Добавить в избранное"
           >
             <span className="like-icon">{isFavorite ? '♥' : '♡'}</span>
-            <span>{isFavorite ? 'В избранном' : 'Like'}</span>
+            <span>{isFavorite ? 'В избранном' : 'В избранное'}</span>
           </button>
           <button
             className="cart-btn"

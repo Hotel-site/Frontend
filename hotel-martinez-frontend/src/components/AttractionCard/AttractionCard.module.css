@@ -5,6 +5,9 @@
   overflow: hidden;
   background: var(--panel);
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.14);
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
 }
 
 .cover {
@@ -15,6 +18,9 @@
 
 .content {
   padding: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 
 .meta {
@@ -37,12 +43,11 @@
 
 .actions {
   display: flex;
-  justify-content: space-between;
-  gap: 0.7rem;
-  margin-top: 0.8rem;
+  justify-content: center;
+  gap: 6px;
+  margin-top: auto;
 }
 
-.favoriteBtn,
 .detailsBtn {
   border: 1px solid var(--line);
   border-radius: 999px;
@@ -54,12 +59,45 @@
 
 .favoriteBtn {
   background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 8px;
+  cursor: pointer;
+  color: var(--text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-weight: 600;
+  transition: all 0.2s ease;
 }
 
-.detailsBtn {
-  background: var(--accent);
+.favoriteBtn:hover {
   border-color: var(--accent);
-  color: #001022;
+  color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.favoriteBtn span:first-child {
+  display: inline-block;
+  transition: transform 0.2s ease;
+}
+
+.favoriteBtn:hover span:first-child {
+  transform: scale(1.15);
+}
+
+.favoriteBtn.active {
+  background: #ef476f;
+  border-color: #ef476f;
+  color: #fff;
+}
+
+.favoriteBtn.active:hover {
+  background: #e8365f;
+  border-color: #e8365f;
+  transform: translateY(-2px) scale(1.02);
 }
 
 .list {

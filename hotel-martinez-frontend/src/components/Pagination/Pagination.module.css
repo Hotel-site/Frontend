@@ -7,12 +7,22 @@
 }
 
 .pagination button {
-  border: 1px solid #d6cab6;
-  background: #fff;
-  border-radius: 999px;
-  padding: 0.45rem 0.8rem;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--text);
+  border-radius: 12px;
+  padding: 8px 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pagination button:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .pagination button:disabled {
-  opacity: 0.45;
+  opacity: 0.4;
+  cursor: not-allowed;
 }

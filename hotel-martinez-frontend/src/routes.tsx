@@ -1,5 +1,6 @@
 import type { RouteObject } from 'react-router-dom'
 import About from './pages/About'
+import Auth from './pages/Auth'
 import Cart from './pages/Cart'
 import Catalog from './pages/Catalog'
 import Favorites from './pages/Favorites'
@@ -10,6 +11,7 @@ import Restaurant from './pages/Restaurant'
 //END-points ued Navbar 
 export const appRoutes: RouteObject[] = [
   { path: '/', element: <Home /> },
+  { path: '/auth', element: <Auth /> },
   { path: '/catalog', element: <Catalog favorites={[]} onToggleFavorite={() => undefined} onAddToCart={() => undefined} /> },
   { path: '/favorites', element: <Favorites favorites={[]} onToggleFavorite={() => undefined} /> },
   { path: '/cart', element: <Cart cartItems={[]} onRemoveFromCart={() => undefined} /> },

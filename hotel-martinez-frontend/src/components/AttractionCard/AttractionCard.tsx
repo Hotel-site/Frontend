@@ -21,7 +21,12 @@ export default function AttractionCard({
   cardRef,
 }: AttractionCardProps) {
   return (
-    <li ref={cardRef} id={`attraction-card-${attraction.id}`} className={clsx(styles.card, styles[viewMode])}>
+    <li 
+      ref={cardRef} 
+      id={`attraction-card-${attraction.id}`} 
+      className={clsx(styles.card, styles[viewMode])}
+      onClick={() => onOpenDetails(attraction.id)}
+    >
       <img loading="lazy" src={attraction.images[0]} alt={attraction.name} className={styles.cover} />
       <div className={styles.content}>
         <p className={styles.meta}>
@@ -35,15 +40,16 @@ export default function AttractionCard({
         <div className={styles.actions}>
           <button
             type="button"
-            className={styles.favoriteBtn}
+            className={`${styles.favoriteBtn} ${isFavorite ? styles.active : ''}`}
             aria-pressed={isFavorite}
             aria-label={isFavorite ? translate('removeFromFavorites') : translate('addToFavorites')}
-            onClick={() => onToggleFavorite(attraction.id)}
+            onClick={(e) => {
+              e.stopPropagation()
+              onToggleFavorite(attraction.id)
+            }}
           >
-            {isFavorite ? '★' : '☆'} {isFavorite ? 'В избранном' : 'В избранное'}
-          </button>
-          <button type="button" className={styles.detailsBtn} onClick={() => onOpenDetails(attraction.id)}>
-            {translate('details')}
+            <span>{isFavorite ? '♥' : '♡'}</span>
+            <span>{isFavorite ? 'В избранном' : 'В избранное'}</span>
           </button>
         </div>
       </div>
