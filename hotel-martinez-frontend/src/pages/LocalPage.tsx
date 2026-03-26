@@ -15,7 +15,11 @@ import { translate } from '../utils/i18n'
 
 const MapView = lazy(() => import('../components/MapView/MapView'))
 
-export default function LocalPage() {
+type LocalPageProps = {
+  onAddToCart?: (attraction: Attraction) => void
+}
+
+export default function LocalPage({ onAddToCart }: LocalPageProps = {}) {
   const {
     query,
     items,
@@ -31,6 +35,8 @@ export default function LocalPage() {
     updateCategory,
     updateMaxDistance,
     updatePriceType,
+    updateMinPrice,
+    updateMaxPrice,
     updateOpenNow,
     updateSortBy,
     toggleFavorite,
@@ -39,14 +45,8 @@ export default function LocalPage() {
 
   const [selectedAttractionId, setSelectedAttractionId] = useState<string | null>(null)
   const [detailAttraction, setDetailAttraction] = useState<Attraction | null>(null)
-  const [isMapVisible, setIsMapVisible] = useState(false)
   const mapSectionRef = useRef<HTMLElement | null>(null)
   const cardRefs = useRef<Record<string, HTMLLIElement | null>>({})
-
-  const showMap = () => {
-    setIsMapVisible(true)
-    mapSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }
 
   const onMarkerSelect = (id: string) => {
     setSelectedAttractionId(id)
@@ -67,9 +67,6 @@ export default function LocalPage() {
           <p className={styles.kicker}>CITY CONCIERGE</p>
           <h1>{translate('localHeroTitle')}</h1>
           <p>{translate('localHeroSubtitle')}</p>
-          <button type="button" className={styles.heroBtn} onClick={showMap}>
-            {translate('viewOnMap')}
-          </button>
         </div>
       </header>
 
@@ -77,10 +74,13 @@ export default function LocalPage() {
         <SearchBar value={query.search} onChange={updateSearch} />
         <div className={styles.viewMode}>
           <button type="button" aria-pressed={viewMode === 'grid'} onClick={() => setViewMode('grid')}>
-            Grid
+            ⊞ Сетка
           </button>
           <button type="button" aria-pressed={viewMode === 'list'} onClick={() => setViewMode('list')}>
-            List
+            ☰ Список
+          </button>
+          <button type="button" aria-pressed={viewMode === 'map'} onClick={() => setViewMode('map')}>
+            🗺️ Карта
           </button>
         </div>
       </div>
@@ -88,13 +88,17 @@ export default function LocalPage() {
       <div className={styles.layout}>
         <FiltersPanel
           category={query.category}
-          maxDistanceKm={query.maxDistanceKm}
           priceType={query.priceType}
+          maxDistanceKm={query.maxDistanceKm}
+          minPrice={query.minPrice}
+          maxPrice={query.maxPrice}
           openNow={query.openNow}
           sortBy={query.sortBy}
           onCategoryChange={updateCategory}
-          onDistanceChange={updateMaxDistance}
           onPriceTypeChange={updatePriceType}
+          onDistanceChange={updateMaxDistance}
+          onMinPriceChange={updateMinPrice}
+          onMaxPriceChange={updateMaxPrice}
           onOpenNowChange={updateOpenNow}
           onSortByChange={updateSortBy}
         />
@@ -102,59 +106,62 @@ export default function LocalPage() {
         <div>
           <p className={styles.resultsInfo}>Найдено: {total}</p>
 
-          {loading && <LoadingState title="Загружаем развлечения" message="Формируем подборку активностей рядом с отелем." />}
-          {error && (
-            <ErrorState
-              emoji="(>_<)"
-              title="Ошибка загрузки развлечений"
-              message={error}
-              onRetry={() => void reload()}
-            />
-          )}
-
-          {!loading && !error && renderedItems.length === 0 && (
-            <div className={styles.emptyState} role="status" aria-live="polite">
-              <p className={styles.emptyEmoji} aria-hidden="true">
-                (o_o)
-              </p>
-              <p className={styles.emptyTitle}>{translate('noResults')}</p>
-              <p className={styles.emptyHint}>Попробуйте изменить дистанцию, категорию или убрать фильтр «Открыто сейчас».</p>
-            </div>
-          )}
-
-          {!loading && !error && (
+          {viewMode === 'map' ? (
+            <section ref={mapSectionRef} className={styles.mapInline} aria-label="Карта развлечений">
+              <Suspense fallback={<div className={styles.mapFallback}>{translate('loadingMap')}</div>}>
+                <MapView attractions={items} selectedId={selectedAttractionId} onMarkerSelect={onMarkerSelect} />
+              </Suspense>
+            </section>
+          ) : (
             <>
-              <ul className={clsx(styles.list, viewMode === 'grid' ? styles.grid : styles.listMode)}>
-                {renderedItems.map((attraction) => (
-                  <AttractionCard
-                    key={attraction.id}
-                    attraction={attraction}
-                    viewMode={viewMode}
-                    isFavorite={favoriteSet.has(attraction.id)}
-                    onToggleFavorite={toggleFavorite}
-                    onOpenDetails={(id) => void openDetails(id)}
-                    cardRef={(node) => {
-                      cardRefs.current[attraction.id] = node
-                    }}
-                  />
-                ))}
-              </ul>
+              {loading && <LoadingState title="Загружаем развлечения" message="Формируем подборку активностей рядом с отелем." />}
+              {error && (
+                <ErrorState
+                  emoji="(>_<)"
+                  title="Ошибка загрузки развлечений"
+                  message={error}
+                  onRetry={() => void reload()}
+                />
+              )}
 
-              <Pagination page={query.page} totalPages={totalPages} onPageChange={setPage} />
+              {!loading && !error && renderedItems.length === 0 && (
+                <div className={styles.emptyState} role="status" aria-live="polite">
+                  <p className={styles.emptyEmoji} aria-hidden="true">
+                    (o_o)
+                  </p>
+                  <p className={styles.emptyTitle}>{translate('noResults')}</p>
+                  <p className={styles.emptyHint}>Попробуйте изменить дистанцию, категорию или убрать фильтр «Открыто сейчас».</p>
+                </div>
+              )}
+
+              {!loading && !error && (
+                <>
+                  <ul className={clsx(styles.list, viewMode === 'grid' ? styles.grid : styles.listMode)}>
+                    {renderedItems.map((attraction) => (
+                      <AttractionCard
+                        key={attraction.id}
+                        attraction={attraction}
+                        viewMode={viewMode}
+                        isFavorite={favoriteSet.has(attraction.id)}
+                        onToggleFavorite={toggleFavorite}
+                        onAddToCart={() => {
+                          onAddToCart?.(attraction)
+                        }}
+                        onOpenDetails={(id) => void openDetails(id)}
+                        cardRef={(node) => {
+                          cardRefs.current[attraction.id] = node
+                        }}
+                      />
+                    ))}
+                  </ul>
+
+                  <Pagination page={query.page} totalPages={totalPages} onPageChange={setPage} />
+                </>
+              )}
             </>
           )}
         </div>
       </div>
-
-      <section ref={mapSectionRef} className={styles.mapSection} aria-label="Карта развлечений">
-        <Suspense fallback={<div className={styles.mapFallback}>{translate('loadingMap')}</div>}>
-          {isMapVisible ? (
-            <MapView attractions={items} selectedId={selectedAttractionId} onMarkerSelect={onMarkerSelect} />
-          ) : (
-            <div className={styles.mapFallback}>Нажмите «{translate('viewOnMap')}», чтобы загрузить карту.</div>
-          )}
-        </Suspense>
-      </section>
 
       <DetailModal attraction={detailAttraction} onClose={() => setDetailAttraction(null)} />
     </section>

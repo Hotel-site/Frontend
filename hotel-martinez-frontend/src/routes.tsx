@@ -7,6 +7,7 @@ import Favorites from './pages/Favorites'
 import Home from './pages/Home'
 import LocalPage from './pages/LocalPage'
 import Restaurant from './pages/Restaurant'
+import Rooms from './pages/Rooms'
 
 //END-points ued Navbar 
 export const appRoutes: RouteObject[] = [
@@ -17,5 +18,6 @@ export const appRoutes: RouteObject[] = [
   { path: '/cart', element: <Cart cartItems={[]} onRemoveFromCart={() => undefined} /> },
   { path: '/about', element: <About /> },
   { path: '/restaurant', element: <Restaurant /> },
+  { path: '/rooms', element: <Rooms /> },
   { path: '/local', element: <LocalPage /> },
 ]

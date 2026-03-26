@@ -1,7 +1,7 @@
 export type PriceType = 'free' | 'budget' | 'moderate' | 'premium'
 export type Category = 'culture' | 'nature' | 'food' | 'shopping' | 'family' | 'nightlife'
 export type SortBy = 'popularity' | 'distance' | 'rating'
-export type ViewMode = 'grid' | 'list'
+export type ViewMode = 'grid' | 'list' | 'map'
 
 export interface Coordinates {
   lat: number
@@ -36,6 +36,7 @@ export interface Attraction {
   tags: string[]
   coords: Coordinates
   distanceKm: number
+  price: number
   priceType: PriceType
   openingHours: OpeningHours
   rating: number
@@ -49,6 +50,8 @@ export interface AttractionQueryParams {
   category: Category | 'all'
   maxDistanceKm: number
   priceType: PriceType | 'all'
+  minPrice: number
+  maxPrice: number
   openNow: boolean
   sortBy: SortBy
   page: number

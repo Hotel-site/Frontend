@@ -1,4 +1,5 @@
 import clsx from 'clsx'
+import { useState } from 'react'
 import type { Attraction, ViewMode } from '../../types/local'
 import styles from './AttractionCard.module.css'
 import { translate } from '../../utils/i18n'
@@ -8,6 +9,7 @@ type AttractionCardProps = {
   isFavorite: boolean
   viewMode: ViewMode
   onToggleFavorite: (id: string) => void
+  onAddToCart: () => void
   onOpenDetails: (id: string) => void
   cardRef?: (node: HTMLLIElement | null) => void
 }
@@ -17,9 +19,18 @@ export default function AttractionCard({
   isFavorite,
   viewMode,
   onToggleFavorite,
+  onAddToCart,
   onOpenDetails,
   cardRef,
 }: AttractionCardProps) {
+  const [isAddedToCart, setIsAddedToCart] = useState(false)
+
+  const handleAddToCart = () => {
+    setIsAddedToCart(true)
+    onAddToCart()
+    setTimeout(() => setIsAddedToCart(false), 600)
+  }
+
   return (
     <li 
       ref={cardRef} 
@@ -33,9 +44,16 @@ export default function AttractionCard({
           <span>{attraction.distanceKm} км</span>
           <span>Рейтинг: {attraction.rating.toFixed(1)}</span>
         </p>
-        <h3>{attraction.name}</h3>
-        <p className={styles.description}>{attraction.shortDescription}</p>
-        <p className={styles.tags}>{attraction.tags.join(' · ')}</p>
+        
+        <div className={styles.textContent}>
+          <h3>{attraction.name}</h3>
+          <p className={styles.description}>{attraction.shortDescription}</p>
+          <p className={styles.tags}>{attraction.tags.join(' · ')}</p>
+        </div>
+
+        <div className={styles.priceTag}>
+          {attraction.price === 0 ? 'Бесплатно' : `€${attraction.price}`}
+        </div>
 
         <div className={styles.actions}>
           <button
@@ -50,6 +68,18 @@ export default function AttractionCard({
           >
             <span>{isFavorite ? '♥' : '♡'}</span>
             <span>{isFavorite ? 'В избранном' : 'В избранное'}</span>
+          </button>
+          <button
+            type="button"
+            className={clsx(styles.cartBtn, { [styles.added]: isAddedToCart })}
+            aria-label="Добавить в корзину"
+            onClick={(e) => {
+              e.stopPropagation()
+              handleAddToCart()
+            }}
+          >
+            <span>🛒</span>
+            <span>В корзину</span>
           </button>
         </div>
       </div>
