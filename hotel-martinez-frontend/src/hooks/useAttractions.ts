@@ -14,7 +14,7 @@ const defaultQuery: AttractionQueryParams = {
   openNow: false,
   sortBy: 'popularity',
   page: 1,
-  pageSize: 5,
+  pageSize: 12,
 }
 
 function readFavoriteIds(): string[] {
@@ -125,6 +125,10 @@ export function useAttractions() {
     setQuery((prev) => ({ ...prev, page }))
   }, [])
 
+  const setPageSize = useCallback((pageSize: number) => {
+    setQuery((prev) => ({ ...prev, pageSize, page: 1 }))
+  }, [])
+
   const toggleFavorite = useCallback((id: string) => {
     setFavoriteIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
   }, [])
@@ -142,6 +146,7 @@ export function useAttractions() {
     favoriteSet,
     setViewMode,
     setPage,
+    setPageSize,
     updateSearch,
     updateCategory,
     updateMaxDistance,

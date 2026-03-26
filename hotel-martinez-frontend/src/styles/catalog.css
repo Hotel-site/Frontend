@@ -69,12 +69,35 @@
   opacity: 0.5;
 }
 
+.catalog-search-wrapper {
+  margin-bottom: 24px;
+}
+
 /* Адаптивная сетка CSS Grid */
 .catalog-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: 14px;
+  margin-bottom: 24px;
   animation: fadeIn 0.3s ease-in-out;
+}
+
+@media (max-width: 1200px) {
+  .catalog-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .catalog-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .catalog-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Grid для избранного и локального гида */

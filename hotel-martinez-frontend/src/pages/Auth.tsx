@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import './Auth.css'
+import '../styles/Auth.css'
 
 export default function Auth() {
   const [isRegister, setIsRegister] = useState(false)

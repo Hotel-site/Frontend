@@ -1,4 +1,4 @@
-import { lazy, Suspense, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import clsx from 'clsx'
 import AttractionCard from '../components/AttractionCard/AttractionCard'
 import DetailModal from '../components/DetailModal/DetailModal'
@@ -41,6 +41,7 @@ export default function LocalPage({ onAddToCart }: LocalPageProps = {}) {
     updateSortBy,
     toggleFavorite,
     reload,
+    setPageSize,
   } = useAttractions()
 
   const [selectedAttractionId, setSelectedAttractionId] = useState<string | null>(null)
@@ -60,11 +61,19 @@ export default function LocalPage({ onAddToCart }: LocalPageProps = {}) {
 
   const renderedItems = useMemo(() => items, [items])
 
+  // Установка размера страницы в зависимости от режима просмотра
+  useEffect(() => {
+    if (viewMode === 'grid') {
+      setPageSize(12) // 4 колонки × 3 ряда
+    } else if (viewMode === 'list') {
+      setPageSize(10) // 10 элементов на странице для списка
+    }
+  }, [viewMode, setPageSize])
+
   return (
     <section className={styles.localPage}>
       <header className={styles.hero}>
         <div>
-          <p className={styles.kicker}>CITY CONCIERGE</p>
           <h1>{translate('localHeroTitle')}</h1>
           <p>{translate('localHeroSubtitle')}</p>
         </div>
@@ -155,7 +164,7 @@ export default function LocalPage({ onAddToCart }: LocalPageProps = {}) {
                     ))}
                   </ul>
 
-                  <Pagination page={query.page} totalPages={totalPages} onPageChange={setPage} />
+                  {(viewMode === 'grid' || viewMode === 'list') && <Pagination page={query.page} totalPages={totalPages} onPageChange={setPage} />}
                 </>
               )}
             </>
