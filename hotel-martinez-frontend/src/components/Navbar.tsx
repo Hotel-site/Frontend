@@ -46,7 +46,6 @@ export default function Navbar({ favoritesCount, cartCount, theme, onToggleTheme
 
         <nav className="nav">
           <NavLink to="/" className={({ isActive }) => `nav__link ${isActive ? 'active' : ''}`}>Главная</NavLink>
-          <NavLink to="/rooms" className={({ isActive }) => `nav__link ${isActive ? 'active' : ''}`}>Номера</NavLink>
           <NavLink to="/catalog" className={({ isActive }) => `nav__link ${isActive ? 'active' : ''}`}>Каталог</NavLink>
           <NavLink to="/restaurant" className={({ isActive }) => `nav__link ${isActive ? 'active' : ''}`}>Ресторан</NavLink>
           <NavLink to="/rooms" className={({ isActive }) => `nav__link ${isActive ? 'active' : ''}`}>Номера</NavLink>
