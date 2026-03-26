@@ -1,29 +1,40 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { products } from '../data/products'
+import type { CartItem } from '../types/cart'
+import type { Product } from '../types/product'
 import '../styles/cart.css'
 
 type Props = {
-  cartItems: number[]
-  onRemoveFromCart: (id: number) => void
+  cartItems: CartItem[]
+  onRemoveFromCart: (item: CartItem) => void
 }
 
 export default function Cart({ cartItems, onRemoveFromCart }: Props) {
-  const cartProducts = useMemo(() => {
-    return cartItems.map((id) => products.find((p) => p.id === id)).filter(Boolean)
+  const uniqueItems = useMemo(() => {
+    const countMap = new Map<string, { item: CartItem; count: number; product: any }>()
+    cartItems.forEach((cartItem) => {
+      try {
+        const key = `${cartItem.type}-${cartItem.id}`
+        const itemData = cartItem.item as any
+        if (countMap.has(key)) {
+          const existing = countMap.get(key)!
+          existing.count += 1
+        } else {
+          countMap.set(key, { item: cartItem, count: 1, product: itemData })
+        }
+      } catch {
+        // Skip problematic items
+      }
+    })
+    return Array.from(countMap.values())
   }, [cartItems])
 
   const total = useMemo(() => {
-    return cartProducts.reduce((sum, p) => sum + (p?.price || 0), 0)
-  }, [cartProducts])
-
-  const uniqueProducts = useMemo(() => {
-    return Array.from(new Set(cartItems)).map((id) => {
-      const product = products.find((p) => p.id === id)
-      const count = cartItems.filter((item) => item === id).length
-      return { product, count }
-    })
-  }, [cartItems])
+    return uniqueItems.reduce((sum, { product, count }) => {
+      const price = (product?.price as number) || 0
+      return sum + price * count
+    }, 0)
+  }, [uniqueItems])
 
   return (
     <section className="cart">
@@ -34,7 +45,7 @@ export default function Cart({ cartItems, onRemoveFromCart }: Props) {
           <div className="empty-cart">
             <p className="empty-emoji">🛍️</p>
             <p className="empty-title">Корзина пуста</p>
-            <p className="empty-hint">Добавьте товары из каталога</p>
+            <p className="empty-hint">Добавьте товары из каталога или гид по городу</p>
             <Link to="/catalog" className="btn-back">
               Перейти в каталог
             </Link>
@@ -49,29 +60,40 @@ export default function Cart({ cartItems, onRemoveFromCart }: Props) {
                 <span>Итого</span>
                 <span></span>
               </div>
-              {uniqueProducts.map(({ product, count }) => (
-                product && (
-                  <div key={product.id} className="cart-item">
+              {uniqueItems.map(({ item, count, product }) => {
+                if (!product) return null
+                
+                const image = (product.image as string) || (product.images?.[0] as string) || 'https://via.placeholder.com/150'
+                const title = (product.title as string) || (product.name as string) || 'Неизвестный товар'
+                const category = (product.category as string) || 'Услуга'
+                const price = (product.price as number) || 0
+                const isAttraction = item.type === 'attraction'
+
+                return (
+                  <div key={`${item.type}-${item.id}`} className="cart-item">
                     <div className="item-info">
-                      <img src={product.image} alt={product.title} className="item-img" />
+                      <img src={image} alt={title} className="item-img" />
                       <div className="item-details">
-                        <h3>{product.title}</h3>
-                        <p className="item-category">{product.category}</p>
+                        <h3>{title}</h3>
+                        <p className="item-category">{category}</p>
+                        {isAttraction && <p className="item-type">📍 Из гида по городу</p>}
                       </div>
                     </div>
                     <div className="item-count">{count}</div>
-                    <div className="item-price">{product.price.toLocaleString('de-DE')} €</div>
-                    <div className="item-total">{(product.price * count).toLocaleString('de-DE')} €</div>
-                    <button
-                      className="btn-remove"
-                      onClick={() => onRemoveFromCart(product.id)}
-                      title="Удалить из корзины"
-                    >
-                      ✕
-                    </button>
+                    <div className="item-price">{price.toLocaleString('de-DE')} €</div>
+                    <div className="item-total">{(price * count).toLocaleString('de-DE')} €</div>
+                    <div className="item-actions">
+                      <button
+                        className="btn-remove-one"
+                        onClick={() => onRemoveFromCart(item)}
+                        title={`Удалить одну единицу${isAttraction ? ' (достопримечательность)' : ''}`}
+                      >
+                        −
+                      </button>
+                    </div>
                   </div>
                 )
-              ))}
+              })}
             </div>
 
             <div className="cart-summary">
@@ -82,7 +104,7 @@ export default function Cart({ cartItems, onRemoveFromCart }: Props) {
               </div>
               <div className="summary-row">
                 <span>Уникальных:</span>
-                <span>{uniqueProducts.length}</span>
+                <span>{uniqueItems.length}</span>
               </div>
               <div className="summary-total">
                 <span>Сумма:</span>

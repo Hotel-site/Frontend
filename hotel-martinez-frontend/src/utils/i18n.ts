@@ -2,7 +2,7 @@ const dictionary = {
   localHeroTitle: 'Локальные развлечения и гид по городу',
   localHeroSubtitle: 'Подберите места рядом с отелем: культура, гастрономия, прогулки и вечерние активности.',
   viewOnMap: 'Посмотреть на карте',
-  searchPlaceholder: 'Поиск по названию или тегам',
+  searchPlaceholder: 'Поиск',
   allCategories: 'Все категории',
   allPrices: 'Любая цена',
   openNow: 'Открыто сейчас',

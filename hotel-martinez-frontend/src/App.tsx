@@ -10,9 +10,13 @@ import Favorites from './pages/Favorites'
 import Cart from './pages/Cart'
 import About from './pages/About'
 import Restaurant from './pages/Restaurant'
+import Rooms from './pages/Rooms'
 import LocalPage from './pages/LocalPage'
 import PageErrorBoundary from './components/PageErrorBoundary'
 import { AuthProvider } from './context/AuthContext'
+import type { CartItem } from './types/cart'
+import type { Attraction } from './types/local'
+import { products } from './data/products'
 import './styles/app.css'
 
 const LOCAL_FAVORITES_KEY = 'local-favorites'
@@ -35,7 +39,7 @@ function readLocalFavoritesCount(): number {
 export default function App() {
   const [favorites, setFavorites] = useState<number[]>([])
   const [localFavoritesCount, setLocalFavoritesCount] = useState<number>(() => readLocalFavoritesCount())
-  const [cart, setCart] = useState<number[]>([])
+  const [cart, setCart] = useState<CartItem[]>([])
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     const t = localStorage.getItem('theme')
     return t === 'light' ? 'light' : 'dark'
@@ -63,12 +67,21 @@ export default function App() {
   }
 
   const onAddToCart = (id: number) => {
-    setCart((prev) => [...prev, id])
+    const product = products.find((p) => p.id === id)
+    if (product) {
+      const item: CartItem = { type: 'product', id, item: product }
+      setCart((prev) => [...prev, item])
+    }
   }
 
-  const onRemoveFromCart = (id: number) => {
+  const onAddAttractionToCart = (attraction: Attraction) => {
+    const item: CartItem = { type: 'attraction', id: attraction.id, item: attraction }
+    setCart((prev) => [...prev, item])
+  }
+
+  const onRemoveFromCart = (itemToRemove: CartItem) => {
     setCart((prev) => {
-      const index = prev.indexOf(id)
+      const index = prev.findIndex((item) => item.type === itemToRemove.type && item.id === itemToRemove.id)
       if (index > -1) {
         return prev.filter((_, i) => i !== index)
       }
@@ -91,7 +104,8 @@ export default function App() {
                 <Route path="/cart" element={<Cart cartItems={cart} onRemoveFromCart={onRemoveFromCart} />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/restaurant" element={<Restaurant />} />
-                <Route path="/local" element={<LocalPage />} />
+                <Route path="/rooms" element={<Rooms />} />
+                <Route path="/local" element={<LocalPage onAddToCart={onAddAttractionToCart} />} />
                 <Route
                   path="*"
                   element={<ErrorState imageUrl="/cry.gif" title="Страница не найдена" message="Путь указан неверно. Проверьте адрес и попробуйте снова." />}

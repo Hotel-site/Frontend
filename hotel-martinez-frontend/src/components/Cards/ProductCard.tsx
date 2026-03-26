@@ -1,4 +1,5 @@
-﻿import type { Product } from '../../types/product'
+﻿import { useState } from 'react'
+import type { Product } from '../../types/product'
 import '../../styles/product-card.css'
 
 type Props = {
@@ -20,6 +21,14 @@ export default function ProductCard({
   onAddToCart,
   onViewDetails,
 }: Props) {
+  const [isAddedToCart, setIsAddedToCart] = useState(false)
+
+  const handleAddToCart = () => {
+    setIsAddedToCart(true)
+    onAddToCart?.(product.id)
+    setTimeout(() => setIsAddedToCart(false), 600)
+  }
+
   return (
     <article className="card" onClick={() => onViewDetails?.(product)} style={{ cursor: 'pointer' }}>
       <img src={product.image} alt={product.title} className="card__img" />
@@ -58,10 +67,10 @@ export default function ProductCard({
             <span>{isFavorite ? 'В избранном' : 'В избранное'}</span>
           </button>
           <button
-            className="cart-btn"
+            className={`cart-btn ${isAddedToCart ? 'added' : ''}`}
             onClick={(e) => {
               e.stopPropagation()
-              onAddToCart?.(product.id)
+              handleAddToCart()
             }}
             title="Добавить в корзину"
           >

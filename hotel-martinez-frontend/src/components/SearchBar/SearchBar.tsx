@@ -14,15 +14,17 @@ export default function SearchBar({ value, onChange }: SearchBarProps) {
 
   return (
     <label className={styles.wrapper}>
-      <span className={styles.label}>{translate('searchPlaceholder')}</span>
-      <input
-        type="search"
-        value={value}
-        onChange={handleChange}
-        placeholder={translate('searchPlaceholder')}
-        aria-label={translate('searchPlaceholder')}
-        className={styles.input}
-      />
+      <div className={styles.inputWrapper}>
+        <input
+          type="search"
+          value={value}
+          onChange={handleChange}
+          placeholder={translate('searchPlaceholder')}
+          aria-label={translate('searchPlaceholder')}
+          className={styles.input}
+        />
+        <span className={styles.icon}>🔍</span>
+      </div>
     </label>
   )
 }
