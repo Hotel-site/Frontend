@@ -1,6 +1,8 @@
 ﻿import { useMemo, useState, useEffect, useRef } from 'react'
 import ProductCard from '../components/Cards/ProductCard'
 import ProductDetailModal from '../components/DetailModal/ProductDetailModal'
+import SearchBar from '../components/SearchBar/SearchBar'
+import Pagination from '../components/Pagination/Pagination'
 import CatalogFiltersPanel, { BUDGET_RANGES, type BudgetType } from '../components/CatalogFiltersPanel/CatalogFiltersPanel'
 import { products } from '../data/products'
 import type { Product } from '../types/product'
@@ -21,6 +23,9 @@ export default function Catalog({ favorites, onToggleFavorite, onAddToCart }: Pr
   const [sortBy, setSortBy] = useState('default')
   const [likes, setLikes] = useState<Record<number, number>>({})
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+
+  const ITEMS_PER_PAGE = 12 // 4 колонки × 3 ряда
 
   // Флаг для отслеживания автоматических изменений цены
   const isAutomaticPriceChange = useRef(false)
@@ -130,6 +135,19 @@ export default function Catalog({ favorites, onToggleFavorite, onAddToCart }: Pr
     return result
   }, [query, category, minPrice, maxPrice, budget, sortBy])
 
+  // Пагинация
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE)
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
+  const paginatedItems = useMemo(
+    () => filtered.slice(startIndex, startIndex + ITEMS_PER_PAGE),
+    [filtered, currentPage]
+  )
+
+  // Сброс на первую страницу при изменении фильтров
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [query, category, minPrice, maxPrice, budget, sortBy])
+
   const handleLike = (id: number) => {
     setLikes((prev) => ({
       ...prev,
@@ -158,12 +176,9 @@ export default function Catalog({ favorites, onToggleFavorite, onAddToCart }: Pr
             </p>
           </div>
 
-          <input
-            className="catalog-search"
-            placeholder="🔍 Поиск по каталогу..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
+          <div className="catalog-search-wrapper">
+            <SearchBar value={query} onChange={setQuery} />
+          </div>
 
           {filtered.length === 0 ? (
             <div className="catalog-empty-state">
@@ -176,7 +191,7 @@ export default function Catalog({ favorites, onToggleFavorite, onAddToCart }: Pr
             </div>
           ) : (
             <div className="catalog-grid">
-              {filtered.map((p) => (
+              {paginatedItems.map((p) => (
                 <ProductCard
                   key={p.id}
                   product={p}
@@ -189,6 +204,10 @@ export default function Catalog({ favorites, onToggleFavorite, onAddToCart }: Pr
                 />
               ))}
             </div>
+          )}
+
+          {filtered.length > 0 && totalPages > 1 && (
+            <Pagination page={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
           )}
         </div>
 

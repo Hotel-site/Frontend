@@ -52,7 +52,36 @@ export default function MapView({ attractions, selectedId, onMarkerSelect }: Map
             onCloseClick={() => setInfoId(null)}
           >
             <div className={styles.infoWindow}>
-              <strong>{attractions.find((item) => item.id === infoId)?.name}</strong>
+              {(() => {
+                const attraction = attractions.find((item) => item.id === infoId)
+                if (!attraction) return null
+                return (
+                  <>
+                    {attraction.images[0] && (
+                      <img src={attraction.images[0]} alt={attraction.name} className={styles.infoImage} />
+                    )}
+                    <button
+                      className={styles.closeButton}
+                      onClick={() => setInfoId(null)}
+                      aria-label="Закрыть"
+                      type="button"
+                    >
+                      ✕
+                    </button>
+                    <div className={styles.infoContent}>
+                      <h3 className={styles.infoTitle}>{attraction.name}</h3>
+                      <p className={styles.infoDescription}>{attraction.shortDescription}</p>
+                      <div className={styles.infoMeta}>
+                        <span className={styles.infoRating}>⭐ {attraction.rating}</span>
+                        <span className={styles.infoDistance}>{attraction.distanceKm} км</span>
+                        {attraction.price > 0 && (
+                          <span className={styles.infoPrice}>{attraction.price}€</span>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )
+              })()}
             </div>
           </InfoWindowF>
         )}
