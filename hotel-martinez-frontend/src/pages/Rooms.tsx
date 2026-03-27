@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { rooms } from '../data/rooms'
+import RoomDetailModal from '../components/RoomDetailModal/RoomDetailModal'
 import '../styles/rooms.css'
 
 export default function Rooms() {
@@ -80,8 +81,6 @@ export default function Rooms() {
                   </div>
                 </div>
 
-                <p className="room-long-description">{room.longDescription}</p>
-
                 <div className="room-specs">
                   <div className="spec">
                     <span className="spec-icon">👥</span>
@@ -93,22 +92,10 @@ export default function Rooms() {
                   </div>
                 </div>
 
-                <div className="amenities">
-                  <h3 className="amenities-title">Удобства:</h3>
-                  <ul className="amenities-list">
-                    {room.amenities.map((amenity, idx) => (
-                      <li key={idx} className="amenity-item">
-                        ✓ {amenity}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
                 <button
                   className="room-btn"
-                  onClick={() => setSelectedRoom(selectedRoom === room.id ? null : room.id)}
-                >
-                  {selectedRoom === room.id ? 'Скрыть детали' : 'Подробнее'}
+                  onClick={() => setSelectedRoom(room.id)}>
+                  Подробнее
                 </button>
               </div>
             </div>
@@ -124,6 +111,13 @@ export default function Rooms() {
           </div>
         </div>
       </div>
+
+      {selectedRoom && (
+        <RoomDetailModal
+          room={rooms.find((r) => r.id === selectedRoom)!}
+          onClose={() => setSelectedRoom(null)}
+        />
+      )}
     </section>
   )
 }
