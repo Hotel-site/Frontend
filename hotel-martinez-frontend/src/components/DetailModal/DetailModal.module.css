@@ -146,11 +146,68 @@
   color: var(--text);
 }
 
-.description p {
-  margin: 0;
+.descriptionText {
   font-size: 0.95rem;
   line-height: 1.5;
   color: var(--muted);
+  overflow-wrap: anywhere;
+  display: flex;
+  flex-direction: column;
+}
+
+.descriptionText p {
+  margin: 0;
+}
+
+.descriptionSectionTitle {
+  margin: 0.25rem 0 0;
+  font-size: 0.9rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.descriptionList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.descriptionListItem {
+  display: flex;
+  align-items: baseline;
+  gap: 0.55rem;
+}
+
+.descriptionItemText {
+  flex: 1;
+  min-width: 0;
+}
+
+.descriptionPrice {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  font-weight: 800;
+  color: var(--text);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+}
+
+.descriptionListItem::before {
+  content: '✔';
+  color: var(--accent);
+  flex: 0 0 auto;
+  line-height: 1.25;
+  margin-top: 0.05rem;
+}
+
+.descriptionGap {
+  height: 0.7rem;
 }
 
 .partnerLink {

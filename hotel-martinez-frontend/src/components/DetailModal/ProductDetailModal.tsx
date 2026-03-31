@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import type { Product } from '../../types/product'
 import styles from './DetailModal.module.css'
 
@@ -11,6 +11,88 @@ export default function ProductDetailModal({ product, onClose }: ProductDetailMo
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
 
   const images = product?.images?.length ? product.images : (product ? [product.image] : [])
+
+  const renderDescription = (text: string) => {
+    const lines = text.split(/\r?\n/)
+    const nodes: ReactNode[] = []
+    let listItems: string[] = []
+    let lastWasGap = false
+
+    const flushList = () => {
+      if (!listItems.length) {
+        return
+      }
+
+      const items = listItems
+      listItems = []
+      lastWasGap = false
+
+      const parsePrice = (text: string) => {
+        const match = text.match(/^(.*?)(?:\s*[—-]\s*|\s+)(\d+(?:[.,]\d+)?\s?(?:€|EUR))$/i)
+        if (!match) {
+          return { label: text, price: null as string | null }
+        }
+
+        return { label: match[1].trim(), price: match[2].trim() }
+      }
+
+      nodes.push(
+        <ul key={`list-${nodes.length}`} className={styles.descriptionList}>
+          {items.map((item, index) => {
+            const { label, price } = parsePrice(item)
+
+            return (
+              <li key={index} className={styles.descriptionListItem}>
+                <span className={styles.descriptionItemText}>{label}</span>
+                {price && <span className={styles.descriptionPrice}>{price}</span>}
+              </li>
+            )
+          })}
+        </ul>,
+      )
+    }
+
+    const isSectionTitle = (line: string) => {
+      const normalized = line.replace(/\s+/g, ' ').trim()
+      return /^[A-ZА-ЯЁ0-9\s]+$/.test(normalized) && normalized.length > 0 && normalized.length <= 32
+    }
+
+    for (const rawLine of lines) {
+      const line = rawLine.trim()
+
+      if (!line) {
+        flushList()
+        if (nodes.length && !lastWasGap) {
+          nodes.push(<div key={`gap-${nodes.length}`} className={styles.descriptionGap} />)
+          lastWasGap = true
+        }
+        continue
+      }
+
+      if (line.startsWith('•')) {
+        lastWasGap = false
+        listItems.push(line.replace(/^•\s*/, ''))
+        continue
+      }
+
+      flushList()
+      lastWasGap = false
+
+      if (isSectionTitle(line)) {
+        nodes.push(
+          <h4 key={`h-${nodes.length}`} className={styles.descriptionSectionTitle}>
+            {line}
+          </h4>,
+        )
+      } else {
+        nodes.push(<p key={`p-${nodes.length}`}>{line}</p>)
+      }
+    }
+
+    flushList()
+
+    return <div className={styles.descriptionText}>{nodes}</div>
+  }
 
   useEffect(() => {
     if (!product) {
@@ -128,7 +210,7 @@ export default function ProductDetailModal({ product, onClose }: ProductDetailMo
             {product.description && (
               <div className={styles.description}>
                 <h3>Описание</h3>
-                <p>{product.description}</p>
+                {renderDescription(product.description)}
               </div>
             )}
           </div>
