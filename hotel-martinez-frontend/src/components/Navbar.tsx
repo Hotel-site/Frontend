@@ -74,6 +74,14 @@ export default function Navbar({ favoritesCount, cartCount, theme, onToggleTheme
                   <NavLink to="/settings" className="menu-item" onClick={() => setIsMenuOpen(false)}>
                     ⚙️ Настройки
                   </NavLink>
+                  {user.role === 'admin' && (
+                    <>
+                      <div className="menu-divider"></div>
+                      <NavLink to="/admin" className="menu-item admin-item" onClick={() => setIsMenuOpen(false)}>
+                        👑 Администратор
+                      </NavLink>
+                    </>
+                  )}
                   <div className="menu-divider"></div>
                   <button className="menu-item logout-item" onClick={handleLogout}>
                     Выход

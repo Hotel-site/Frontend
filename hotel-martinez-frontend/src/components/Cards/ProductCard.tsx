@@ -36,7 +36,7 @@ export default function ProductCard({
         <div className="card__cat">{product.category}</div>
         <h3 className="card__title">{product.title}</h3>
         <p className="card__price">
-          {product.price.toLocaleString('de-DE')} {product.unit ?? '€'}
+          {product.price.toLocaleString('de-DE')} €
         </p>
 
         <div className="card__stats">

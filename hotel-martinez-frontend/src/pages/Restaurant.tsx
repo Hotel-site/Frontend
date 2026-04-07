@@ -39,7 +39,7 @@ export default function Restaurant() {
                     <div className="menu-item__name">{it.name}</div>
                     {it.description && <div className="menu-item__desc">{it.description}</div>}
                   </div>
-                  <div className="menu-item__price">{it.price}</div>
+                  <div className="menu-item__price">{it.price}€</div>
                 </li>
               ))}
             </ul>
@@ -54,7 +54,7 @@ export default function Restaurant() {
                 <div>
                   <div className="menu-item__name">{drink.name}</div>
                 </div>
-                <div className="menu-item__price">{drink.price}</div>
+                <div className="menu-item__price">{drink.price}€</div>
               </li>
             ))}
           </ul>

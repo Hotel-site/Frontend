@@ -1,4 +1,5 @@
 ﻿import { useMemo, useState, useEffect, useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import ProductCard from '../components/Cards/ProductCard'
 import ProductDetailModal from '../components/DetailModal/ProductDetailModal'
 import SearchBar from '../components/SearchBar/SearchBar'
@@ -15,6 +16,7 @@ type Props = {
 }
 
 export default function Catalog({ favorites, onToggleFavorite, onAddToCart }: Props) {
+  const [searchParams, setSearchParams] = useSearchParams()
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('Все')
   const [minPrice, setMinPrice] = useState(0)
@@ -29,6 +31,19 @@ export default function Catalog({ favorites, onToggleFavorite, onAddToCart }: Pr
 
   // Флаг для отслеживания автоматических изменений цены
   const isAutomaticPriceChange = useRef(false)
+
+  // Открытие товара по ID из URL параметров
+  useEffect(() => {
+    const productId = searchParams.get('productId')
+    if (productId) {
+      const product = products.find(p => p.id === parseInt(productId))
+      if (product) {
+        setSelectedProduct(product)
+      }
+      // Удалить параметр из URL после открытия
+      setSearchParams({})
+    }
+  }, [searchParams, setSearchParams])
 
   const categories = useMemo(
     () => ['Все', ...Array.from(new Set(products.map((p) => p.category)))],
