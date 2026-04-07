@@ -3,6 +3,12 @@
   background: var(--bg);
 }
 
+.rooms .container {
+  width: min(1400px, 94%);
+  margin: 0 auto;
+  padding: 0;
+}
+
 .rooms h1 {
   font-size: 3rem;
   margin-bottom: 10px;
@@ -19,9 +25,15 @@
 
 .rooms__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 40px;
   margin-bottom: 80px;
+}
+
+@media (max-width: 1200px) {
+  .rooms__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 /* Room Card */
