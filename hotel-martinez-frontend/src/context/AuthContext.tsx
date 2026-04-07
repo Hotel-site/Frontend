@@ -19,22 +19,12 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-const STORAGE_KEY = 'auth-user'
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   // Загрузка пользователя при монтировании
   useEffect(() => {
-    const storedUser = localStorage.getItem(STORAGE_KEY)
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser))
-      } catch {
-        localStorage.removeItem(STORAGE_KEY)
-      }
-    }
     setIsLoading(false)
   }, [])
 
@@ -59,7 +49,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`,
       }
 
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newUser))
       setUser(newUser)
     } finally {
       setIsLoading(false)
@@ -91,7 +80,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`,
       }
 
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newUser))
       setUser(newUser)
     } finally {
       setIsLoading(false)
@@ -99,7 +87,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const logout = () => {
-    localStorage.removeItem(STORAGE_KEY)
     setUser(null)
   }
 

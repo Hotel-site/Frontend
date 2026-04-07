@@ -19,35 +19,18 @@ import type { Attraction } from './types/local'
 import { products } from './data/products'
 import './styles/app.css'
 
-const LOCAL_FAVORITES_KEY = 'local-favorites'
-
 function readLocalFavoritesCount(): number {
-  const raw = localStorage.getItem(LOCAL_FAVORITES_KEY)
-
-  if (!raw) {
-    return 0
-  }
-
-  try {
-    const parsed = JSON.parse(raw) as string[]
-    return Array.isArray(parsed) ? parsed.length : 0
-  } catch {
-    return 0
-  }
+  return 0
 }
 
 export default function App() {
   const [favorites, setFavorites] = useState<number[]>([])
   const [localFavoritesCount, setLocalFavoritesCount] = useState<number>(() => readLocalFavoritesCount())
   const [cart, setCart] = useState<CartItem[]>([])
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    const t = localStorage.getItem('theme')
-    return t === 'light' ? 'light' : 'dark'
-  })
+  const [theme, setTheme] = useState<'light' | 'dark'>('dark')
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
-    localStorage.setItem('theme', theme)
   }, [theme])
 
   useEffect(() => {
