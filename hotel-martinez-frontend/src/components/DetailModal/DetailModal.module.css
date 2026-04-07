@@ -1,11 +1,15 @@
 .overlay {
   position: fixed;
-  inset: 0;
-  background: rgba(8, 12, 20, 0.7);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
   display: grid;
   place-items: center;
   padding: 1rem;
   z-index: 60;
+  animation: fadeIn 180ms ease;
 }
 
 .modal {
@@ -13,22 +17,33 @@
   color: var(--text);
   border: 1px solid var(--line);
   width: min(860px, 100%);
-  border-radius: 20px;
+  border-radius: 16px;
   padding: 1.1rem;
   max-height: 90vh;
   overflow: auto;
+  overscroll-behavior: contain;
   position: relative;
-  box-shadow: 0 22px 44px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: rise 220ms ease;
 }
 
 .content {
   display: flex;
   gap: 1.5rem;
   flex-wrap: wrap;
+  align-items: stretch;
+}
+
+.imageGallery {
+  position: relative;
+  flex-shrink: 0;
+  width: 280px;
 }
 
 .modal h2 {
   color: var(--text);
+  margin: 0 0 0.8rem 0;
+  font-size: 1.6rem;
 }
 
 .modal p {
@@ -39,15 +54,24 @@
   position: absolute;
   right: 0.8rem;
   top: 0.8rem;
-  border: 1px solid var(--line);
-  border-radius: 8px;
+  border: none;
+  border-radius: 50%;
   width: 2.2rem;
   height: 2.2rem;
-  color: var(--text);
-  background: transparent;
+  color: white;
+  background: rgba(0, 0, 0, 0.5);
   font-size: 1.3rem;
   line-height: 1;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.closeBtn:hover {
+  background: rgba(0, 0, 0, 0.8);
+  transform: scale(1.1);
 }
 
 .gallery {
@@ -56,7 +80,8 @@
 
 .productImage {
   width: 100%;
-  height: 320px;
+  height: 100%;
+  min-height: 320px;
   object-fit: cover;
   border-radius: 12px;
 }
@@ -66,6 +91,7 @@
   display: flex;
   gap: 0.5rem;
   overflow-x: auto;
+  overflow-y: hidden;
 }
 
 .thumb,
@@ -94,8 +120,12 @@
   border-radius: 999px;
   background: var(--accent);
   color: #001022;
-  padding: 0.7rem 1rem;
+  padding: 0.7rem 1.5rem;
   font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 1rem;
+  width: fit-content;
 }
 
 .bookingMessage {
@@ -107,6 +137,8 @@
 .details {
   flex: 1;
   min-width: 250px;
+  display: flex;
+  flex-direction: column;
 }
 
 .productInfo {
@@ -114,6 +146,9 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
 }
 
 .category {
@@ -135,24 +170,28 @@
 }
 
 .description {
-  margin-top: 1.5rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--line);
+  margin-top: 1rem;
+  padding: 0;
+  border: none;
 }
 
 .description h3 {
   margin: 0 0 0.5rem 0;
-  font-size: 1rem;
+  font-size: 0.95rem;
   color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .descriptionText {
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   line-height: 1.5;
   color: var(--muted);
   overflow-wrap: anywhere;
   display: flex;
   flex-direction: column;
+  margin: 0;
+  padding: 0;
 }
 
 .descriptionText p {
@@ -216,6 +255,7 @@
   color: var(--accent);
   text-decoration: none;
   font-weight: 600;
+  font-size: 0.9rem;
 }
 
 .partnerLink:hover {
@@ -225,7 +265,7 @@
 .imageGallery {
   position: relative;
   flex-shrink: 0;
-  width: 320px;
+  width: 280px;
 }
 
 .navButtonPrev,
@@ -237,8 +277,8 @@
   color: white;
   border: none;
   border-radius: 50%;
-  width: 38px;
-  height: 38px;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -316,5 +356,79 @@
   }
   to {
     transform: translateY(0);
+  }
+}
+
+@media (max-width: 768px) {
+  .overlay {
+    padding: 0.75rem;
+  }
+
+  .modal {
+    border-radius: 12px;
+    padding: 0.9rem;
+  }
+
+  .closeBtn {
+    width: 2rem;
+    height: 2rem;
+    font-size: 1.2rem;
+  }
+
+  .content {
+    flex-direction: column;
+  }
+
+  .imageGallery {
+    width: 100%;
+  }
+
+  .productImage {
+    height: 240px;
+  }
+
+  .details {
+    min-width: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .overlay {
+    padding: 0.5rem;
+  }
+
+  .modal {
+    border-radius: 10px;
+    padding: 0.8rem;
+    width: 100%;
+  }
+
+  .closeBtn {
+    width: 1.8rem;
+    height: 1.8rem;
+    font-size: 1rem;
+    right: 0.6rem;
+    top: 0.6rem;
+  }
+
+  .content {
+    flex-direction: column;
+  }
+
+  .imageGallery {
+    width: 100%;
+  }
+
+  .productImage {
+    height: 200px;
+  }
+
+  .modal h2 {
+    font-size: 1.3rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .modal p {
+    font-size: 0.9rem;
   }
 }

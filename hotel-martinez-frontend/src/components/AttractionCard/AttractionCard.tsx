@@ -47,7 +47,6 @@ export default function AttractionCard({
         
         <div className={styles.textContent}>
           <h3>{attraction.name}</h3>
-          <p className={styles.description}>{attraction.shortDescription}</p>
           <p className={styles.tags}>{attraction.tags.join(' · ')}</p>
         </div>
 

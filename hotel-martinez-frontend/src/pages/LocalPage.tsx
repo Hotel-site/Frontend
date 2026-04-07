@@ -8,7 +8,7 @@ import SearchBar from '../components/SearchBar/SearchBar'
 import ErrorState from '../components/ErrorState/ErrorState'
 import LoadingState from '../components/LoadingState/LoadingState'
 import { useAttractions } from '../hooks/useAttractions'
-import { fetchAttractionById } from '../services/localApi'
+import { fetchAttractionById } from '../data/attractions'
 import type { Attraction } from '../types/local'
 import styles from '../styles/LocalPage.module.css'
 import { translate } from '../utils/i18n'
@@ -61,12 +61,9 @@ export default function LocalPage({ onAddToCart }: LocalPageProps = {}) {
 
   const renderedItems = useMemo(() => items, [items])
 
-  // Установка размера страницы в зависимости от режима просмотра
   useEffect(() => {
     if (viewMode === 'grid') {
-      setPageSize(12) // 4 колонки × 3 ряда
-    } else if (viewMode === 'list') {
-      setPageSize(10) // 10 элементов на странице для списка
+      setPageSize(12)
     }
   }, [viewMode, setPageSize])
 
@@ -84,9 +81,6 @@ export default function LocalPage({ onAddToCart }: LocalPageProps = {}) {
         <div className={styles.viewMode}>
           <button type="button" aria-pressed={viewMode === 'grid'} onClick={() => setViewMode('grid')}>
             ⊞ Сетка
-          </button>
-          <button type="button" aria-pressed={viewMode === 'list'} onClick={() => setViewMode('list')}>
-            ☰ Список
           </button>
           <button type="button" aria-pressed={viewMode === 'map'} onClick={() => setViewMode('map')}>
             🗺️ Карта
@@ -145,7 +139,7 @@ export default function LocalPage({ onAddToCart }: LocalPageProps = {}) {
 
               {!loading && !error && (
                 <>
-                  <ul className={clsx(styles.list, viewMode === 'grid' ? styles.grid : styles.listMode)}>
+                  <ul className={clsx(styles.list, styles.grid)}>
                     {renderedItems.map((attraction) => (
                       <AttractionCard
                         key={attraction.id}
@@ -164,7 +158,7 @@ export default function LocalPage({ onAddToCart }: LocalPageProps = {}) {
                     ))}
                   </ul>
 
-                  {(viewMode === 'grid' || viewMode === 'list') && <Pagination page={query.page} totalPages={totalPages} onPageChange={setPage} />}
+                  <Pagination page={query.page} totalPages={totalPages} onPageChange={setPage} />
                 </>
               )}
             </>

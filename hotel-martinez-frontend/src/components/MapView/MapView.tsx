@@ -70,7 +70,6 @@ export default function MapView({ attractions, selectedId, onMarkerSelect }: Map
                     </button>
                     <div className={styles.infoContent}>
                       <h3 className={styles.infoTitle}>{attraction.name}</h3>
-                      <p className={styles.infoDescription}>{attraction.shortDescription}</p>
                       <div className={styles.infoMeta}>
                         <span className={styles.infoRating}>⭐ {attraction.rating}</span>
                         <span className={styles.infoDistance}>{attraction.distanceKm} км</span>

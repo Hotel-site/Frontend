@@ -120,9 +120,6 @@
   }
 }
 
-.listMode {
-  grid-template-columns: 1fr;
-}
 
 .mapSection {
   min-height: 500px;

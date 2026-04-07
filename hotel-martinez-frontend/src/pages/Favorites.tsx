@@ -4,7 +4,7 @@ import ProductCard from '../components/Cards/ProductCard'
 import ErrorState from '../components/ErrorState/ErrorState'
 import LoadingState from '../components/LoadingState/LoadingState'
 import { products } from '../data/products'
-import { fetchAttractionById } from '../services/localApi'
+import { fetchAttractionById } from '../data/attractions'
 import type { Attraction } from '../types/local'
 import '../styles/catalog.css'
 
