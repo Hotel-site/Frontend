@@ -12,6 +12,7 @@ import About from './pages/About'
 import Restaurant from './pages/Restaurant'
 import Rooms from './pages/Rooms'
 import LocalPage from './pages/LocalPage'
+import Admin from './pages/Admin'
 import PageErrorBoundary from './components/PageErrorBoundary'
 import { AuthProvider } from './context/AuthContext'
 import type { CartItem } from './types/cart'
@@ -89,6 +90,7 @@ export default function App() {
                 <Route path="/restaurant" element={<Restaurant />} />
                 <Route path="/rooms" element={<Rooms />} />
                 <Route path="/local" element={<LocalPage onAddToCart={onAddAttractionToCart} />} />
+                <Route path="/admin" element={<Admin />} />
                 <Route
                   path="*"
                   element={<ErrorState imageUrl="/cry.gif" title="Страница не найдена" message="Путь указан неверно. Проверьте адрес и попробуйте снова." />}

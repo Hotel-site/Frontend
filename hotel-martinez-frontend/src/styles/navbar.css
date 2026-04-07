@@ -78,6 +78,7 @@
 .menu-item:hover { background: var(--line); }
 .menu-divider { height: 1px; background: var(--line); margin: 4px 0; }
 .logout-item { color: #ff4444; }
+.admin-item { color: #9333ea; font-weight: 500; }
 
 @media (max-width: 640px) {
   .nav__link { padding: 6px 8px; font-size: 14px; }

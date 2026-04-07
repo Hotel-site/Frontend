@@ -1,11 +1,14 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import type { ReactNode } from 'react'
 
+export type UserRole = 'user' | 'admin'
+
 export interface User {
   id: string
   email: string
   name: string
   avatar?: string
+  role: UserRole
 }
 
 interface AuthContextType {
@@ -25,6 +28,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Загрузка пользователя при монтировании
   useEffect(() => {
+    const savedUser = localStorage.getItem('user')
+    if (savedUser) {
+      try {
+        setUser(JSON.parse(savedUser))
+      } catch (error) {
+        console.error('Ошибка при загрузке пользователя:', error)
+        localStorage.removeItem('user')
+      }
+    }
     setIsLoading(false)
   }, [])
 
@@ -42,14 +54,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error('Введите валидный email')
       }
 
+      const role: UserRole = email === 'admin@hotel.com' ? 'admin' : 'user'
       const newUser: User = {
         id: Math.random().toString(36).substr(2, 9),
         email,
         name: email.split('@')[0],
         avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`,
+        role,
       }
 
       setUser(newUser)
+      localStorage.setItem('user', JSON.stringify(newUser))
     } finally {
       setIsLoading(false)
     }
@@ -73,14 +88,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error('Пароль должен быть не менее 6 символов')
       }
 
+      const role: UserRole = email === 'admin@hotel.com' ? 'admin' : 'user'
       const newUser: User = {
         id: Math.random().toString(36).substr(2, 9),
         email,
         name,
         avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`,
+        role,
       }
 
       setUser(newUser)
+      localStorage.setItem('user', JSON.stringify(newUser))
     } finally {
       setIsLoading(false)
     }
@@ -88,6 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = () => {
     setUser(null)
+    localStorage.removeItem('user')
   }
 
   return (
