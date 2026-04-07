@@ -11,13 +11,20 @@ export default function RoomDetailModal({ room, onClose }: RoomDetailModalProps)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
 
   useEffect(() => {
+    const previousBodyOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         onClose()
       }
     }
+    
     window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+      document.body.style.overflow = previousBodyOverflow
+    }
   }, [onClose])
 
   const handlePrevImage = () => {
