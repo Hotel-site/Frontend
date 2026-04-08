@@ -22,9 +22,7 @@ export default function Cart({ cartItems, onRemoveFromCart }: Props) {
         } else {
           countMap.set(key, { item: cartItem, count: 1, product: itemData })
         }
-      } catch {
-        // Skip problematic items
-      }
+      } catch {}
     })
     return Array.from(countMap.values())
   }, [cartItems])

@@ -5,6 +5,7 @@ export interface User {
   id: string
   email: string
   name: string
+  role: 'admin' | 'user'
   avatar?: string
 }
 
@@ -30,7 +31,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const storedUser = localStorage.getItem(STORAGE_KEY)
     if (storedUser) {
       try {
-        setUser(JSON.parse(storedUser))
+        const parsedUser = JSON.parse(storedUser) as Partial<User>
+        const hydratedUser: User = {
+          id: parsedUser.id ?? '',
+          email: parsedUser.email ?? '',
+          name: parsedUser.name ?? 'Guest',
+          role: parsedUser.role ?? 'user',
+          avatar: parsedUser.avatar,
+        }
+        setUser(hydratedUser)
       } catch {
         localStorage.removeItem(STORAGE_KEY)
       }
@@ -56,6 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         id: Math.random().toString(36).substr(2, 9),
         email,
         name: email.split('@')[0],
+        role: email.toLowerCase() === 'admin@hotel-martinez.com' ? 'admin' : 'user',
         avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`,
       }
 
@@ -88,6 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         id: Math.random().toString(36).substr(2, 9),
         email,
         name,
+        role: email.toLowerCase() === 'admin@hotel-martinez.com' ? 'admin' : 'user',
         avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`,
       }
 

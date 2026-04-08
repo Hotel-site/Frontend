@@ -18,16 +18,15 @@ export default function Catalog({ favorites, onToggleFavorite, onAddToCart }: Pr
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('Все')
   const [minPrice, setMinPrice] = useState(0)
-  const [maxPrice, setMaxPrice] = useState(0) // Будет установлено через useEffect
+  const [maxPrice, setMaxPrice] = useState(0) 
   const [budget, setBudget] = useState<BudgetType>('all')
   const [sortBy, setSortBy] = useState('default')
   const [likes, setLikes] = useState<Record<number, number>>({})
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
 
-  const ITEMS_PER_PAGE = 12 // 4 колонки × 3 ряда
+  const ITEMS_PER_PAGE = 12 
 
-  // Флаг для отслеживания автоматических изменений цены
   const isAutomaticPriceChange = useRef(false)
 
   const categories = useMemo(
@@ -40,12 +39,10 @@ export default function Catalog({ favorites, onToggleFavorite, onAddToCart }: Pr
     []
   )
 
-  // Инициализация максимальной цены при загрузке
   useEffect(() => {
     setMaxPrice(maxProductPrice)
   }, [maxProductPrice])
 
-  // Синхронизация ползунков с выбранной категорией бюджета
   useEffect(() => {
     isAutomaticPriceChange.current = true
     
@@ -58,7 +55,6 @@ export default function Catalog({ favorites, onToggleFavorite, onAddToCart }: Pr
       const range = BUDGET_RANGES[budget]
       if (range) {
         setMinPrice(range.min)
-        // Для премиума используем актуальную максимальную цену
         if (budget === 'premium') {
           setMaxPrice(maxProductPrice)
         } else {
@@ -81,7 +77,6 @@ export default function Catalog({ favorites, onToggleFavorite, onAddToCart }: Pr
       const range = BUDGET_RANGES[budget]
       if (range) {
         let expectedMax = range.max
-        // Для премиума максимум равен максимальной цене товара
         if (budget === 'premium') {
           expectedMax = maxProductPrice
         }
@@ -101,7 +96,6 @@ export default function Catalog({ favorites, onToggleFavorite, onAddToCart }: Pr
         p.category.toLowerCase().includes(query.toLowerCase())
       const byPrice = p.price >= minPrice && p.price <= maxPrice
 
-      // Применить фильтр по бюджету
       let byBudget = true
       if (budget !== 'all') {
         const range = BUDGET_RANGES[budget]
@@ -113,7 +107,6 @@ export default function Catalog({ favorites, onToggleFavorite, onAddToCart }: Pr
       return byCategory && byQuery && byPrice && byBudget
     })
 
-    // Применить сортировку
     switch (sortBy) {
       case 'price-asc':
         result.sort((a, b) => a.price - b.price)
@@ -128,7 +121,6 @@ export default function Catalog({ favorites, onToggleFavorite, onAddToCart }: Pr
         result.sort((a, b) => b.title.localeCompare(a.title, 'ru'))
         break
       default:
-        // Keep original order
         break
     }
 
@@ -143,7 +135,6 @@ export default function Catalog({ favorites, onToggleFavorite, onAddToCart }: Pr
     [filtered, currentPage]
   )
 
-  // Сброс на первую страницу при изменении фильтров
   useEffect(() => {
     setCurrentPage(1)
   }, [query, category, minPrice, maxPrice, budget, sortBy])

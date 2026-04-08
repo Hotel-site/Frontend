@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import type { Room } from '../../types/room'
 import './RoomDetailModal.css'
 
@@ -9,6 +9,7 @@ interface RoomDetailModalProps {
 
 export default function RoomDetailModal({ room, onClose }: RoomDetailModalProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const amenitiesListRef = useRef<HTMLUListElement | null>(null)
 
   useEffect(() => {
     const previousBodyOverflow = document.body.style.overflow
@@ -26,6 +27,39 @@ export default function RoomDetailModal({ room, onClose }: RoomDetailModalProps)
       document.body.style.overflow = previousBodyOverflow
     }
   }, [onClose])
+
+  useEffect(() => {
+    const amenitiesList = amenitiesListRef.current
+    if (!amenitiesList) return
+
+    const syncAmenityHeights = () => {
+      const items = Array.from(
+        amenitiesList.querySelectorAll<HTMLElement>('.details-amenity-item')
+      )
+
+      if (!items.length) return
+
+      items.forEach((item) => {
+        item.style.minHeight = '0px'
+      })
+
+      const maxHeight = Math.max(
+        ...items.map((item) => Math.ceil(item.getBoundingClientRect().height))
+      )
+
+      items.forEach((item) => {
+        item.style.minHeight = `${maxHeight}px`
+      })
+    }
+
+    const rafId = window.requestAnimationFrame(syncAmenityHeights)
+    window.addEventListener('resize', syncAmenityHeights)
+
+    return () => {
+      window.cancelAnimationFrame(rafId)
+      window.removeEventListener('resize', syncAmenityHeights)
+    }
+  }, [room])
 
   const handlePrevImage = () => {
     setCurrentImageIndex((prev) => (prev === 0 ? room.images.length - 1 : prev - 1))
@@ -144,9 +178,9 @@ export default function RoomDetailModal({ room, onClose }: RoomDetailModalProps)
 
           <div className="details-amenities">
             <h3>Удобства</h3>
-            <ul className="amenities-list">
+            <ul ref={amenitiesListRef} className="details-amenities-list">
               {room.amenities.map((amenity, idx) => (
-                <li key={idx} className="amenity-item">
+                <li key={idx} className="details-amenity-item">
                   <span className="amenity-check">✓</span>
                   {amenity}
                 </li>
