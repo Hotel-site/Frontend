@@ -1,11 +1,26 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { rooms } from '../data/rooms'
 import RoomDetailModal from '../components/RoomDetailModal/RoomDetailModal'
 import '../styles/rooms.css'
 
 export default function Rooms() {
+  const [searchParams, setSearchParams] = useSearchParams()
   const [selectedRoom, setSelectedRoom] = useState<number | null>(null)
   const [currentImageIndex, setCurrentImageIndex] = useState<Record<number, number>>({})
+
+  // Открытие номера по ID из URL параметров
+  useEffect(() => {
+    const roomId = searchParams.get('roomId')
+    if (roomId) {
+      const room = rooms.find(r => r.id === parseInt(roomId))
+      if (room) {
+        setSelectedRoom(room.id)
+      }
+      // Удалить параметр из URL после открытия
+      setSearchParams({})
+    }
+  }, [searchParams, setSearchParams])
 
   const handlePrevImage = (roomId: number, totalImages: number) => {
     setCurrentImageIndex((prev) => ({

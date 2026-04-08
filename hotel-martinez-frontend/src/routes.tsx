@@ -1,5 +1,6 @@
 import type { RouteObject } from 'react-router-dom'
 import About from './pages/About'
+import Admin from './pages/Admin'
 import Auth from './pages/Auth'
 import Cart from './pages/Cart'
 import Catalog from './pages/Catalog'
@@ -13,6 +14,7 @@ import Rooms from './pages/Rooms'
 export const appRoutes: RouteObject[] = [
   { path: '/', element: <Home /> },
   { path: '/auth', element: <Auth /> },
+  { path: '/admin', element: <Admin /> },
   { path: '/catalog', element: <Catalog favorites={[]} onToggleFavorite={() => undefined} onAddToCart={() => undefined} /> },
   { path: '/favorites', element: <Favorites favorites={[]} onToggleFavorite={() => undefined} /> },
   { path: '/cart', element: <Cart cartItems={[]} onRemoveFromCart={() => undefined} /> },

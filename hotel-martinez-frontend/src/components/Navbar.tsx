@@ -4,13 +4,11 @@ import { useState, useEffect, useRef } from 'react'
 import '../styles/navbar.css'
 
 type Props = {
-  favoritesCount: number
-  cartCount: number
   theme: 'light' | 'dark'
   onToggleTheme: () => void
 }
 
-export default function Navbar({ favoritesCount, cartCount, theme, onToggleTheme }: Props) {
+export default function Navbar({ theme, onToggleTheme }: Props) {
   const { user, logout, isAuthenticated } = useAuth()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -74,6 +72,14 @@ export default function Navbar({ favoritesCount, cartCount, theme, onToggleTheme
                   <NavLink to="/settings" className="menu-item" onClick={() => setIsMenuOpen(false)}>
                     ⚙️ Настройки
                   </NavLink>
+                  {user.role === 'admin' && (
+                    <>
+                      <div className="menu-divider"></div>
+                      <NavLink to="/admin" className="menu-item admin-item" onClick={() => setIsMenuOpen(false)}>
+                        👑 Администратор
+                      </NavLink>
+                    </>
+                  )}
                   <div className="menu-divider"></div>
                   <button className="menu-item logout-item" onClick={handleLogout}>
                     Выход

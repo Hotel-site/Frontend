@@ -2,8 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { fetchAttractions, MAX_PRICE } from '../data/attractions'
 import type { Attraction, AttractionQueryParams, Category, PriceType, SortBy, ViewMode } from '../types/local'
 
-const FAVORITES_KEY = 'local-favorites'
-
 const defaultQuery: AttractionQueryParams = {
   search: '',
   category: 'all',
@@ -18,18 +16,7 @@ const defaultQuery: AttractionQueryParams = {
 }
 
 function readFavoriteIds(): string[] {
-  const value = localStorage.getItem(FAVORITES_KEY)
-
-  if (!value) {
-    return []
-  }
-
-  try {
-    const parsed = JSON.parse(value) as string[]
-    return Array.isArray(parsed) ? parsed : []
-  } catch {
-    return []
-  }
+  return []
 }
 
 export function useAttractions() {
@@ -43,7 +30,6 @@ export function useAttractions() {
   const [favoriteIds, setFavoriteIds] = useState<string[]>(() => readFavoriteIds())
 
   useEffect(() => {
-    localStorage.setItem(FAVORITES_KEY, JSON.stringify(favoriteIds))
     window.dispatchEvent(new Event('local-favorites-updated'))
   }, [favoriteIds])
 

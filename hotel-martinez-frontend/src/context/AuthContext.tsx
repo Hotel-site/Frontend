@@ -1,12 +1,15 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import type { ReactNode } from 'react'
 
+export type UserRole = 'user' | 'admin'
+
 export interface User {
   id: string
   email: string
   name: string
   role: 'admin' | 'user'
   avatar?: string
+  role: UserRole
 }
 
 interface AuthContextType {
@@ -20,28 +23,19 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-const STORAGE_KEY = 'auth-user'
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   // Загрузка пользователя при монтировании
   useEffect(() => {
-    const storedUser = localStorage.getItem(STORAGE_KEY)
-    if (storedUser) {
+    const savedUser = localStorage.getItem('user')
+    if (savedUser) {
       try {
-        const parsedUser = JSON.parse(storedUser) as Partial<User>
-        const hydratedUser: User = {
-          id: parsedUser.id ?? '',
-          email: parsedUser.email ?? '',
-          name: parsedUser.name ?? 'Guest',
-          role: parsedUser.role ?? 'user',
-          avatar: parsedUser.avatar,
-        }
-        setUser(hydratedUser)
-      } catch {
-        localStorage.removeItem(STORAGE_KEY)
+        setUser(JSON.parse(savedUser))
+      } catch (error) {
+        console.error('Ошибка при загрузке пользователя:', error)
+        localStorage.removeItem('user')
       }
     }
     setIsLoading(false)
@@ -61,16 +55,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error('Введите валидный email')
       }
 
+      const role: UserRole = email === 'admin@hotel.com' ? 'admin' : 'user'
       const newUser: User = {
         id: Math.random().toString(36).substr(2, 9),
         email,
         name: email.split('@')[0],
         role: email.toLowerCase() === 'admin@hotel-martinez.com' ? 'admin' : 'user',
         avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`,
+        role,
       }
 
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newUser))
       setUser(newUser)
+      localStorage.setItem('user', JSON.stringify(newUser))
     } finally {
       setIsLoading(false)
     }
@@ -94,24 +90,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error('Пароль должен быть не менее 6 символов')
       }
 
+      const role: UserRole = email === 'admin@hotel.com' ? 'admin' : 'user'
       const newUser: User = {
         id: Math.random().toString(36).substr(2, 9),
         email,
         name,
         role: email.toLowerCase() === 'admin@hotel-martinez.com' ? 'admin' : 'user',
         avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`,
+        role,
       }
 
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newUser))
       setUser(newUser)
+      localStorage.setItem('user', JSON.stringify(newUser))
     } finally {
       setIsLoading(false)
     }
   }
 
   const logout = () => {
-    localStorage.removeItem(STORAGE_KEY)
     setUser(null)
+    localStorage.removeItem('user')
   }
 
   return (

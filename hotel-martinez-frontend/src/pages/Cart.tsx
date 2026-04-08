@@ -1,7 +1,6 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import type { CartItem } from '../types/cart'
-import type { Product } from '../types/product'
 import '../styles/cart.css'
 
 type Props = {

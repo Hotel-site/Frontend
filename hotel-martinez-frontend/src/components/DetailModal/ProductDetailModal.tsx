@@ -199,7 +199,7 @@ export default function ProductDetailModal({ product, onClose }: ProductDetailMo
             <div className={styles.productInfo}>
               <p className={styles.category}>Категория: {product.category}</p>
               <p className={styles.price}>
-                Цена: {product.price.toLocaleString('de-DE')} {product.unit ?? '€'}
+                Цена: {product.price.toLocaleString('de-DE')} €
               </p>
             </div>
 
