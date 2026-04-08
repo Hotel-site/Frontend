@@ -7,7 +7,6 @@ export interface User {
   id: string
   email: string
   name: string
-  role: 'admin' | 'user'
   avatar?: string
   role: UserRole
 }
@@ -60,7 +59,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         id: Math.random().toString(36).substr(2, 9),
         email,
         name: email.split('@')[0],
-        role: email.toLowerCase() === 'admin@hotel-martinez.com' ? 'admin' : 'user',
         avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`,
         role,
       }
@@ -95,7 +93,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         id: Math.random().toString(36).substr(2, 9),
         email,
         name,
-        role: email.toLowerCase() === 'admin@hotel-martinez.com' ? 'admin' : 'user',
         avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`,
         role,
       }
