@@ -2,8 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { fetchAttractions, MAX_PRICE } from '../data/attractions'
 import type { Attraction, AttractionQueryParams, Category, PriceType, SortBy, ViewMode } from '../types/local'
 
-const FAVORITES_KEY = 'local-favorites'
-
 const defaultQuery: AttractionQueryParams = {
   search: '',
   category: 'all',

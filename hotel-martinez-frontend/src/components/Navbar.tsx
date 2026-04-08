@@ -4,13 +4,11 @@ import { useState, useEffect, useRef } from 'react'
 import '../styles/navbar.css'
 
 type Props = {
-  favoritesCount: number
-  cartCount: number
   theme: 'light' | 'dark'
   onToggleTheme: () => void
 }
 
-export default function Navbar({ favoritesCount, cartCount, theme, onToggleTheme }: Props) {
+export default function Navbar({ theme, onToggleTheme }: Props) {
   const { user, logout, isAuthenticated } = useAuth()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)

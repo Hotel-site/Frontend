@@ -20,31 +20,14 @@ import type { Attraction } from './types/local'
 import { products } from './data/products'
 import './styles/app.css'
 
-function readLocalFavoritesCount(): number {
-  return 0
-}
-
 export default function App() {
   const [favorites, setFavorites] = useState<number[]>([])
-  const [localFavoritesCount, setLocalFavoritesCount] = useState<number>(() => readLocalFavoritesCount())
   const [cart, setCart] = useState<CartItem[]>([])
   const [theme, setTheme] = useState<'light' | 'dark'>('dark')
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
   }, [theme])
-
-  useEffect(() => {
-    const sync = () => setLocalFavoritesCount(readLocalFavoritesCount())
-
-    window.addEventListener('storage', sync)
-    window.addEventListener('local-favorites-updated', sync)
-
-    return () => {
-      window.removeEventListener('storage', sync)
-      window.removeEventListener('local-favorites-updated', sync)
-    }
-  }, [])
 
   const onToggleFavorite = (id: number) => {
     setFavorites((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
@@ -77,7 +60,7 @@ export default function App() {
     <AuthProvider>
       <BrowserRouter>
         <div className="app">
-          <Navbar favoritesCount={favorites.length + localFavoritesCount} cartCount={cart.length} theme={theme} onToggleTheme={() => setTheme(theme === 'dark' ? 'light' : 'dark')} />
+          <Navbar theme={theme} onToggleTheme={() => setTheme(theme === 'dark' ? 'light' : 'dark')} />
           <main className="app-main">
             <PageErrorBoundary>
               <Routes>
