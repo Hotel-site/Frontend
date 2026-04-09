@@ -6,7 +6,16 @@ export default function Footer() {
       <div className="container footer__inner">
         <div className="footer__left">
           <p>Hôtel Martinez — исторический отель Франции</p>
-          <p>© 2026 Hôtel Martinez. 5 Starts Hotel.</p>
+
+          <div className="footer__signature">
+            {/* Replace this placeholder with your real logo (e.g. /logo.svg) */}
+            <img
+              className="footer__logo"
+              src="/martinez-logo-placeholder.svg"
+              alt="Hôtel Martinez logo"
+            />
+            <span>© 2026 Hôtel Martinez. 5 Starts Hotel.</span>
+          </div>
         </div>
         <div className="footer__right">
           <p>Контакты:</p>
