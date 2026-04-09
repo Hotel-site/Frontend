@@ -3,15 +3,17 @@ import { useAuth } from '../context/AuthContext'
 import { products } from '../data/products'
 import { rooms } from '../data/rooms'
 import { DAYS } from '../data/menus'
+import { attractions } from '../data/attractions'
 import type { HotelCategory } from '../types/product'
+import type { Attraction } from '../types/local'
 import ErrorState from '../components/ErrorState/ErrorState'
 import '../styles/admin.css'
 
-type Tab = 'products' | 'rooms' | 'menus' | 'dashboard'
+type Tab = 'products' | 'rooms' | 'menus' | 'attractions' | 'dashboard'
 
 type ConfirmDelete = {
-  type: 'product' | 'room' | 'menu'
-  id: number
+  type: 'product' | 'room' | 'menu' | 'attraction'
+  id: number | string
   name: string
 } | null
 
@@ -21,6 +23,7 @@ export default function Admin() {
   const [editingProduct, setEditingProduct] = useState<(typeof products)[0] | null>(null)
   const [editingRoom, setEditingRoom] = useState<(typeof rooms)[0] | null>(null)
   const [editingMenu, setEditingMenu] = useState<(typeof DAYS)[0] | null>(null)
+  const [editingAttraction, setEditingAttraction] = useState<Attraction | null>(null)
   const [confirmDelete, setConfirmDelete] = useState<ConfirmDelete>(null)
   const [isAddingProduct, setIsAddingProduct] = useState(false)
   const [isAddingRoom, setIsAddingRoom] = useState(false)
@@ -46,10 +49,12 @@ export default function Admin() {
   } | null>(null)
   const [newRoomImageIndex, setNewRoomImageIndex] = useState(0)
   const [newRoomImageUrl, setNewRoomImageUrl] = useState('')
+  const [isAddingAttraction, setIsAddingAttraction] = useState(false)
+  const [newAttractionData, setNewAttractionData] = useState<Attraction | null>(null)
+  const [newAttractionImageIndex, setNewAttractionImageIndex] = useState(0)
 
-  // Блокировка скролла когда модальное окно открыто
   useEffect(() => {
-    if (editingProduct || editingRoom || editingMenu || confirmDelete || isAddingProduct || isAddingRoom) {
+    if (editingProduct || editingRoom || editingMenu || editingAttraction || confirmDelete || isAddingProduct || isAddingRoom || isAddingAttraction) {
       document.body.style.overflow = 'hidden'
     } else {
       document.body.style.overflow = 'auto'
@@ -58,30 +63,30 @@ export default function Admin() {
     return () => {
       document.body.style.overflow = 'auto'
     }
-  }, [editingProduct, editingRoom, editingMenu, confirmDelete, isAddingProduct, isAddingRoom])
+  }, [editingProduct, editingRoom, editingMenu, editingAttraction, confirmDelete, isAddingProduct, isAddingRoom, isAddingAttraction])
 
-  // Закрытие модалей при нажатии Escape
   useEffect(() => {
     const handleEscapeKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         setEditingProduct(null)
         setEditingRoom(null)
         setEditingMenu(null)
+        setEditingAttraction(null)
         setConfirmDelete(null)
         setIsAddingProduct(false)
         setIsAddingRoom(false)
+        setIsAddingAttraction(false)
       }
     }
 
-    if (editingProduct || editingRoom || editingMenu || confirmDelete || isAddingProduct || isAddingRoom) {
+    if (editingProduct || editingRoom || editingMenu || editingAttraction || confirmDelete || isAddingProduct || isAddingRoom || isAddingAttraction) {
       document.addEventListener('keydown', handleEscapeKey)
       return () => {
         document.removeEventListener('keydown', handleEscapeKey)
       }
     }
-  }, [editingProduct, editingRoom, editingMenu, confirmDelete, isAddingProduct, isAddingRoom])
+  }, [editingProduct, editingRoom, editingMenu, editingAttraction, confirmDelete, isAddingProduct, isAddingRoom, isAddingAttraction])
 
-  // Проверка доступа
   if (!user || user.role !== 'admin') {
     return (
       <ErrorState
@@ -133,6 +138,12 @@ export default function Admin() {
           >
             🍽️ Меню
           </button>
+          <button
+            className={`nav-btn ${activeTab === 'attractions' ? 'active' : ''}`}
+            onClick={() => setActiveTab('attractions')}
+          >
+            🗺️ Гид по городу
+          </button>
         </nav>
 
         <main className="admin-main">
@@ -168,6 +179,7 @@ export default function Admin() {
             />
           )}
           {activeTab === 'menus' && <MenusTab editingMenu={editingMenu} setEditingMenu={setEditingMenu} setConfirmDelete={setConfirmDelete} />}
+          {activeTab === 'attractions' && <AttractionsTab editingAttraction={editingAttraction} setEditingAttraction={setEditingAttraction} setConfirmDelete={setConfirmDelete} isAddingAttraction={isAddingAttraction} setIsAddingAttraction={setIsAddingAttraction} newAttractionData={newAttractionData} setNewAttractionData={setNewAttractionData} newAttractionImageIndex={newAttractionImageIndex} setNewAttractionImageIndex={setNewAttractionImageIndex} />}
         </main>
       </div>
 
@@ -200,6 +212,8 @@ function ConfirmDeleteDialog({ item, onConfirm, onCancel }: ConfirmDeleteDialogP
         return '🏨'
       case 'menu':
         return '🍽️'
+      case 'attraction':
+        return '🗺️'
     }
   }
 
@@ -211,6 +225,8 @@ function ConfirmDeleteDialog({ item, onConfirm, onCancel }: ConfirmDeleteDialogP
         return 'номер'
       case 'menu':
         return 'меню'
+      case 'attraction':
+        return 'достопримечательность'
     }
   }
 
@@ -252,6 +268,10 @@ function DashboardTab() {
         <div className="stat-card">
           <h3>Дни меню</h3>
           <p className="stat-number">{DAYS.length}</p>
+        </div>
+        <div className="stat-card">
+          <h3>Достопримечательности</h3>
+          <p className="stat-number">{attractions.length}</p>
         </div>
         <div className="stat-card">
           <h3>Статус системы</h3>
@@ -296,6 +316,7 @@ function ProductsTab({
   newImageUrl,
   setNewImageUrl
 }: ProductsTabProps) {
+  const DEFAULT_CATEGORIES = ['SPA & Wellness', 'Рестораны', 'Трансфер', 'События', 'Мерч']
   const [formData, setFormData] = useState(editingProduct ? {
     title: editingProduct.title,
     price: editingProduct.price,
@@ -306,7 +327,7 @@ function ProductsTab({
   } : null)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [newCategory, setNewCategory] = useState('')
-  const [categories, setCategories] = useState(['SPA & Wellness', 'Рестораны', 'Трансфер', 'События', 'Мерч'])
+  const [categories, setCategories] = useState(DEFAULT_CATEGORIES)
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false)
 
   const handleSave = () => {
@@ -446,6 +467,8 @@ function ProductsTab({
           setEditingProduct(null)
           setFormData(null)
           setCategoryDropdownOpen(false)
+          setNewCategory('')
+          setCategories(DEFAULT_CATEGORIES)
         }}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
@@ -453,6 +476,9 @@ function ProductsTab({
               <button className="modal-close" onClick={() => {
                 setEditingProduct(null)
                 setFormData(null)
+                setCategoryDropdownOpen(false)
+                setNewCategory('')
+                setCategories(DEFAULT_CATEGORIES)
               }}>✕</button>
             </div>
             
@@ -691,6 +717,9 @@ function ProductsTab({
           setIsAddingProduct(false)
           setNewProductData(null)
           setNewProductImageIndex(0)
+          setCategoryDropdownOpen(false)
+          setNewCategory('')
+          setCategories(DEFAULT_CATEGORIES)
         }}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
@@ -699,6 +728,9 @@ function ProductsTab({
                 setIsAddingProduct(false)
                 setNewProductData(null)
                 setNewProductImageIndex(0)
+                setCategoryDropdownOpen(false)
+                setNewCategory('')
+                setCategories(DEFAULT_CATEGORIES)
               }}>✕</button>
             </div>
             
@@ -1700,6 +1732,7 @@ function MenusTab({ editingMenu, setEditingMenu, setConfirmDelete }: MenusTabPro
   const [newItemDescription, setNewItemDescription] = useState('')
   const [showAddMenuDropdown, setShowAddMenuDropdown] = useState(false)
   const [menuDays, setMenuDays] = useState(DAYS)
+  const [isAddingNewMenu, setIsAddingNewMenu] = useState(false)
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -1715,7 +1748,8 @@ function MenusTab({ editingMenu, setEditingMenu, setConfirmDelete }: MenusTabPro
     }
   }, [showAddMenuDropdown])
 
-  const openEditMenu = (day: (typeof DAYS)[0]) => {
+  const openEditMenu = (day: (typeof DAYS)[0], isNew: boolean = false) => {
+    setIsAddingNewMenu(isNew)
     setEditingMenu(day)
     setFormData(JSON.parse(JSON.stringify(day)))
     setSelectedSectionIndex(0)
@@ -1724,6 +1758,7 @@ function MenusTab({ editingMenu, setEditingMenu, setConfirmDelete }: MenusTabPro
   const closeModal = () => {
     setEditingMenu(null)
     setFormData(null)
+    setIsAddingNewMenu(false)
     setNewItemName('')
     setNewItemPrice('')
     setNewItemDescription('')
@@ -1764,7 +1799,7 @@ function MenusTab({ editingMenu, setEditingMenu, setConfirmDelete }: MenusTabPro
       }
       
       setShowAddMenuDropdown(false)
-      openEditMenu(newMenu)
+      openEditMenu(newMenu, true)
     }
   }
 
@@ -1833,14 +1868,11 @@ function MenusTab({ editingMenu, setEditingMenu, setConfirmDelete }: MenusTabPro
   const currentSection = formData?.sections[selectedSectionIndex]
 
   const handlePriceInput = (value: string): string => {
-    // Оставляем только цифры и одну точку
     let filtered = value.replace(/[^\d.]/g, '')
-    // Если несколько точек, оставляем только первую
     const parts = filtered.split('.')
     if (parts.length > 2) {
       filtered = parts[0] + '.' + parts.slice(1).join('')
     }
-    // Не позволяем начинать с точки
     if (filtered.startsWith('.')) {
       filtered = filtered.substring(1)
     }
@@ -1948,14 +1980,13 @@ function MenusTab({ editingMenu, setEditingMenu, setConfirmDelete }: MenusTabPro
         <div className="modal-overlay" onClick={closeModal}>
           <div className="modal-content menu-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>Редактирование меню - {formData.label}</h2>
+              <h2>{isAddingNewMenu ? '➕ Добавление меню' : '✏️ Редактирование меню'} - {formData.label}</h2>
               <button className="btn-close" onClick={closeModal}>✕</button>
             </div>
 
             <div className="modal-body">
               <div className="modal-body-form">
                 <div className="menu-editor">
-                  {/* Выбор секции */}
                   <div className="sections-tabs">
                     {formData.sections.map((section, idx) => (
                       <button
@@ -1968,7 +1999,6 @@ function MenusTab({ editingMenu, setEditingMenu, setConfirmDelete }: MenusTabPro
                     ))}
                   </div>
 
-                  {/* Список блюд текущей секции */}
                   {currentSection && (
                     <div className="menu-items-editor">
                       <h3>{currentSection.category}</h3>
@@ -2013,7 +2043,6 @@ function MenusTab({ editingMenu, setEditingMenu, setConfirmDelete }: MenusTabPro
                           ))}
                         </div>
 
-                        {/* Форма добавления нового блюда */}
                         <div className="add-item-form">
                         <h4>Добавить новое блюдо</h4>
                         <input
@@ -2051,7 +2080,6 @@ function MenusTab({ editingMenu, setEditingMenu, setConfirmDelete }: MenusTabPro
                 </div>
               </div>
 
-              {/* Предпросмотр */}
               <div className="modal-body-preview">
                 <div className="preview-menu">
                   <h3>{formData.label}</h3>
@@ -2086,6 +2114,971 @@ function MenusTab({ editingMenu, setEditingMenu, setConfirmDelete }: MenusTabPro
                 closeModal()
               }}>
                 💾 Сохранить
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+type AttractionsTabProps = {
+  editingAttraction: Attraction | null
+  setEditingAttraction: (attraction: Attraction | null) => void
+  setConfirmDelete: (item: ConfirmDelete) => void
+  isAddingAttraction: boolean
+  setIsAddingAttraction: (value: boolean) => void
+  newAttractionData: Attraction | null
+  setNewAttractionData: (data: Attraction | null) => void
+  newAttractionImageIndex: number
+  setNewAttractionImageIndex: React.Dispatch<React.SetStateAction<number>>
+}
+
+function AttractionsTab({ editingAttraction, setEditingAttraction, setConfirmDelete, isAddingAttraction, setIsAddingAttraction, newAttractionData, setNewAttractionData, newAttractionImageIndex, setNewAttractionImageIndex }: AttractionsTabProps) {
+  const DEFAULT_ATTRACTION_CATEGORIES = ['culture', 'nature', 'food', 'shopping', 'family', 'nightlife']
+  const [formData, setFormData] = useState<Attraction | null>(null)
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [newImageUrl, setNewImageUrl] = useState('')
+  const [attractionCategories, setAttractionCategories] = useState(DEFAULT_ATTRACTION_CATEGORIES)
+  const [newAttractionCategory, setNewAttractionCategory] = useState('')
+  const [attractionCategoryDropdownOpen, setAttractionCategoryDropdownOpen] = useState(false)
+
+  const handleSave = () => {
+    console.log('Сохранено:', formData)
+    setEditingAttraction(null)
+    setFormData(null)
+  }
+
+  const addAttractionCategory = () => {
+    if (newAttractionCategory.trim() && !attractionCategories.includes(newAttractionCategory)) {
+      setAttractionCategories([...attractionCategories, newAttractionCategory])
+      if (formData) {
+        setFormData({...formData, category: newAttractionCategory as any})
+      }
+      setNewAttractionCategory('')
+    }
+  }
+
+  const addImage = () => {
+    if (newImageUrl.trim() && formData) {
+      const newImages = [...(formData.images || []), newImageUrl]
+      setFormData({
+        ...formData,
+        images: newImages,
+      })
+      setNewImageUrl('')
+    }
+  }
+
+  const deleteImage = (index: number) => {
+    if (formData) {
+      const newImages = formData.images.filter((_, i) => i !== index)
+      setFormData({
+        ...formData,
+        images: newImages,
+      })
+    }
+  }
+
+  const moveImageUp = (index: number) => {
+    if (formData && index > 0) {
+      const newImages = [...formData.images]
+      ;[newImages[index - 1], newImages[index]] = [newImages[index], newImages[index - 1]]
+      setFormData({
+        ...formData,
+        images: newImages,
+      })
+    }
+  }
+
+  const moveImageDown = (index: number) => {
+    if (formData && index < formData.images.length - 1) {
+      const newImages = [...formData.images]
+      ;[newImages[index], newImages[index + 1]] = [newImages[index + 1], newImages[index]]
+      setFormData({
+        ...formData,
+        images: newImages,
+      })
+    }
+  }
+
+  const openEditAttraction = (attraction: Attraction) => {
+    setEditingAttraction(attraction)
+    setFormData(JSON.parse(JSON.stringify(attraction)))
+    setCurrentImageIndex(0)
+  }
+
+  const closeModal = () => {
+    setEditingAttraction(null)
+    setFormData(null)
+    setCurrentImageIndex(0)
+    setNewImageUrl('')
+    setAttractionCategoryDropdownOpen(false)
+    setNewAttractionCategory('')
+    setAttractionCategories(DEFAULT_ATTRACTION_CATEGORIES)
+  }
+
+  return (
+    <div className="admin-tab">
+      <div className="tab-header">
+        <h2>🗺️ Управление достопримечательностями</h2>
+        <button 
+          className="btn-primary"
+          onClick={() => {
+            const newAttraction: Attraction = {
+              id: `attr-${Date.now()}`,
+              name: '',
+              slug: '',
+              shortDescription: '',
+              description: '',
+              category: 'culture',
+              tags: [],
+              coords: { lat: 43.55, lng: 7.01 },
+              distanceKm: 0,
+              price: 0,
+              priceType: 'free',
+              openingHours: {
+                monday: '09:00-18:00',
+                tuesday: '09:00-18:00',
+                wednesday: '09:00-18:00',
+                thursday: '09:00-18:00',
+                friday: '09:00-18:00',
+                saturday: '10:00-19:00',
+                sunday: '10:00-19:00',
+              },
+              rating: 5,
+              popularity: 50,
+              images: [],
+              partnerContact: {
+                phone: '',
+                email: '',
+                website: '',
+                bookingUrl: '',
+              },
+            }
+            setNewAttractionData(newAttraction)
+            setIsAddingAttraction(true)
+          }}
+        >
+          + Добавить достопримечательность
+        </button>
+      </div>
+
+      <div className="items-table">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Название</th>
+              <th>Категория</th>
+              <th>Цена</th>
+              <th>Описание</th>
+              <th>Рейтинг</th>
+              <th>Действия</th>
+            </tr>
+          </thead>
+          <tbody>
+            {attractions.map((attraction: Attraction) => (
+              <tr key={attraction.id}>
+                <td>{attraction.id}</td>
+                <td>{attraction.name}</td>
+                <td>{attraction.category}</td>
+                <td>{attraction.price} € ({attraction.priceType})</td>
+                <td className="description-cell">{attraction.shortDescription.substring(0, 50)}...</td>
+                <td>⭐ {attraction.rating}</td>
+                <td className="action-cell">
+                  <button className="btn-small btn-edit" onClick={() => openEditAttraction(attraction)}>
+                    ✏️ Редакт.
+                  </button>
+                  <button className="btn-small btn-delete" onClick={() => setConfirmDelete({
+                    type: 'attraction',
+                    id: attraction.id,
+                    name: attraction.name,
+                  })}>🗑️ Удалить</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {editingAttraction && formData && (
+        <div className="modal-overlay" onClick={closeModal}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>✏️ Редактирование достопримечательности</h3>
+              <button className="modal-close" onClick={closeModal}>✕</button>
+            </div>
+
+            <div className="modal-body">
+              <div className="modal-body-form">
+                <div className="form-group">
+                  <label>Название</label>
+                  <input 
+                    type="text" 
+                    value={formData.name}
+                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    placeholder="Введите название"
+                  />
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group" style={{flex: 1}}>
+                    <label>Категория</label>
+                    <div className="custom-dropdown">
+                      <button 
+                        type="button"
+                        className="custom-dropdown-btn"
+                        onClick={() => setAttractionCategoryDropdownOpen(!attractionCategoryDropdownOpen)}
+                      >
+                        {formData.category}
+                        <span className="dropdown-arrow">▼</span>
+                      </button>
+                      {attractionCategoryDropdownOpen && (
+                        <div className="custom-dropdown-menu">
+                          {attractionCategories.map((cat) => (
+                            <button 
+                              key={cat}
+                              type="button"
+                              className={`dropdown-item ${formData.category === cat ? 'active' : ''}`}
+                              onClick={() => {
+                                setFormData({...formData, category: cat as any})
+                                setAttractionCategoryDropdownOpen(false)
+                              }}
+                            >
+                              {cat}
+                            </button>
+                          ))}
+                          <div className="dropdown-divider"></div>
+                          <div className="dropdown-add-category">
+                            <input 
+                              type="text"
+                              value={newAttractionCategory}
+                              onChange={(e) => setNewAttractionCategory(e.target.value)}
+                              placeholder="Новая категория"
+                              onClick={(e) => e.stopPropagation()}
+                              onKeyPress={(e) => {
+                                if (e.key === 'Enter') {
+                                  addAttractionCategory()
+                                  setAttractionCategoryDropdownOpen(false)
+                                }
+                              }}
+                            />
+                            <button 
+                              type="button"
+                              className="dropdown-add-btn"
+                              onClick={() => {
+                                addAttractionCategory()
+                                setAttractionCategoryDropdownOpen(false)
+                              }}
+                            >
+                              + Добавить
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="form-group" style={{flex: 1}}>
+                    <label>Цена (€)</label>
+                    <input 
+                      type="number" 
+                      value={formData.price}
+                      onChange={(e) => setFormData({...formData, price: parseFloat(e.target.value)})}
+                      placeholder="Введите цену"
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label>Краткое описание</label>
+                  <textarea 
+                    value={formData.shortDescription}
+                    onChange={(e) => setFormData({...formData, shortDescription: e.target.value})}
+                    placeholder="Введите краткое описание"
+                    rows={2}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Полное описание</label>
+                  <textarea 
+                    value={formData.description}
+                    onChange={(e) => setFormData({...formData, description: e.target.value})}
+                    placeholder="Введите полное описание"
+                    rows={4}
+                  />
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group" style={{flex: 1}}>
+                    <label>Расстояние (км)</label>
+                    <input 
+                      type="number" 
+                      value={formData.distanceKm}
+                      onChange={(e) => setFormData({...formData, distanceKm: parseFloat(e.target.value)})}
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label>Контактный телефон</label>
+                  <input 
+                    type="text" 
+                    value={formData.partnerContact.phone}
+                    onChange={(e) => {
+                      let value = e.target.value
+                      const hasPlus = value.startsWith('+')
+                      let cleaned = value.replace(/[^\d+]/g, '').replace(/\+/g, '')
+                      if (cleaned.length > 15) {
+                        cleaned = cleaned.slice(0, 15)
+                      }
+                      const formatted = hasPlus ? '+' + cleaned : cleaned
+                      
+                      setFormData({
+                        ...formData,
+                        partnerContact: {...formData.partnerContact, phone: formatted}
+                      })
+                    }}
+                    placeholder="+33 4 93 00 00 01"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Email</label>
+                  <input 
+                    type="text" 
+                    value={formData.partnerContact.email}
+                    onChange={(e) => {
+                      let value = e.target.value
+                      value = value.replace(/[^a-zA-Z0-9@.\-_+]/g, '')
+                      
+                      setFormData({
+                        ...formData,
+                        partnerContact: {...formData.partnerContact, email: value}
+                      })
+                    }}
+                    placeholder="example@domain.com"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Веб-сайт</label>
+                  <input 
+                    type="text" 
+                    value={formData.partnerContact.website || ''}
+                    onChange={(e) => {
+                      let value = e.target.value
+                      
+                      // Проверяем что вводят только валидные URL символы
+                      // Разрешаем: энгл буквы, цифры, .-_~/:?#[]@!$&'()*+,;=%
+                      // Отклоняем: кириллицу, спецсимволы и спацес
+                      const validUrlRegex = /^[a-zA-Z0-9.\-_~:/?#\[\]@!$&'()*+,;=%]*$/
+                      if (!validUrlRegex.test(value)) {
+                        return
+                      }
+                      
+                      setFormData({
+                        ...formData,
+                        partnerContact: {...formData.partnerContact, website: value}
+                      })
+                    }}
+                    placeholder="https://example.com"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Фотографии</label>
+                  <div className="images-manager">
+                    {formData.images && formData.images.length > 0 && (
+                      <div className="images-list">
+                        {formData.images.map((img, index) => (
+                          <div key={index} className="image-item">
+                            <img src={img} alt={`Attraction ${index + 1}`} />
+                            <div className="image-controls">
+                              {index > 0 && (
+                                <button 
+                                  type="button"
+                                  className="btn-image-control"
+                                  onClick={() => moveImageUp(index)}
+                                  title="Переместить вверх"
+                                >
+                                  ⬆️
+                                </button>
+                              )}
+                              {index < formData.images.length - 1 && (
+                                <button 
+                                  type="button"
+                                  className="btn-image-control"
+                                  onClick={() => moveImageDown(index)}
+                                  title="Переместить вниз"
+                                >
+                                  ⬇️
+                                </button>
+                              )}
+                              <button 
+                                type="button"
+                                className="btn-image-delete"
+                                onClick={() => deleteImage(index)}
+                                title="Удалить фото"
+                              >
+                                🗑️
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <div className="add-image-form">
+                      <input 
+                        type="text"
+                        value={newImageUrl}
+                        onChange={(e) => setNewImageUrl(e.target.value)}
+                        placeholder="Вставьте URL фотографии"
+                        onKeyPress={(e) => e.key === 'Enter' && addImage()}
+                      />
+                      <button 
+                        type="button"
+                        className="btn-primary"
+                        onClick={addImage}
+                      >
+                        + Добавить фото
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="modal-body-preview">
+                <div className="preview-card">
+                  <div className="preview-gallery">
+                    <img 
+                      src={formData.images && formData.images.length > 0 ? formData.images[currentImageIndex] : '/placeholder.png'} 
+                      alt={formData.name} 
+                      className="preview-image-large"
+                    />
+                    
+                    {formData.images && formData.images.length > 1 && (
+                      <>
+                        <button
+                          className="preview-nav-button preview-nav-prev"
+                          onClick={() => setCurrentImageIndex((prev) => (prev > 0 ? prev - 1 : formData.images!.length - 1))}
+                          aria-label="Предыдущее фото"
+                        >
+                          ‹
+                        </button>
+
+                        <button
+                          className="preview-nav-button preview-nav-next"
+                          onClick={() => setCurrentImageIndex((prev) => (prev < formData.images!.length - 1 ? prev + 1 : 0))}
+                          aria-label="Следующее фото"
+                        >
+                          ›
+                        </button>
+
+                        <div className="preview-indicators">
+                          {formData.images.map((_, index) => (
+                            <button
+                              key={index}
+                              className={`preview-indicator ${index === currentImageIndex ? 'preview-indicator-active' : ''}`}
+                              onClick={() => setCurrentImageIndex(index)}
+                              aria-label={`Фото ${index + 1}`}
+                            />
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  <div className="preview-details">
+                    <h2 className="preview-title">{formData.name || '(название)'}</h2>
+                    
+                    <div className="preview-info">
+                      <p className="preview-category">Категория: {formData.category}</p>
+                      <p className="preview-price">Цена: {formData.price} €</p>
+                    </div>
+
+                    {formData.shortDescription && (
+                      <div className="preview-description-section">
+                        <h3 className="preview-description-title">Описание</h3>
+                        <p className="preview-description">{formData.shortDescription}</p>
+                      </div>
+                    )}
+
+                    {(formData.partnerContact.phone || formData.partnerContact.email || formData.partnerContact.website) && (
+                      <div className="preview-description-section">
+                        <h3 className="preview-description-title">Контакты партнера</h3>
+                        <div style={{display: 'flex', flexDirection: 'row', columnGap: '1rem', rowGap: '0.25rem', flexWrap: 'wrap', alignItems: 'center', color: '#c8c8d8', fontSize: '14px'}}>
+                          {formData.partnerContact.phone && (
+                            <p style={{margin: 0, display: 'flex', alignItems: 'center', gap: '0.7rem'}}>
+                              <span style={{fontSize: '1.1rem', width: '1.2rem'}}>📱</span>
+                              {formData.partnerContact.phone}
+                            </p>
+                          )}
+                          {formData.partnerContact.email && (
+                            <p style={{margin: 0, display: 'flex', alignItems: 'center', gap: '0.7rem'}}>
+                              <span style={{fontSize: '1.1rem', width: '1.2rem'}}>📧</span>
+                              {formData.partnerContact.email}
+                            </p>
+                          )}
+                          {formData.partnerContact.website && (
+                            <p style={{margin: 0, display: 'flex', alignItems: 'center', gap: '0.7rem'}}>
+                              <span style={{fontSize: '1.1rem', width: '1.2rem'}}>🌐</span>
+                              <a
+                                href={`https://${formData.partnerContact.website.replace(/^https?:\/\//, '')}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                style={{color: '#667eea', textDecoration: 'none'}}
+                              >
+                                {formData.partnerContact.website}
+                              </a>
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button className="btn-cancel" onClick={closeModal}>
+                Отменить
+              </button>
+              <button className="btn-primary" onClick={handleSave}>
+                💾 Сохранить
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isAddingAttraction && newAttractionData && (
+        <div className="modal-overlay" onClick={() => {
+          setIsAddingAttraction(false)
+          setNewAttractionData(null)
+          setNewAttractionImageIndex(0)
+          setAttractionCategoryDropdownOpen(false)
+          setNewAttractionCategory('')
+          setAttractionCategories(DEFAULT_ATTRACTION_CATEGORIES)
+        }}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>➕ Добавление новой достопримечательности</h3>
+              <button className="modal-close" onClick={() => {
+                setIsAddingAttraction(false)
+                setNewAttractionData(null)
+                setNewAttractionImageIndex(0)
+                setAttractionCategoryDropdownOpen(false)
+                setNewAttractionCategory('')
+                setAttractionCategories(DEFAULT_ATTRACTION_CATEGORIES)
+              }}>✕</button>
+            </div>
+
+            <div className="modal-body">
+              <div className="modal-body-form">
+                <div className="form-group">
+                  <label>Название</label>
+                  <input 
+                    type="text" 
+                    value={newAttractionData.name}
+                    onChange={(e) => setNewAttractionData({...newAttractionData, name: e.target.value})}
+                    placeholder="Введите название"
+                  />
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group" style={{flex: 1}}>
+                    <label>Категория</label>
+                    <div className="custom-dropdown">
+                      <button 
+                        type="button"
+                        className="custom-dropdown-btn"
+                        onClick={() => setAttractionCategoryDropdownOpen(!attractionCategoryDropdownOpen)}
+                      >
+                        {newAttractionData.category}
+                        <span className="dropdown-arrow">▼</span>
+                      </button>
+                      {attractionCategoryDropdownOpen && (
+                        <div className="custom-dropdown-menu">
+                          {attractionCategories.map((cat) => (
+                            <button 
+                              key={cat}
+                              type="button"
+                              className={`dropdown-item ${newAttractionData.category === cat ? 'active' : ''}`}
+                              onClick={() => {
+                                setNewAttractionData({...newAttractionData, category: cat as any})
+                                setAttractionCategoryDropdownOpen(false)
+                              }}
+                            >
+                              {cat}
+                            </button>
+                          ))}
+                          <div className="dropdown-divider"></div>
+                          <div className="dropdown-add-category">
+                            <input 
+                              type="text"
+                              value={newAttractionCategory}
+                              onChange={(e) => setNewAttractionCategory(e.target.value)}
+                              placeholder="Новая категория"
+                              onClick={(e) => e.stopPropagation()}
+                              onKeyPress={(e) => {
+                                if (e.key === 'Enter') {
+                                  if (newAttractionCategory.trim() && !attractionCategories.includes(newAttractionCategory)) {
+                                    setAttractionCategories([...attractionCategories, newAttractionCategory])
+                                    setNewAttractionData({...newAttractionData, category: newAttractionCategory as any})
+                                    setNewAttractionCategory('')
+                                  }
+                                  setAttractionCategoryDropdownOpen(false)
+                                }
+                              }}
+                            />
+                            <button 
+                              type="button"
+                              className="dropdown-add-btn"
+                              onClick={() => {
+                                if (newAttractionCategory.trim() && !attractionCategories.includes(newAttractionCategory)) {
+                                  setAttractionCategories([...attractionCategories, newAttractionCategory])
+                                  setNewAttractionData({...newAttractionData, category: newAttractionCategory as any})
+                                  setNewAttractionCategory('')
+                                }
+                                setAttractionCategoryDropdownOpen(false)
+                              }}
+                            >
+                              + Добавить
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="form-group" style={{flex: 1}}>
+                    <label>Цена (€)</label>
+                    <input 
+                      type="number" 
+                      value={newAttractionData.price}
+                      onChange={(e) => setNewAttractionData({...newAttractionData, price: parseFloat(e.target.value)})}
+                      placeholder="Введите цену"
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label>Краткое описание</label>
+                  <textarea 
+                    value={newAttractionData.shortDescription}
+                    onChange={(e) => setNewAttractionData({...newAttractionData, shortDescription: e.target.value})}
+                    placeholder="Введите краткое описание"
+                    rows={2}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Полное описание</label>
+                  <textarea 
+                    value={newAttractionData.description}
+                    onChange={(e) => setNewAttractionData({...newAttractionData, description: e.target.value})}
+                    placeholder="Введите полное описание"
+                    rows={4}
+                  />
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group" style={{flex: 1}}>
+                    <label>Расстояние (км)</label>
+                    <input 
+                      type="number" 
+                      value={newAttractionData.distanceKm}
+                      onChange={(e) => setNewAttractionData({...newAttractionData, distanceKm: parseFloat(e.target.value)})}
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label>Контактный телефон</label>
+                  <input 
+                    type="text" 
+                    value={newAttractionData.partnerContact.phone}
+                    onChange={(e) => {
+                      let value = e.target.value
+                      const hasPlus = value.startsWith('+')
+                      let cleaned = value.replace(/[^\d+]/g, '').replace(/\+/g, '')
+                      
+                      if (cleaned.length > 15) {
+                        cleaned = cleaned.slice(0, 15)
+                      }
+                      
+                      const formatted = hasPlus ? '+' + cleaned : cleaned
+                      
+                      setNewAttractionData({
+                        ...newAttractionData,
+                        partnerContact: {...newAttractionData.partnerContact, phone: formatted}
+                      })
+                    }}
+                    placeholder="+33 4 93 00 00 01"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Email</label>
+                  <input 
+                    type="text" 
+                    value={newAttractionData.partnerContact.email}
+                    onChange={(e) => {
+                      let value = e.target.value
+                      // Проверяем и очищаем невалидные символы в режиме реального времени
+                      // Однако разрешаем всё что может включать email
+                      // Очищаем кто любые спецсимволы кроме @.-_+
+                      value = value.replace(/[^a-zA-Z0-9@.\-_+]/g, '')
+                      
+                      setNewAttractionData({
+                        ...newAttractionData,
+                        partnerContact: {...newAttractionData.partnerContact, email: value}
+                      })
+                    }}
+                    placeholder="example@domain.com"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Веб-сайт</label>
+                  <input 
+                    type="text" 
+                    value={newAttractionData.partnerContact.website || ''}
+                    onChange={(e) => {
+                      let value = e.target.value
+                      
+                      // Проверяем что вводят только валидные URL символы
+                      // Разрешаем: энгл буквы, цифры, .-_~/:?#[]@!$&'()*+,;=%
+                      // Отклоняем: кириллицу, спецсимволы и спацес
+                      const validUrlRegex = /^[a-zA-Z0-9.\-_~:/?#\[\]@!$&'()*+,;=%]*$/
+                      if (!validUrlRegex.test(value)) {
+                        return
+                      }
+                      
+                      setNewAttractionData({
+                        ...newAttractionData,
+                        partnerContact: {...newAttractionData.partnerContact, website: value}
+                      })
+                    }}
+                    placeholder="https://example.com"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Фотографии</label>
+                  <div className="images-manager">
+                    {newAttractionData.images && newAttractionData.images.length > 0 && (
+                      <div className="images-list">
+                        {newAttractionData.images.map((img, index) => (
+                          <div key={index} className="image-item">
+                            <img src={img} alt={`Attraction ${index + 1}`} />
+                            <div className="image-controls">
+                              {index > 0 && (
+                                <button 
+                                  type="button"
+                                  className="btn-image-control"
+                                  onClick={() => {
+                                    const newImages = [...newAttractionData.images]
+                                    ;[newImages[index - 1], newImages[index]] = [newImages[index], newImages[index - 1]]
+                                    setNewAttractionData({
+                                      ...newAttractionData,
+                                      images: newImages,
+                                    })
+                                  }}
+                                  title="Переместить вверх"
+                                >
+                                  ⬆️
+                                </button>
+                              )}
+                              {index < newAttractionData.images.length - 1 && (
+                                <button 
+                                  type="button"
+                                  className="btn-image-control"
+                                  onClick={() => {
+                                    const newImages = [...newAttractionData.images]
+                                    ;[newImages[index], newImages[index + 1]] = [newImages[index + 1], newImages[index]]
+                                    setNewAttractionData({
+                                      ...newAttractionData,
+                                      images: newImages,
+                                    })
+                                  }}
+                                  title="Переместить вниз"
+                                >
+                                  ⬇️
+                                </button>
+                              )}
+                              <button 
+                                type="button"
+                                className="btn-image-delete"
+                                onClick={() => {
+                                  const newImages = newAttractionData.images.filter((_, i) => i !== index)
+                                  setNewAttractionData({
+                                    ...newAttractionData,
+                                    images: newImages,
+                                  })
+                                }}
+                                title="Удалить фото"
+                              >
+                                🗑️
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <div className="add-image-form">
+                      <input 
+                        type="text"
+                        value={newImageUrl}
+                        onChange={(e) => setNewImageUrl(e.target.value)}
+                        placeholder="Вставьте URL фотографии"
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter' && newImageUrl.trim() && newAttractionData) {
+                            const newImages = [...(newAttractionData.images || []), newImageUrl]
+                            setNewAttractionData({
+                              ...newAttractionData,
+                              images: newImages,
+                            })
+                            setNewImageUrl('')
+                          }
+                        }}
+                      />
+                      <button 
+                        type="button"
+                        className="btn-primary"
+                        onClick={() => {
+                          if (newImageUrl.trim() && newAttractionData) {
+                            const newImages = [...(newAttractionData.images || []), newImageUrl]
+                            setNewAttractionData({
+                              ...newAttractionData,
+                              images: newImages,
+                            })
+                            setNewImageUrl('')
+                          }
+                        }}
+                      >
+                        + Добавить фото
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="modal-body-preview">
+                <div className="preview-card">
+                  <div className="preview-gallery">
+                    <img 
+                      src={newAttractionData.images && newAttractionData.images.length > 0 ? newAttractionData.images[newAttractionImageIndex] : '/placeholder.png'} 
+                      alt={newAttractionData.name} 
+                      className="preview-image-large"
+                    />
+                    
+                    {newAttractionData.images && newAttractionData.images.length > 1 && (
+                      <>
+                        <button
+                          className="preview-nav-button preview-nav-prev"
+                          onClick={() => setNewAttractionImageIndex((prev) => (prev > 0 ? prev - 1 : newAttractionData.images!.length - 1))}
+                          aria-label="Предыдущее фото"
+                        >
+                          ‹
+                        </button>
+
+                        <button
+                          className="preview-nav-button preview-nav-next"
+                          onClick={() => setNewAttractionImageIndex((prev) => (prev < newAttractionData.images!.length - 1 ? prev + 1 : 0))}
+                          aria-label="Следующее фото"
+                        >
+                          ›
+                        </button>
+
+                        <div className="preview-indicators">
+                          {newAttractionData.images.map((_, index) => (
+                            <button
+                              key={index}
+                              className={`preview-indicator ${index === newAttractionImageIndex ? 'preview-indicator-active' : ''}`}
+                              onClick={() => setNewAttractionImageIndex(index)}
+                              aria-label={`Фото ${index + 1}`}
+                            />
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  <div className="preview-details">
+                    <h2 className="preview-title">{newAttractionData.name || '(название)'}</h2>
+                    
+                    <div className="preview-info">
+                      <p className="preview-category">Категория: {newAttractionData.category}</p>
+                      <p className="preview-price">Цена: {newAttractionData.price} €</p>
+                    </div>
+
+                    {newAttractionData.shortDescription && (
+                      <div className="preview-description-section">
+                        <h3 className="preview-description-title">Описание</h3>
+                        <p className="preview-description">{newAttractionData.shortDescription}</p>
+                      </div>
+                    )}
+
+                    {(newAttractionData.partnerContact.phone || newAttractionData.partnerContact.email || newAttractionData.partnerContact.website) && (
+                      <div className="preview-description-section">
+                        <h3 className="preview-description-title">Контакты партнера</h3>
+                        <div style={{display: 'flex', flexDirection: 'row', columnGap: '1rem', rowGap: '0.25rem', flexWrap: 'wrap', alignItems: 'center', color: '#c8c8d8', fontSize: '14px'}}>
+                          {newAttractionData.partnerContact.phone && (
+                            <p style={{margin: 0, display: 'flex', alignItems: 'center', gap: '0.7rem'}}>
+                              <span style={{fontSize: '1.1rem', width: '1.2rem'}}>📱</span>
+                              {newAttractionData.partnerContact.phone}
+                            </p>
+                          )}
+                          {newAttractionData.partnerContact.email && (
+                            <p style={{margin: 0, display: 'flex', alignItems: 'center', gap: '0.7rem'}}>
+                              <span style={{fontSize: '1.1rem', width: '1.2rem'}}>📧</span>
+                              {newAttractionData.partnerContact.email}
+                            </p>
+                          )}
+                          {newAttractionData.partnerContact.website && (
+                            <p style={{margin: 0, display: 'flex', alignItems: 'center', gap: '0.7rem'}}>
+                              <span style={{fontSize: '1.1rem', width: '1.2rem'}}>🌐</span>
+                              <a
+                                href={`https://${newAttractionData.partnerContact.website.replace(/^https?:\/\//, '')}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                style={{color: '#667eea', textDecoration: 'none'}}
+                              >
+                                {newAttractionData.partnerContact.website}
+                              </a>
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button className="btn-cancel" onClick={() => {
+                setIsAddingAttraction(false)
+                setNewAttractionData(null)
+                setNewAttractionImageIndex(0)
+                setNewImageUrl('')
+              }}>
+                Отменить
+              </button>
+              <button className="btn-primary" onClick={() => {
+                console.log('Новая достопримечательность добавлена:', newAttractionData)
+                setIsAddingAttraction(false)
+                setNewAttractionData(null)
+                setNewAttractionImageIndex(0)
+                setNewImageUrl('')
+              }}>
+                ✅ Создать достопримечательность
               </button>
             </div>
           </div>

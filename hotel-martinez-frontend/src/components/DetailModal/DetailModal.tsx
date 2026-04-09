@@ -144,10 +144,34 @@ export default function DetailModal({ attraction, onClose }: DetailModalProps) {
             </div>
 
             <div className={styles.productInfo}>
-              <p className={styles.category}>
-                <strong>Контакты партнера:</strong>
-              </p>
-              <p>{attraction.partnerContact.phone} · {attraction.partnerContact.email}</p>
+              <h3>Контакты партнера</h3>
+              <div className={styles.contactsList}>
+                {attraction.partnerContact.phone && (
+                  <p className={styles.contactItem}>
+                    <span className={styles.contactIcon}>📞</span>
+                    <span className={styles.contactValue}>{attraction.partnerContact.phone}</span>
+                  </p>
+                )}
+                {attraction.partnerContact.email && (
+                  <p className={styles.contactItem}>
+                    <span className={styles.contactIcon}>📧</span>
+                    <span className={styles.contactValue}>{attraction.partnerContact.email}</span>
+                  </p>
+                )}
+                {attraction.partnerContact.website && (
+                  <p className={styles.contactItem}>
+                    <span className={styles.contactIcon}>🌐</span>
+                    <a
+                      href={`https://${attraction.partnerContact.website.replace(/^https?:\/\//, '')}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className={styles.websiteLink}
+                    >
+                      {attraction.partnerContact.website}
+                    </a>
+                  </p>
+                )}
+              </div>
             </div>
 
             <button type="button" className={styles.bookBtn} onClick={() => void bookNow()} disabled={bookingState === 'loading'}>
@@ -158,17 +182,6 @@ export default function DetailModal({ attraction, onClose }: DetailModalProps) {
               <p className={styles.bookingMessage} role="status" aria-live="polite">
                 {bookingMessage}
               </p>
-            )}
-
-            {attraction.partnerContact.bookingUrl && (
-              <a
-                className={styles.partnerLink}
-                href={attraction.partnerContact.bookingUrl}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Перейти к партнеру для подтверждения
-              </a>
             )}
           </div>
         </div>

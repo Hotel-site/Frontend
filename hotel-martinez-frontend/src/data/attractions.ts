@@ -11,7 +11,7 @@ import type {
 const MOCK_ENDPOINT = '/api/mock-booking'
 const NETWORK_DELAY_MS = 350
 
-const attractions: Attraction[] = [
+export const attractions: Attraction[] = [
   {
     id: 'attr-1',
     name: 'Старый порт Канн',
