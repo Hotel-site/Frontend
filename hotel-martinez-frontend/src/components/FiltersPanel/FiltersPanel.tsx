@@ -8,6 +8,7 @@ type FiltersPanelProps = {
   maxDistanceKm: number
   minPrice: number
   maxPrice: number
+  maxAvailablePrice: number
   openNow: boolean
   sortBy: SortBy
   onCategoryChange: (value: Category | 'all') => void
@@ -29,13 +30,28 @@ const categoryOptions: Array<{ value: Category | 'all'; label: string }> = [
   { value: 'nightlife', label: 'Ночная жизнь' },
 ]
 
-const PRICE_CATEGORIES: Array<{ value: PriceType | 'all'; label: string }> = [
-  { value: 'all', label: 'Любой' },
-  { value: 'free', label: 'Бесплатно' },
-  { value: 'budget', label: 'Бюджетный' },
-  { value: 'moderate', label: 'Средний' },
-  { value: 'premium', label: 'Премиум' },
+const PRICE_RANGES = (
+  maxAvailablePrice: number,
+): Array<{ id: string; label: string; min: number; max: number }> => [
+  { id: 'any', label: 'Любое', min: 0, max: maxAvailablePrice },
+  { id: 'free', label: 'Бесплатно', min: 0, max: 0 },
+  { id: 'budget', label: 'Бюджетный', min: 0, max: 50 },
+  { id: 'medium', label: 'Средний', min: 50, max: 150 },
+  { id: 'premium', label: 'Премиум', min: 150, max: maxAvailablePrice },
 ]
+
+function getPriceRangeId(
+  minPrice: number,
+  maxPrice: number,
+  actualMaxPrice: number,
+): string | null {
+  if (minPrice === 0 && maxPrice === 0) return 'free'
+  if (minPrice === 0 && maxPrice === 50) return 'budget'
+  if (minPrice === 50 && maxPrice === 150) return 'medium'
+  if (minPrice === 150 && maxPrice === actualMaxPrice) return 'premium'
+  if (minPrice === 0 && maxPrice === actualMaxPrice) return 'any'
+  return null
+}
 
 export default function FiltersPanel({
   category,
@@ -43,6 +59,7 @@ export default function FiltersPanel({
   maxDistanceKm,
   minPrice,
   maxPrice,
+  maxAvailablePrice,
   openNow,
   sortBy,
   onCategoryChange,
@@ -86,7 +103,7 @@ export default function FiltersPanel({
               <input
                 type="number"
                 min={0}
-                max={150}
+                max={maxPrice}
                 value={minPrice}
                 onChange={(event) => onMinPriceChange(Math.min(Number(event.target.value), maxPrice))}
               />
@@ -96,7 +113,7 @@ export default function FiltersPanel({
               <input
                 type="number"
                 min={0}
-                max={150}
+                max={maxPrice}
                 value={maxPrice}
                 onChange={(event) => onMaxPriceChange(Math.max(Number(event.target.value), minPrice))}
               />
@@ -108,14 +125,14 @@ export default function FiltersPanel({
             <div
               className={styles.sliderTrackActive}
               style={{
-                left: `${(minPrice / 150) * 100}%`,
-                right: `${100 - (maxPrice / 150) * 100}%`,
+                left: `${(minPrice / maxAvailablePrice) * 100}%`,
+                right: `${100 - (maxPrice / maxAvailablePrice) * 100}%`,
               }}
             />
             <input
               type="range"
               min={0}
-              max={150}
+              max={maxAvailablePrice}
               value={minPrice}
               onChange={(event) => {
                 const newValue = Number(event.target.value)
@@ -128,7 +145,7 @@ export default function FiltersPanel({
             <input
               type="range"
               min={0}
-              max={150}
+              max={maxAvailablePrice}
               value={maxPrice}
               onChange={(event) => {
                 const newValue = Number(event.target.value)
@@ -142,6 +159,25 @@ export default function FiltersPanel({
 
           <div className={styles.priceDisplay}>
             €{minPrice} – €{maxPrice}
+          </div>
+
+          <div className={styles.priceCategories}>
+            {PRICE_RANGES(maxAvailablePrice).map((range) => {
+              const isActive = getPriceRangeId(minPrice, maxPrice, maxAvailablePrice) === range.id
+              return (
+                <button
+                  key={range.id}
+                  type="button"
+                  className={`${styles.priceOption} ${isActive ? styles.active : ''}`}
+                  onClick={() => {
+                    onMinPriceChange(range.min)
+                    onMaxPriceChange(range.max)
+                  }}
+                >
+                  {range.label}
+                </button>
+              )
+            })}
           </div>
         </div>
       </label>
@@ -174,9 +210,10 @@ export default function FiltersPanel({
       <label className={styles.field}>
         Сортировка
         <select value={sortBy} onChange={(event) => onSortByChange(event.target.value as SortBy)}>
-          <option value="popularity">{translate('sortPopularity')}</option>
           <option value="distance">{translate('sortDistance')}</option>
           <option value="rating">{translate('sortRating')}</option>
+          <option value="priceAsc">{translate('sortPriceAsc')}</option>
+          <option value="priceDesc">{translate('sortPriceDesc')}</option>
         </select>
       </label>
     </aside>

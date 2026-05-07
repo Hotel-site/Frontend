@@ -26,17 +26,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  // Загрузка пользователя при монтировании
   useEffect(() => {
-    const savedUser = localStorage.getItem('user')
-    if (savedUser) {
-      try {
-        setUser(JSON.parse(savedUser))
-      } catch (error) {
-        console.error('Ошибка при загрузке пользователя:', error)
-        localStorage.removeItem('user')
-      }
-    }
     setIsLoading(false)
   }, [])
 
@@ -64,7 +54,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       setUser(newUser)
-      localStorage.setItem('user', JSON.stringify(newUser))
     } finally {
       setIsLoading(false)
     }
@@ -98,7 +87,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       setUser(newUser)
-      localStorage.setItem('user', JSON.stringify(newUser))
     } finally {
       setIsLoading(false)
     }
@@ -106,7 +94,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = () => {
     setUser(null)
-    localStorage.removeItem('user')
   }
 
   return (

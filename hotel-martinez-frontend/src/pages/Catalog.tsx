@@ -233,6 +233,68 @@ export default function Catalog({ favorites, onToggleFavorite, onAddToCart }: Pr
           maxProductPrice={maxProductPrice}
         />
       </div>
+
+      <ProductDetailModal product={selectedProduct} onClose={() => setSelectedProduct(null)} />
+
+      {bookingProduct && (
+        <div className="booking-modal" role="dialog" aria-modal="true">
+          <div className="booking-modal__content">
+            <button
+              type="button"
+              className="booking-modal__close"
+              onClick={() => setBookingProduct(null)}
+              aria-label="Закрыть"
+            >
+              ✕
+            </button>
+
+            <h2>Бронирование: {bookingProduct.title}</h2>
+            <p className="booking-modal__price">
+              {bookingProduct.price.toLocaleString('de-DE')} {bookingProduct.unit || '€'}
+            </p>
+
+            <div className="booking-modal__user-info">
+              <p>
+                <strong>От:</strong> {user?.name} ({user?.email})
+              </p>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                const formData = new FormData(e.currentTarget as HTMLFormElement)
+                const dateTime = formData.get('dateTime') as string
+                const guestCount = parseInt(formData.get('guestCount') as string)
+                const notes = formData.get('notes') as string
+
+                onAddBookingToCart?.(bookingProduct, {
+                  dateTime,
+                  guestCount,
+                  notes,
+                })
+
+                alert(`Спасибо за бронирование ${bookingProduct.title}!\nВаша бронь добавлена в корзину.`)
+                setBookingProduct(null)
+              }}
+              className="booking-form"
+            >
+              <label>
+                Дата и время
+                <input type="datetime-local" name="dateTime" required />
+              </label>
+
+              <label>
+                Дополнительные пожелания
+                <textarea name="notes" placeholder="Расскажите о ваших пожеланиях..." rows={3}></textarea>
+              </label>
+
+              <button type="submit" className="booking-form__submit">
+                Забронировать
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </section>
   )
 }

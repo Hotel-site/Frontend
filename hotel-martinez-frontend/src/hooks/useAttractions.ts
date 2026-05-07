@@ -10,7 +10,7 @@ const defaultQuery: AttractionQueryParams = {
   minPrice: 0,
   maxPrice: MAX_PRICE,
   openNow: false,
-  sortBy: 'popularity',
+  sortBy: 'rating',
   page: 1,
   pageSize: 12,
 }
