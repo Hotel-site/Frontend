@@ -8,13 +8,14 @@ import CatalogFiltersPanel, { BUDGET_RANGES, type BudgetType } from '../componen
 import { useAuth } from '../context/AuthContext'
 import { products } from '../data/products'
 import type { Product } from '../types/product'
+import type { BookingData } from '../types/cart'
 import '../styles/catalog.css'
 
 type Props = {
   favorites: number[]
   onToggleFavorite: (id: number) => void
   onAddToCart: (id: number) => void
-  onAddBookingToCart?: (product: Product, bookingData: { dateTime: string; guestCount: number; notes: string }) => void
+  onAddBookingToCart?: (product: Product, bookingData: BookingData) => void
 }
 
 export default function Catalog({ favorites, onToggleFavorite, onAddToCart, onAddBookingToCart }: Props) {
@@ -275,11 +276,6 @@ export default function Catalog({ favorites, onToggleFavorite, onAddToCart, onAd
               <label>
                 Дата и время
                 <input type="datetime-local" name="dateTime" required />
-              </label>
-
-              <label>
-                Количество гостей
-                <input type="number" name="guestCount" min="1" defaultValue="1" required />
               </label>
 
               <label>

@@ -333,20 +333,21 @@
 
 .booking-modal__close {
   position: absolute;
-  top: 20px;
-  right: 20px;
+  top: 15px;
+  right: 15px;
   background: transparent;
   border: none;
-  font-size: 28px;
+  font-size: 32px;
   cursor: pointer;
   color: var(--text);
-  width: 40px;
-  height: 40px;
+  width: 50px;
+  height: 50px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
   transition: all 0.2s ease;
+  z-index: 1001;
 }
 
 .booking-modal__close:hover {
@@ -402,6 +403,7 @@
 }
 
 .booking-form__submit {
+  width: 100%;
   padding: 14px;
   background: var(--accent);
   color: var(--bg);

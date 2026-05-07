@@ -79,10 +79,6 @@ export default function RoomDetailModal({ room, onClose }: RoomDetailModalProps)
     }
   }
 
-  const handleBooking = () => {
-    alert(`📞 Спасибо за интерес! Вы выбрали: ${room.title}\n\nВскоре с вами свяжется наш менеджер.`)
-  }
-
   return (
     <div
       className="room-modal__overlay"
@@ -187,10 +183,6 @@ export default function RoomDetailModal({ room, onClose }: RoomDetailModalProps)
               ))}
             </ul>
           </div>
-
-          <button className="details-booking-btn" onClick={handleBooking}>
-            📞 Забронировать номер
-          </button>
         </div>
       </div>
     </div>

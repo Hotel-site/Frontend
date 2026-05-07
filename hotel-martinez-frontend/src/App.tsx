@@ -81,7 +81,7 @@ export default function App() {
                 <Route path="/cart" element={<Cart cartItems={cart} onRemoveFromCart={onRemoveFromCart} onCheckout={onCheckout} />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/restaurant" element={<Restaurant />} />
-                <Route path="/rooms" element={<Rooms />} />
+                <Route path="/rooms" element={<Rooms onAddBookingToCart={onAddBookingToCart} />} />
                 <Route path="/local" element={<LocalPage />} />
                 <Route path="/admin" element={<Admin />} />
                 <Route

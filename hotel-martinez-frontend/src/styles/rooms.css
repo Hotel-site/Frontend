@@ -277,6 +277,30 @@
   transform: translateY(0);
 }
 
+.room-booking-btn {
+  width: 100%;
+  padding: 14px 20px;
+  background: linear-gradient(135deg, #5da5d8 0%, #4a92c5 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 12px;
+}
+
+.room-booking-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(93, 165, 216, 0.35);
+}
+
+.room-booking-btn:active {
+  transform: translateY(0);
+}
+
 /* Booking Section */
 .booking-section {
   text-align: center;

@@ -2,12 +2,22 @@ import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { rooms } from '../data/rooms'
 import RoomDetailModal from '../components/RoomDetailModal/RoomDetailModal'
+import { useAuth } from '../context/AuthContext'
+import type { Product } from '../types/product'
+import type { BookingData } from '../types/cart'
 import '../styles/rooms.css'
+import '../styles/catalog.css'
 
-export default function Rooms() {
+type Props = {
+  onAddBookingToCart?: (product: Product, bookingData: BookingData) => void
+}
+
+export default function Rooms({ onAddBookingToCart }: Props) {
+  const { user } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const [selectedRoom, setSelectedRoom] = useState<number | null>(null)
   const [currentImageIndex, setCurrentImageIndex] = useState<Record<number, number>>({})
+  const [bookingRoom, setBookingRoom] = useState<any>(null)
 
   // Открытие номера по ID из URL параметров
   useEffect(() => {
@@ -46,7 +56,7 @@ export default function Rooms() {
 
         <div className="rooms__grid">
           {rooms.map((room) => (
-            <div key={room.id} className="room-card">
+            <div key={room.id} className="room-card" onClick={() => setSelectedRoom(room.id)}>
               <div className="room-card__gallery">
                 <div className="gallery-container">
                   <img
@@ -58,13 +68,19 @@ export default function Rooms() {
                     <>
                       <button
                         className="gallery-btn gallery-btn--prev"
-                        onClick={() => handlePrevImage(room.id, room.images.length)}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handlePrevImage(room.id, room.images.length)
+                        }}
                       >
                         ‹
                       </button>
                       <button
                         className="gallery-btn gallery-btn--next"
-                        onClick={() => handleNextImage(room.id, room.images.length)}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleNextImage(room.id, room.images.length)
+                        }}
                       >
                         ›
                       </button>
@@ -73,9 +89,10 @@ export default function Rooms() {
                           <span
                             key={idx}
                             className={`dot ${(currentImageIndex[room.id] || 0) === idx ? 'active' : ''}`}
-                            onClick={() =>
+                            onClick={(e) => {
+                              e.stopPropagation()
                               setCurrentImageIndex((prev) => ({ ...prev, [room.id]: idx }))
-                            }
+                            }}
                           />
                         ))}
                       </div>
@@ -107,10 +124,14 @@ export default function Rooms() {
                   </div>
                 </div>
 
-                <button
-                  className="room-btn"
-                  onClick={() => setSelectedRoom(room.id)}>
-                  Подробнее
+                <button 
+                  className="room-booking-btn"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    setBookingRoom(room)
+                  }}>
+                  📞 Забронировать номер
                 </button>
               </div>
             </div>
@@ -132,6 +153,72 @@ export default function Rooms() {
           room={rooms.find((r) => r.id === selectedRoom)!}
           onClose={() => setSelectedRoom(null)}
         />
+      )}
+
+      {bookingRoom && (
+        <div className="booking-modal" role="dialog" aria-modal="true">
+          <div className="booking-modal__content" onClick={(e) => e.stopPropagation()}>
+            <button
+              className="booking-modal__close"
+              onClick={() => setBookingRoom(null)}
+            >
+              ✕
+            </button>
+
+            <h2>Бронирование: {bookingRoom.title}</h2>
+            <p className="booking-modal__price">
+              {bookingRoom.price.toLocaleString('de-DE')} €
+            </p>
+
+            <div className="booking-modal__user-info">
+              <p>
+                <strong>От:</strong> {user?.name} ({user?.email})
+              </p>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                const formData = new FormData(e.currentTarget as HTMLFormElement)
+                const dateTime = formData.get('dateTime') as string
+                const notes = formData.get('notes') as string
+
+                const roomAsProduct: Product = {
+                  id: bookingRoom.id,
+                  title: bookingRoom.title,
+                  description: bookingRoom.description,
+                  category: 'Номера',
+                  price: bookingRoom.price,
+                  image: bookingRoom.images[0],
+                  requiresBooking: true,
+                }
+
+                onAddBookingToCart?.(roomAsProduct, {
+                  dateTime,
+                  notes,
+                })
+
+                alert(`Спасибо за бронирование ${bookingRoom.title}!\nВаша бронь добавлена в корзину.`)
+                setBookingRoom(null)
+              }}
+              className="booking-form"
+            >
+              <label>
+                Дата и время
+                <input type="datetime-local" name="dateTime" required />
+              </label>
+
+              <label>
+                Дополнительные пожелания
+                <textarea name="notes" placeholder="Расскажите о ваших пожеланиях..." rows={3}></textarea>
+              </label>
+
+              <button type="submit" className="booking-form__submit">
+                Забронировать
+              </button>
+            </form>
+          </div>
+        </div>
       )}
     </section>
   )

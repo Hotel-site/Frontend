@@ -3,7 +3,7 @@ import type { Attraction } from './local'
 
 export interface BookingData {
   dateTime: string
-  guestCount: number
+  guestCount?: number
   notes: string
 }
 
