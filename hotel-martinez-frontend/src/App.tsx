@@ -16,7 +16,6 @@ import Admin from './pages/Admin'
 import PageErrorBoundary from './components/PageErrorBoundary'
 import { AuthProvider } from './context/AuthContext'
 import type { CartItem } from './types/cart'
-import type { Attraction } from './types/local'
 import { products } from './data/products'
 import './styles/app.css'
 
@@ -39,11 +38,6 @@ export default function App() {
       const item: CartItem = { type: 'product', id, item: product }
       setCart((prev) => [...prev, item])
     }
-  }
-
-  const onAddAttractionToCart = (attraction: Attraction) => {
-    const item: CartItem = { type: 'attraction', id: attraction.id, item: attraction }
-    setCart((prev) => [...prev, item])
   }
 
   const onRemoveFromCart = (itemToRemove: CartItem) => {
@@ -72,7 +66,7 @@ export default function App() {
                 <Route path="/about" element={<About />} />
                 <Route path="/restaurant" element={<Restaurant />} />
                 <Route path="/rooms" element={<Rooms />} />
-                <Route path="/local" element={<LocalPage onAddToCart={onAddAttractionToCart} />} />
+                <Route path="/local" element={<LocalPage />} />
                 <Route path="/admin" element={<Admin />} />
                 <Route
                   path="*"

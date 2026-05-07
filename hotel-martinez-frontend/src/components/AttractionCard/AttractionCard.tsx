@@ -9,7 +9,7 @@ type AttractionCardProps = {
   isFavorite: boolean
   viewMode: ViewMode
   onToggleFavorite: (id: string) => void
-  onAddToCart: () => void
+  onAddToCart?: () => void
   onOpenDetails: (id: string) => void
   cardRef?: (node: HTMLLIElement | null) => void
 }
@@ -27,7 +27,7 @@ export default function AttractionCard({
 
   const handleAddToCart = () => {
     setIsAddedToCart(true)
-    onAddToCart()
+    onAddToCart?.()
     setTimeout(() => setIsAddedToCart(false), 600)
   }
 
@@ -51,7 +51,7 @@ export default function AttractionCard({
         </div>
 
         <div className={styles.priceTag}>
-          {attraction.price === 0 ? 'Бесплатно' : `€${attraction.price}`}
+          €{attraction.price}
         </div>
 
         <div className={styles.actions}>
@@ -68,18 +68,20 @@ export default function AttractionCard({
             <span>{isFavorite ? '♥' : '♡'}</span>
             <span>{isFavorite ? 'В избранном' : 'В избранное'}</span>
           </button>
-          <button
-            type="button"
-            className={clsx(styles.cartBtn, { [styles.added]: isAddedToCart })}
-            aria-label="Добавить в корзину"
-            onClick={(e) => {
-              e.stopPropagation()
-              handleAddToCart()
-            }}
-          >
-            <span>🛒</span>
-            <span>В корзину</span>
-          </button>
+          {onAddToCart && (
+            <button
+              type="button"
+              className={clsx(styles.cartBtn, { [styles.added]: isAddedToCart })}
+              aria-label="Добавить в корзину"
+              onClick={(e) => {
+                e.stopPropagation()
+                handleAddToCart()
+              }}
+            >
+              <span>🛒</span>
+              <span>В корзину</span>
+            </button>
+          )}
         </div>
       </div>
     </li>

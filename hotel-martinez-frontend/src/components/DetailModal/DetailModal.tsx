@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react'
-import { submitBookingRequest } from '../../data/attractions'
 import type { Attraction, Category } from '../../types/local'
 import styles from './DetailModal.module.css'
-import { translate } from '../../utils/i18n'
 
 const CATEGORY_LABELS: Record<Category, string> = {
   culture: 'Культура',
@@ -20,13 +18,9 @@ type DetailModalProps = {
 
 export default function DetailModal({ attraction, onClose }: DetailModalProps) {
   const [activeImage, setActiveImage] = useState(0)
-  const [bookingState, setBookingState] = useState<'idle' | 'loading' | 'success'>('idle')
-  const [bookingMessage, setBookingMessage] = useState('')
 
   useEffect(() => {
     setActiveImage(0)
-    setBookingState('idle')
-    setBookingMessage('')
   }, [attraction?.id])
 
   useEffect(() => {
@@ -56,25 +50,6 @@ export default function DetailModal({ attraction, onClose }: DetailModalProps) {
 
   if (!attraction) {
     return null
-  }
-
-  const bookNow = async () => {
-    setBookingState('loading')
-    setBookingMessage('')
-
-    try {
-      await submitBookingRequest({
-        attractionId: attraction.id,
-        guestName: 'Guest',
-        guestPhone: '+0 000 000 00 00',
-      })
-
-      setBookingState('success')
-      setBookingMessage('')
-    } catch {
-      setBookingState('idle')
-      setBookingMessage('Не удалось отправить заявку. Попробуйте еще раз.')
-    }
   }
 
   return (
@@ -149,27 +124,6 @@ export default function DetailModal({ attraction, onClose }: DetailModalProps) {
               </p>
               <p>{attraction.partnerContact.phone} · {attraction.partnerContact.email}</p>
             </div>
-
-            <button type="button" className={styles.bookBtn} onClick={() => void bookNow()} disabled={bookingState === 'loading'}>
-              {bookingState === 'success' ? 'Заявка отправлена' : translate('bookNow')}
-            </button>
-
-            {bookingMessage && (
-              <p className={styles.bookingMessage} role="status" aria-live="polite">
-                {bookingMessage}
-              </p>
-            )}
-
-            {attraction.partnerContact.bookingUrl && (
-              <a
-                className={styles.partnerLink}
-                href={attraction.partnerContact.bookingUrl}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Перейти к партнеру для подтверждения
-              </a>
-            )}
           </div>
         </div>
       </div>
