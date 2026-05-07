@@ -6,27 +6,29 @@ type Props = {
   product: Product
   isFavorite: boolean
   onToggleFavorite: (id: number) => void
-  likes?: number
-  onLike?: (id: number) => void
   onAddToCart?: (id: number) => void
   onViewDetails?: (product: Product) => void
+  onRequestBooking?: (product: Product) => void
 }
 
 export default function ProductCard({
   product,
   isFavorite,
   onToggleFavorite,
-  likes = 0,
-  onLike,
   onAddToCart,
   onViewDetails,
+  onRequestBooking,
 }: Props) {
   const [isAddedToCart, setIsAddedToCart] = useState(false)
 
-  const handleAddToCart = () => {
-    setIsAddedToCart(true)
-    onAddToCart?.(product.id)
-    setTimeout(() => setIsAddedToCart(false), 600)
+  const handleCartClick = () => {
+    if (product.requiresBooking) {
+      onRequestBooking?.(product)
+    } else {
+      setIsAddedToCart(true)
+      onAddToCart?.(product.id)
+      setTimeout(() => setIsAddedToCart(false), 600)
+    }
   }
 
   return (
@@ -39,21 +41,6 @@ export default function ProductCard({
           {product.price.toLocaleString('de-DE')} €
         </p>
 
-        <div className="card__stats">
-          <button
-            className="like-stat"
-            onClick={(e) => {
-              e.stopPropagation()
-              onLike?.(product.id)
-            }}
-            title="Лайки"
-          >
-            <span className="like-icon">👍</span>
-            <span className="like-count">{likes}</span>
-          </button>
-          <span className="rating">★★★★★ (15)</span>
-        </div>
-
         <div className="card__actions">
           <button
             className={`like-btn ${isFavorite ? 'active' : ''}`}
@@ -61,8 +48,7 @@ export default function ProductCard({
               e.stopPropagation()
               onToggleFavorite(product.id)
             }}
-            title="Добавить в избранное"
-          >
+            title="Добавить в избранное">
             <span className="like-icon">{isFavorite ? '♥' : '♡'}</span>
             <span>{isFavorite ? 'В избранном' : 'В избранное'}</span>
           </button>
@@ -70,12 +56,11 @@ export default function ProductCard({
             className={`cart-btn ${isAddedToCart ? 'added' : ''}`}
             onClick={(e) => {
               e.stopPropagation()
-              handleAddToCart()
+              handleCartClick()
             }}
-            title="Добавить в корзину"
-          >
-            <span>🛒</span>
-            <span>В корзину</span>
+            title={product.requiresBooking ? 'Забронировать' : 'Добавить в корзину'}>
+            <span>{product.requiresBooking ? '📅' : '🛒'}</span>
+            <span>{product.requiresBooking ? 'Забронировать' : 'В корзину'}</span>
           </button>
         </div>
       </div>

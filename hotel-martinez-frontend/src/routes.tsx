@@ -17,7 +17,7 @@ export const appRoutes: RouteObject[] = [
   { path: '/admin', element: <Admin /> },
   { path: '/catalog', element: <Catalog favorites={[]} onToggleFavorite={() => undefined} onAddToCart={() => undefined} /> },
   { path: '/favorites', element: <Favorites favorites={[]} onToggleFavorite={() => undefined} /> },
-  { path: '/cart', element: <Cart cartItems={[]} onRemoveFromCart={() => undefined} /> },
+  { path: '/cart', element: <Cart cartItems={[]} onRemoveFromCart={() => undefined} onCheckout={() => undefined} /> },
   { path: '/about', element: <About /> },
   { path: '/restaurant', element: <Restaurant /> },
   { path: '/rooms', element: <Rooms /> },

@@ -6,9 +6,10 @@ import '../styles/cart.css'
 type Props = {
   cartItems: CartItem[]
   onRemoveFromCart: (item: CartItem) => void
+  onCheckout: () => void
 }
 
-export default function Cart({ cartItems, onRemoveFromCart }: Props) {
+export default function Cart({ cartItems, onRemoveFromCart, onCheckout }: Props) {
   const uniqueItems = useMemo(() => {
     const countMap = new Map<string, { item: CartItem; count: number; product: any }>()
     cartItems.forEach((cartItem) => {
@@ -107,7 +108,7 @@ export default function Cart({ cartItems, onRemoveFromCart }: Props) {
                 <span>Сумма:</span>
                 <span className="total-amount">{total.toLocaleString('de-DE')} €</span>
               </div>
-              <button className="btn-checkout">Оформить заказ</button>
+              <button className="btn-checkout" onClick={onCheckout}>Оплатить</button>
               <Link to="/catalog" className="btn-continue">
                 Продолжить покупки
               </Link>
