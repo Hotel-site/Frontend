@@ -11,9 +11,9 @@ const sampleAttraction: Attraction = {
   description: 'Long description',
   category: 'culture',
   tags: ['museum'],
-  coords: { lat: 43.5, lng: 7.0 },
+  location: '123 Test Street, Test City, Country',
   distanceKm: 1.2,
-  priceType: 'budget',
+  price: 25,
   openingHours: {
     monday: '09:00-18:00',
     tuesday: '09:00-18:00',

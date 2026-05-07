@@ -8,7 +8,7 @@ import SearchBar from '../components/SearchBar/SearchBar'
 import ErrorState from '../components/ErrorState/ErrorState'
 import LoadingState from '../components/LoadingState/LoadingState'
 import { useAttractions } from '../hooks/useAttractions'
-import { fetchAttractionById } from '../data/attractions'
+import { fetchAttractionById, MAX_PRICE } from '../data/attractions'
 import type { Attraction } from '../types/local'
 import styles from '../styles/LocalPage.module.css'
 import { translate } from '../utils/i18n'
@@ -89,6 +89,7 @@ export default function LocalPage() {
           maxDistanceKm={query.maxDistanceKm}
           minPrice={query.minPrice}
           maxPrice={query.maxPrice}
+          maxAvailablePrice={MAX_PRICE}
           openNow={query.openNow}
           sortBy={query.sortBy}
           onCategoryChange={updateCategory}

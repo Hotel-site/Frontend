@@ -1,11 +1,6 @@
 export type Category = 'culture' | 'nature' | 'food' | 'shopping' | 'family' | 'nightlife'
-export type SortBy = 'popularity' | 'distance' | 'rating'
+export type SortBy = 'distance' | 'rating' | 'priceAsc' | 'priceDesc'
 export type ViewMode = 'grid' | 'list' | 'map'
-
-export interface Coordinates {
-  lat: number
-  lng: number
-}
 
 export type Weekday =
   | 'monday'
@@ -28,17 +23,14 @@ export interface PartnerContact {
 export interface Attraction {
   id: string
   name: string
-  slug: string
   shortDescription: string
   description: string
   category: Category
-  tags: string[]
-  coords: Coordinates
+  location: string
   distanceKm: number
   price: number
   openingHours: OpeningHours
   rating: number
-  popularity: number
   images: string[]
   partnerContact: PartnerContact
 }

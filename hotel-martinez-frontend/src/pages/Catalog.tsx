@@ -245,7 +245,7 @@ export default function Catalog({ favorites, onToggleFavorite, onAddToCart, onAd
 
             <h2>Бронирование: {bookingProduct.title}</h2>
             <p className="booking-modal__price">
-              {bookingProduct.price.toLocaleString('de-DE')} € {bookingProduct.unit ? `/ ${bookingProduct.unit}` : ''}
+              {bookingProduct.price.toLocaleString('de-DE')} {bookingProduct.unit || '€'}
             </p>
 
             <div className="booking-modal__user-info">

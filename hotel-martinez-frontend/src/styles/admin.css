@@ -487,9 +487,9 @@
 }
 
 .modal-body-form {
-  flex: 0 0 auto;
-  width: 55%;
-  min-width: 500px;
+  flex: 0 0 630px;
+  width: 630px;
+  min-width: 450px;
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -499,7 +499,9 @@
 }
 
 .modal-body-preview {
-  flex: 1;
+  flex: 0 0 900px;
+  width: 900px;
+  min-width: 900px;
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -509,7 +511,6 @@
   border-left: 1px solid rgba(102, 126, 234, 0.15);
   justify-content: flex-start;
   align-items: center;
-  min-width: 300px;
 }
 
 .preview-card {
@@ -521,8 +522,7 @@
   border-radius: 20px;
   overflow: auto;
   padding: 1.1rem;
-  width: 100%;
-  max-width: 100%;
+  width: 860px;
   height: auto;
   box-shadow: 0 22px 44px rgba(0, 0, 0, 0.4);
 }
@@ -869,6 +869,7 @@
     border-top: 1px solid rgba(102, 126, 234, 0.15);
     max-height: 400px;
     padding: 20px 30px;
+    width: 860px;
   }
 
   .preview-card {
@@ -1019,6 +1020,8 @@
 
 .custom-dropdown {
   position: relative;
+  width: 100%;
+  min-width: 0;
 }
 
 .custom-dropdown-btn {
@@ -1036,6 +1039,7 @@
   justify-content: space-between;
   align-items: center;
   text-align: left;
+  box-sizing: border-box;
 }
 
 .custom-dropdown-btn:hover {
@@ -1052,13 +1056,15 @@
   font-size: 11px;
   color: #667eea;
   transition: transform 0.3s ease;
+  flex-shrink: 0;
+  margin-left: 8px;
 }
 
 .custom-dropdown-menu {
   position: absolute;
   top: 100%;
   left: 0;
-  right: 0;
+  width: 100%;
   margin-top: 4px;
   border: 1.5px solid rgba(102, 126, 234, 0.3);
   border-radius: 8px;
@@ -1068,7 +1074,9 @@
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
   max-height: 300px;
   overflow-y: auto;
+  overflow-x: hidden;
   animation: slideDown 0.2s ease;
+  box-sizing: border-box;
 }
 
 @keyframes slideDown {
@@ -1094,6 +1102,7 @@
   cursor: pointer;
   transition: all 0.2s ease;
   display: block;
+  box-sizing: border-box;
 }
 
 .dropdown-item:hover {
@@ -1112,16 +1121,19 @@
 }
 
 .dropdown-add-category {
-  padding: 12px;
+  padding: 8px 12px;
   display: flex;
-  gap: 8px;
+  gap: 6px;
   border-top: 1px solid rgba(102, 126, 234, 0.2);
-  align-items: center;
+  align-items: stretch;
+  box-sizing: border-box;
+  min-width: 0;
 }
 
 .dropdown-add-category input {
   flex: 1;
-  padding: 10px 12px;
+  min-width: 0;
+  padding: 8px 11px;
   border: 1.5px solid rgba(102, 126, 234, 0.3);
   border-radius: 6px;
   background: rgba(11, 18, 32, 0.5);
@@ -1129,6 +1141,7 @@
   font-size: 13px;
   font-family: inherit;
   transition: all 0.3s ease;
+  box-sizing: border-box;
 }
 
 .dropdown-add-category input:focus {
@@ -1138,7 +1151,7 @@
 }
 
 .dropdown-add-btn {
-  padding: 10px 12px;
+  padding: 8px 10px;
   border: 1.5px solid #667eea;
   border-radius: 6px;
   background: rgba(102, 126, 234, 0.2);
