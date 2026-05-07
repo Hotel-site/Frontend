@@ -15,8 +15,8 @@ import LocalPage from './pages/LocalPage'
 import Admin from './pages/Admin'
 import PageErrorBoundary from './components/PageErrorBoundary'
 import { AuthProvider } from './context/AuthContext'
-import type { CartItem } from './types/cart'
-import type { Attraction } from './types/local'
+import type { CartItem, BookingData } from './types/cart'
+import type { Product } from './types/product'
 import { products } from './data/products'
 import './styles/app.css'
 
@@ -41,8 +41,13 @@ export default function App() {
     }
   }
 
-  const onAddAttractionToCart = (attraction: Attraction) => {
-    const item: CartItem = { type: 'attraction', id: attraction.id, item: attraction }
+  const onAddBookingToCart = (product: Product, bookingData: BookingData) => {
+    const item: CartItem = { 
+      type: 'booking', 
+      id: `booking-${product.id}-${Date.now()}`, 
+      item: product,
+      bookingData
+    }
     setCart((prev) => [...prev, item])
   }
 
@@ -56,6 +61,11 @@ export default function App() {
     })
   }
 
+  const onCheckout = () => {
+    alert('Спасибо за ваш заказ! Оплата успешно произведена.')
+    setCart([])
+  }
+
   return (
     <AuthProvider>
       <BrowserRouter>
@@ -66,13 +76,13 @@ export default function App() {
               <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/auth" element={<Auth />} />
-                <Route path="/catalog" element={<Catalog favorites={favorites} onToggleFavorite={onToggleFavorite} onAddToCart={onAddToCart} />} />
+                <Route path="/catalog" element={<Catalog favorites={favorites} onToggleFavorite={onToggleFavorite} onAddToCart={onAddToCart} onAddBookingToCart={onAddBookingToCart} />} />
                 <Route path="/favorites" element={<Favorites favorites={favorites} onToggleFavorite={onToggleFavorite} />} />
-                <Route path="/cart" element={<Cart cartItems={cart} onRemoveFromCart={onRemoveFromCart} />} />
+                <Route path="/cart" element={<Cart cartItems={cart} onRemoveFromCart={onRemoveFromCart} onCheckout={onCheckout} />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/restaurant" element={<Restaurant />} />
-                <Route path="/rooms" element={<Rooms />} />
-                <Route path="/local" element={<LocalPage onAddToCart={onAddAttractionToCart} />} />
+                <Route path="/rooms" element={<Rooms onAddBookingToCart={onAddBookingToCart} />} />
+                <Route path="/local" element={<LocalPage />} />
                 <Route path="/admin" element={<Admin />} />
                 <Route
                   path="*"

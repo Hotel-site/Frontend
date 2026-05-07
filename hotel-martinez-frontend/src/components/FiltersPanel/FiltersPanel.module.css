@@ -261,17 +261,6 @@
 }
 
 .priceOption {
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-}
-
-.priceOption:first-child {
-  grid-column: 1 / -1;
-}
-
-.priceLabel {
-  width: 100%;
   padding: 0.6rem 0.8rem;
   border-radius: 8px;
   border: 1.5px solid var(--line);
@@ -280,17 +269,22 @@
   font-weight: 500;
   font-size: 0.9rem;
   text-align: center;
+  cursor: pointer;
   transition: all 0.2s ease;
 }
 
-.priceOption input:checked + .priceLabel {
+.priceOption:first-child {
+  grid-column: 1 / -1;
+}
+
+.priceOption:hover {
+  border-color: var(--accent);
+  background: var(--bg);
+}
+
+.priceOption.active {
   background: var(--accent);
   color: var(--bg);
   border-color: var(--accent);
   font-weight: 600;
-}
-
-.priceLabel:hover {
-  border-color: var(--accent);
-  background: var(--bg);
 }

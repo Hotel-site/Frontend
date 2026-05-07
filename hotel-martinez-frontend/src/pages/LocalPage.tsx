@@ -15,11 +15,7 @@ import { translate } from '../utils/i18n'
 
 const MapView = lazy(() => import('../components/MapView/MapView'))
 
-type LocalPageProps = {
-  onAddToCart?: (attraction: Attraction) => void
-}
-
-export default function LocalPage({ onAddToCart }: LocalPageProps = {}) {
+export default function LocalPage() {
   const {
     query,
     items,
@@ -34,7 +30,6 @@ export default function LocalPage({ onAddToCart }: LocalPageProps = {}) {
     updateSearch,
     updateCategory,
     updateMaxDistance,
-    updatePriceType,
     updateMinPrice,
     updateMaxPrice,
     updateOpenNow,
@@ -91,14 +86,12 @@ export default function LocalPage({ onAddToCart }: LocalPageProps = {}) {
       <div className={styles.layout}>
         <FiltersPanel
           category={query.category}
-          priceType={query.priceType}
           maxDistanceKm={query.maxDistanceKm}
           minPrice={query.minPrice}
           maxPrice={query.maxPrice}
           openNow={query.openNow}
           sortBy={query.sortBy}
           onCategoryChange={updateCategory}
-          onPriceTypeChange={updatePriceType}
           onDistanceChange={updateMaxDistance}
           onMinPriceChange={updateMinPrice}
           onMaxPriceChange={updateMaxPrice}
@@ -147,9 +140,6 @@ export default function LocalPage({ onAddToCart }: LocalPageProps = {}) {
                         viewMode={viewMode}
                         isFavorite={favoriteSet.has(attraction.id)}
                         onToggleFavorite={toggleFavorite}
-                        onAddToCart={() => {
-                          onAddToCart?.(attraction)
-                        }}
                         onOpenDetails={(id) => void openDetails(id)}
                         cardRef={(node) => {
                           cardRefs.current[attraction.id] = node

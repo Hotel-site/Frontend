@@ -15,4 +15,5 @@ export interface Product {
   category: HotelCategory
   unit?: string
   description?: string
+  requiresBooking?: boolean
 }

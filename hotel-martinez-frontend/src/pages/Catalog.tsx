@@ -5,17 +5,21 @@ import ProductDetailModal from '../components/DetailModal/ProductDetailModal'
 import SearchBar from '../components/SearchBar/SearchBar'
 import Pagination from '../components/Pagination/Pagination'
 import CatalogFiltersPanel, { BUDGET_RANGES, type BudgetType } from '../components/CatalogFiltersPanel/CatalogFiltersPanel'
+import { useAuth } from '../context/AuthContext'
 import { products } from '../data/products'
 import type { Product } from '../types/product'
+import type { BookingData } from '../types/cart'
 import '../styles/catalog.css'
 
 type Props = {
   favorites: number[]
   onToggleFavorite: (id: number) => void
   onAddToCart: (id: number) => void
+  onAddBookingToCart?: (product: Product, bookingData: BookingData) => void
 }
 
-export default function Catalog({ favorites, onToggleFavorite, onAddToCart }: Props) {
+export default function Catalog({ favorites, onToggleFavorite, onAddToCart, onAddBookingToCart }: Props) {
+  const { user } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('Все')
@@ -23,8 +27,8 @@ export default function Catalog({ favorites, onToggleFavorite, onAddToCart }: Pr
   const [maxPrice, setMaxPrice] = useState(0) 
   const [budget, setBudget] = useState<BudgetType>('all')
   const [sortBy, setSortBy] = useState('default')
-  const [likes, setLikes] = useState<Record<number, number>>({})
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+  const [bookingProduct, setBookingProduct] = useState<Product | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
 
   const ITEMS_PER_PAGE = 12 
@@ -154,13 +158,6 @@ export default function Catalog({ favorites, onToggleFavorite, onAddToCart }: Pr
     setCurrentPage(1)
   }, [query, category, minPrice, maxPrice, budget, sortBy])
 
-  const handleLike = (id: number) => {
-    setLikes((prev) => ({
-      ...prev,
-      [id]: prev[id] ? 0 : 1,
-    }))
-  }
-
   const handleResetFilters = () => {
     setQuery('')
     setCategory('Все')
@@ -194,19 +191,17 @@ export default function Catalog({ favorites, onToggleFavorite, onAddToCart }: Pr
               <button className="empty-reset-btn" onClick={handleResetFilters}>
                 Очистить все фильтры
               </button>
-            </div>
-          ) : (
-            <div className="catalog-grid">
+            </div>):
+            (<div className="catalog-grid">
               {paginatedItems.map((p) => (
                 <ProductCard
                   key={p.id}
                   product={p}
                   isFavorite={favorites.includes(p.id)}
                   onToggleFavorite={onToggleFavorite}
-                  likes={likes[p.id] || 0}
                   onViewDetails={() => setSelectedProduct(p)}
-                  onLike={() => handleLike(p.id)}
                   onAddToCart={() => onAddToCart(p.id)}
+                  onRequestBooking={() => setBookingProduct(p)}
                 />
               ))}
             </div>
@@ -233,6 +228,68 @@ export default function Catalog({ favorites, onToggleFavorite, onAddToCart }: Pr
           maxProductPrice={maxProductPrice}
         />
       </div>
+
+      <ProductDetailModal product={selectedProduct} onClose={() => setSelectedProduct(null)} />
+
+      {bookingProduct && (
+        <div className="booking-modal" role="dialog" aria-modal="true">
+          <div className="booking-modal__content">
+            <button
+              type="button"
+              className="booking-modal__close"
+              onClick={() => setBookingProduct(null)}
+              aria-label="Закрыть"
+            >
+              ✕
+            </button>
+
+            <h2>Бронирование: {bookingProduct.title}</h2>
+            <p className="booking-modal__price">
+              {bookingProduct.price.toLocaleString('de-DE')} € {bookingProduct.unit ? `/ ${bookingProduct.unit}` : ''}
+            </p>
+
+            <div className="booking-modal__user-info">
+              <p>
+                <strong>От:</strong> {user?.name} ({user?.email})
+              </p>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                const formData = new FormData(e.currentTarget as HTMLFormElement)
+                const dateTime = formData.get('dateTime') as string
+                const guestCount = parseInt(formData.get('guestCount') as string)
+                const notes = formData.get('notes') as string
+
+                onAddBookingToCart?.(bookingProduct, {
+                  dateTime,
+                  guestCount,
+                  notes,
+                })
+
+                alert(`Спасибо за бронирование ${bookingProduct.title}!\nВаша бронь добавлена в корзину.`)
+                setBookingProduct(null)
+              }}
+              className="booking-form"
+            >
+              <label>
+                Дата и время
+                <input type="datetime-local" name="dateTime" required />
+              </label>
+
+              <label>
+                Дополнительные пожелания
+                <textarea name="notes" placeholder="Расскажите о ваших пожеланиях..." rows={3}></textarea>
+              </label>
+
+              <button type="submit" className="booking-form__submit">
+                Забронировать
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </section>
   )
 }

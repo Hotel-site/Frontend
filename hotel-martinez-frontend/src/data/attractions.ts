@@ -24,7 +24,6 @@ const attractions: Attraction[] = [
     coords: { lat: 43.5505, lng: 7.0128 },
     distanceKm: 1.2,
     price: 0,
-    priceType: 'free',
     openingHours: {
       monday: '00:00-23:59',
       tuesday: '00:00-23:59',
@@ -60,7 +59,6 @@ const attractions: Attraction[] = [
     coords: { lat: 43.5513, lng: 7.0094 },
     distanceKm: 1.8,
     price: 25,
-    priceType: 'budget',
     openingHours: {
       monday: '10:00-18:00',
       tuesday: '10:00-18:00',
@@ -94,7 +92,6 @@ const attractions: Attraction[] = [
     coords: { lat: 43.5435, lng: 7.0339 },
     distanceKm: 2.6,
     price: 0,
-    priceType: 'free',
     openingHours: {
       monday: '07:00-21:00',
       tuesday: '07:00-21:00',
@@ -128,7 +125,6 @@ const attractions: Attraction[] = [
     coords: { lat: 43.5519, lng: 7.0121 },
     distanceKm: 1.5,
     price: 20,
-    priceType: 'budget',
     openingHours: {
       monday: '08:00-13:00',
       tuesday: '08:00-13:00',
@@ -161,7 +157,6 @@ const attractions: Attraction[] = [
     coords: { lat: 43.5431, lng: 6.9992 },
     distanceKm: 4.2,
     price: 0,
-    priceType: 'free',
     openingHours: {
       monday: '06:30-20:30',
       tuesday: '06:30-20:30',
@@ -194,7 +189,6 @@ const attractions: Attraction[] = [
     coords: { lat: 43.5522, lng: 7.0101 },
     distanceKm: 1.9,
     price: 55,
-    priceType: 'moderate',
     openingHours: {
       monday: '18:00-23:30',
       tuesday: '18:00-23:30',
@@ -227,7 +221,6 @@ const attractions: Attraction[] = [
     coords: { lat: 43.5528, lng: 7.0078 },
     distanceKm: 2.1,
     price: 60,
-    priceType: 'moderate',
     openingHours: {
       monday: '09:30-18:30',
       tuesday: '09:30-18:30',
@@ -261,7 +254,6 @@ const attractions: Attraction[] = [
     coords: { lat: 43.5362, lng: 7.0252 },
     distanceKm: 3.4,
     price: 125,
-    priceType: 'premium',
     openingHours: {
       monday: '08:00-17:30',
       tuesday: '08:00-17:30',
@@ -295,7 +287,6 @@ const attractions: Attraction[] = [
     coords: { lat: 43.552, lng: 7.0125 },
     distanceKm: 1.6,
     price: 145,
-    priceType: 'premium',
     openingHours: {
       monday: '10:00-15:00',
       tuesday: '10:00-15:00',
@@ -328,7 +319,6 @@ const attractions: Attraction[] = [
     coords: { lat: 43.5478, lng: 7.0234 },
     distanceKm: 2.9,
     price: 50,
-    priceType: 'moderate',
     openingHours: {
       monday: '09:00-19:00',
       tuesday: '09:00-19:00',
@@ -362,7 +352,6 @@ const attractions: Attraction[] = [
     coords: { lat: 43.5531, lng: 7.0142 },
     distanceKm: 1.4,
     price: 65,
-    priceType: 'moderate',
     openingHours: {
       monday: '17:30-21:00',
       tuesday: '17:30-21:00',
@@ -397,7 +386,6 @@ const attractions: Attraction[] = [
     coords: { lat: 43.5516, lng: 7.0114 },
     distanceKm: 1.7,
     price: 135,
-    priceType: 'premium',
     openingHours: {
       monday: '20:00-01:30',
       tuesday: '20:00-01:30',
@@ -431,7 +419,6 @@ const attractions: Attraction[] = [
     coords: { lat: 43.6582, lng: 6.9251 },
     distanceKm: 19.8,
     price: 150,
-    priceType: 'premium',
     openingHours: {
       monday: '08:30-19:00',
       tuesday: '08:30-19:00',
@@ -465,7 +452,6 @@ const attractions: Attraction[] = [
     coords: { lat: 43.5488, lng: 7.0197 },
     distanceKm: 2.3,
     price: 25,
-    priceType: 'budget',
     openingHours: {
       monday: '07:00-10:00',
       tuesday: '07:00-10:00',
@@ -543,7 +529,6 @@ function applyFilters(items: Attraction[], params: AttractionQueryParams): Attra
     .filter((item) => matchesSearch(item, params.search))
     .filter((item) => params.category === 'all' || item.category === params.category)
     .filter((item) => item.distanceKm <= params.maxDistanceKm)
-    .filter((item) => params.priceType === 'all' || item.priceType === params.priceType)
     .filter((item) => item.price >= params.minPrice && item.price <= params.maxPrice)
     .filter((item) => !params.openNow || isAttractionOpenNow(item))
 }
