@@ -53,8 +53,8 @@ export default function DetailModal({ attraction, onClose }: DetailModalProps) {
   }
 
   return (
-    <div className={styles.overlay} role="dialog" aria-modal="true" aria-labelledby="detail-modal-title">
-      <div className={styles.modal}>
+    <div className={styles.overlay} role="dialog" aria-modal="true" aria-labelledby="detail-modal-title" onClick={onClose}>
+      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <button type="button" aria-label="Закрыть детальную информацию" className={styles.closeBtn} onClick={onClose}>
           x
         </button>
@@ -146,29 +146,21 @@ export default function DetailModal({ attraction, onClose }: DetailModalProps) {
                     </a>
                   </p>
                 )}
+                {attraction.partnerContact.bookingUrl && (
+                  <p className={styles.contactItem}>
+                    <span className={styles.contactIcon}>🌐</span>
+                    <a
+                      href={attraction.partnerContact.bookingUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className={styles.websiteLink}
+                    >
+                      {attraction.partnerContact.bookingUrl}
+                    </a>
+                  </p>
+                )}
               </div>
             </div>
-
-            <button type="button" className={styles.bookBtn} onClick={() => void bookNow()} disabled={bookingState === 'loading'}>
-              {bookingState === 'success' ? 'Заявка отправлена' : translate('bookNow')}
-            </button>
-
-            {bookingMessage && (
-              <p className={styles.bookingMessage} role="status" aria-live="polite">
-                {bookingMessage}
-              </p>
-            )}
-
-            {attraction.partnerContact.bookingUrl && (
-              <a
-                className={styles.partnerLink}
-                href={attraction.partnerContact.bookingUrl}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Перейти к партнеру для подтверждения
-              </a>
-            )}
           </div>
         </div>
       </div>

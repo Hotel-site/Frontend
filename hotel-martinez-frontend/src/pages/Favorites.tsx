@@ -76,7 +76,7 @@ export default function Favorites({ favorites, onToggleFavorite }: Props) {
               <Link to="/catalog" className="empty-action-btn">
                 Перейти в каталог
               </Link>
-              <Link to="/local" className="empty-action-btn">
+              <Link to="/attractions" className="empty-action-btn">
                 Перейти в гид
               </Link>
             </div>
@@ -115,7 +115,7 @@ export default function Favorites({ favorites, onToggleFavorite }: Props) {
                           >
                             Убрать из избранного
                           </button>
-                          <Link to="/local" className="cart-btn" style={{ textDecoration: 'none' }}>
+                          <Link to="/attractions" className="cart-btn" style={{ textDecoration: 'none' }}>
                             Открыть в гиде
                           </Link>
                         </div>

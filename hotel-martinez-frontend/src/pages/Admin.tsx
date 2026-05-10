@@ -2229,15 +2229,13 @@ function AttractionsTab({ editingAttraction, setEditingAttraction, setConfirmDel
             const newAttraction: Attraction = {
               id: `attr-${Date.now()}`,
               name: '',
-              slug: '',
               shortDescription: '',
               description: '',
               category: 'culture',
-              tags: [],
+              address: '',
               coords: { lat: 43.55, lng: 7.01 },
               distanceKm: 0,
               price: 0,
-              priceType: 'free',
               openingHours: {
                 monday: '09:00-18:00',
                 tuesday: '09:00-18:00',
@@ -2248,7 +2246,6 @@ function AttractionsTab({ editingAttraction, setEditingAttraction, setConfirmDel
                 sunday: '10:00-19:00',
               },
               rating: 5,
-              popularity: 50,
               images: [],
               partnerContact: {
                 phone: '',
@@ -2284,7 +2281,7 @@ function AttractionsTab({ editingAttraction, setEditingAttraction, setConfirmDel
                 <td>{attraction.id}</td>
                 <td>{attraction.name}</td>
                 <td>{attraction.category}</td>
-                <td>{attraction.price} € ({attraction.priceType})</td>
+                <td>{attraction.price} € </td>
                 <td className="description-cell">{attraction.shortDescription.substring(0, 50)}...</td>
                 <td>⭐ {attraction.rating}</td>
                 <td className="action-cell">

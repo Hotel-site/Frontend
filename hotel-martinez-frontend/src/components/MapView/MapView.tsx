@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { GoogleMap, InfoWindowF, MarkerF, useJsApiLoader } from '@react-google-maps/api'
 import type { Attraction } from '../../types/local'
 import styles from './MapView.module.css'
@@ -16,7 +16,9 @@ const containerStyle = {
 
 export default function MapView({ attractions, selectedId, onMarkerSelect }: MapViewProps) {
   const [infoId, setInfoId] = useState<string | null>(null)
-  const center = useMemo(() => attractions[0]?.coords ?? { lat: 43.5513, lng: 7.0174 }, [attractions])
+
+  // Центр карты - первое место или Канн
+  const center = attractions[0]?.coords || { lat: 43.5513, lng: 7.0174 }
 
   const { isLoaded, loadError } = useJsApiLoader({
     id: 'google-map-script',
@@ -43,6 +45,7 @@ export default function MapView({ attractions, selectedId, onMarkerSelect }: Map
               onMarkerSelect(attraction.id)
             }}
             zIndex={selectedId === attraction.id ? 10 : 1}
+            title={attraction.name}
           />
         ))}
 

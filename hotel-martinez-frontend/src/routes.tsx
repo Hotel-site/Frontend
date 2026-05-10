@@ -21,5 +21,5 @@ export const appRoutes: RouteObject[] = [
   { path: '/about', element: <About /> },
   { path: '/restaurant', element: <Restaurant /> },
   { path: '/rooms', element: <Rooms /> },
-  { path: '/local', element: <LocalPage /> },
+  { path: '/attractions', element: <LocalPage /> },
 ]

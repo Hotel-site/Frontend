@@ -19,7 +19,8 @@ export const attractions: Attraction[] = [
     description:
       'Классическое место для прогулок на закате. Рядом рыбный рынок, уличные музыканты и вид на исторический квартал Le Suquet.',
     category: 'culture',
-    location: 'Vieux Port, 06400 Cannes, France',
+    address: 'Vieux Port, 06400 Cannes, France',
+    coords: { lat: 43.5524, lng: 7.0176 },
     distanceKm: 1.2,
     price: 0,
     openingHours: {
@@ -40,7 +41,6 @@ export const attractions: Attraction[] = [
     partnerContact: {
       phone: '+33 4 93 00 00 01',
       email: 'port@visit-cannes.example',
-      website: 'https://visit-cannes.example/port',
       bookingUrl: 'https://visit-cannes.example/port/book',
     },
   },
@@ -51,7 +51,8 @@ export const attractions: Attraction[] = [
     description:
       'Коллекции искусства и этнографии, смотровая башня и спокойный сад во внутреннем дворе.',
     category: 'culture',
-    location: 'Musée de la Castre, Le Suquet, 06400 Cannes, France',
+    address: 'Musée de la Castre, Le Suquet, 06400 Cannes, France',
+    coords: { lat: 43.5534, lng: 7.0173 },
     distanceKm: 1.8,
     price: 25,
     openingHours: {
@@ -81,7 +82,8 @@ export const attractions: Attraction[] = [
     description:
       'Отличный вариант для утреннего отдыха и семейной прогулки. Рядом пункт проката сапов.',
     category: 'family',
-    location: 'Bijou Plage, 06400 Cannes, France',
+    address: 'Bijou Plage, 06400 Cannes, France',
+    coords: { lat: 43.5512, lng: 7.0342 },
     distanceKm: 2.6,
     price: 0,
     openingHours: {
@@ -111,7 +113,8 @@ export const attractions: Attraction[] = [
     description:
       'Лучшее место для гастро-тура: попробуйте локальные специалитеты и свежую выпечку.',
     category: 'food',
-    location: 'Marché Forville, 06400 Cannes, France',
+    address: 'Marché Forville, 06400 Cannes, France',
+    coords: { lat: 43.5489, lng: 7.0159 },
     distanceKm: 1.5,
     price: 20,
     openingHours: {
@@ -130,7 +133,7 @@ export const attractions: Attraction[] = [
     partnerContact: {
       phone: '+33 4 93 00 00 04',
       email: 'forville@visit-cannes.example',
-      website: 'https://visit-cannes.example/forville',
+      bookingUrl: 'https://visit-cannes.example/forville/book',
     },
   },
   {
@@ -140,7 +143,8 @@ export const attractions: Attraction[] = [
     description:
       'Маршруты разной сложности среди соснового леса, идеальны для утренней активности.',
     category: 'nature',
-    location: 'Croix-des-Gardes Trail, 06400 Cannes, France',
+    address: 'Parc de la Croix-des-Gardes, Cannes, France',
+    coords: { lat: 43.5659, lng: 7.0215 },
     distanceKm: 4.2,
     price: 0,
     openingHours: {
@@ -169,7 +173,8 @@ export const attractions: Attraction[] = [
     description:
       'Узкие улочки, камерные винные бары и живые выступления по выходным.',
     category: 'nightlife',
-    location: 'Le Suquet, 06400 Cannes, France',
+    address: 'Le Suquet, 06400 Cannes, France',
+    coords: { lat: 43.5530, lng: 7.0172 },
     distanceKm: 1.9,
     price: 55,
     openingHours: {
@@ -198,7 +203,8 @@ export const attractions: Attraction[] = [
     description:
       'Двухчасовой маршрут по историческим улочкам, скрытым дворикам и фототочкам с живыми историями о городе.',
     category: 'culture',
-    location: 'Old Town, 06400 Cannes, France',
+    address: 'Rue Saint-Antoine, Cannes, France',
+    coords: { lat: 43.5510, lng: 7.0165 },
     distanceKm: 2.1,
     price: 60,
     openingHours: {
@@ -229,7 +235,8 @@ export const attractions: Attraction[] = [
     description:
       'Трансфер на лодке, остановка с гидом на Сен-Онора и свободное время для купания и прогулки по монастырским садам.',
     category: 'nature',
-    location: 'Lerins Islands, 06400 Cannes, France',
+    address: 'Lerins Islands, 06400 Cannes, France',
+    coords: { lat: 43.5106, lng: 6.9764 },
     distanceKm: 3.4,
     price: 125,
     openingHours: {
@@ -260,7 +267,8 @@ export const attractions: Attraction[] = [
     description:
       'Дегустация с шефом: локальные сыры, морепродукты, оливковые масла и сезонные десерты.',
     category: 'food',
-    location: 'Marché Forville, 06400 Cannes, France',
+    address: 'Marché Forville, 06400 Cannes, France',
+    coords: { lat: 43.5489, lng: 7.0159 },
     distanceKm: 1.6,
     price: 145,
     openingHours: {
@@ -289,7 +297,8 @@ export const attractions: Attraction[] = [
     description:
       'Включены электровелосипеды, шлемы и сопровождение гида. По пути — остановки для детей и смотровые точки у моря.',
     category: 'family',
-    location: 'Cannes Coastal Route, 06400 Cannes, France',
+    address: 'Boulevard de la Croisette, Cannes, France',
+    coords: { lat: 43.5563, lng: 7.0234 },
     distanceKm: 2.9,
     price: 50,
     openingHours: {
@@ -319,7 +328,8 @@ export const attractions: Attraction[] = [
     description:
       'Фотограф-гид проведет по 5 живописным точкам и поможет с кадрированием, композицией и портретными снимками.',
     category: 'culture',
-    location: 'Scenic Viewpoints, 06400 Cannes, France',
+    address: 'Rue d\'Antibes, Cannes, France',
+    coords: { lat: 43.5507, lng: 7.0155 },
     distanceKm: 1.4,
     price: 65,
     openingHours: {
@@ -350,7 +360,8 @@ export const attractions: Attraction[] = [
     description:
       'Встреча с локальным хостом, приветственный напиток и дружеский маршрут по стильным барам в старом квартале.',
     category: 'nightlife',
-    location: 'Le Suquet, 06400 Cannes, France',
+    address: 'Le Suquet, 06400 Cannes, France',
+    coords: { lat: 43.5530, lng: 7.0172 },
     distanceKm: 1.7,
     price: 135,
     openingHours: {
@@ -380,7 +391,8 @@ export const attractions: Attraction[] = [
     description:
       'Включены транспорт, сопровождение гида и посещение ателье; по желанию — мастер-класс.',
     category: 'shopping',
-    location: 'Grasse, 06130 Grasse, France',
+    address: 'Grasse, 06130 Grasse, France',
+    coords: { lat: 43.6584, lng: 6.9281 },
     distanceKm: 19.8,
     price: 150,
     openingHours: {
@@ -410,7 +422,8 @@ export const attractions: Attraction[] = [
     description:
       'Спокойный утренний формат: немного практики и локальные истории — идеально перед завтраком.',
     category: 'nature',
-    location: 'Cannes Parks, 06400 Cannes, France',
+    address: 'Parc de la Reine-Jeanne, Cannes, France',
+    coords: { lat: 43.5618, lng: 7.0298 },
     distanceKm: 2.3,
     price: 25,
     openingHours: {

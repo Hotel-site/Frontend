@@ -26,7 +26,8 @@ export interface Attraction {
   shortDescription: string
   description: string
   category: Category
-  location: string
+  address: string
+  coords: { lat: number; lng: number }
   distanceKm: number
   price: number
   openingHours: OpeningHours
