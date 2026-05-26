@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import ProductCard from '../components/Cards/ProductCard'
 import ErrorState from '../components/ErrorState/ErrorState'
 import LoadingState from '../components/LoadingState/LoadingState'
+import { useAuth } from '../context/AuthContext'
+import { favoriteApi } from '../api'
 import { products } from '../data/products'
 import { fetchAttractionById } from '../data/attractions'
 import type { Attraction } from '../types/local'
@@ -13,11 +15,8 @@ type Props = {
   onToggleFavorite: (id: number) => void
 }
 
-function readLocalFavoriteIds(): string[] {
-  return []
-}
-
 export default function Favorites({ favorites, onToggleFavorite }: Props) {
+  const { user } = useAuth()
   const favProducts = products.filter((p) => favorites.includes(p.id))
   const [localItems, setLocalItems] = useState<Attraction[]>([])
   const [isLoadingLocal, setIsLoadingLocal] = useState(true)
@@ -32,18 +31,26 @@ export default function Favorites({ favorites, onToggleFavorite }: Props) {
       setLoadError(null)
 
       try {
-        const ids = readLocalFavoriteIds()
-        const result = await Promise.all(ids.map((id) => fetchAttractionById(id)))
-        setLocalItems(result.filter((item): item is Attraction => item !== null))
-      } catch {
-        setLoadError('Не удалось загрузить локальное избранное. Попробуйте позже.')
+        // Load from API if user is authenticated
+        if (user?.id) {
+          const apiFavorites = await favoriteApi.getUserFavorites(user.id)
+          // Map API favorites to attractions (for entityType === 1, entityId is attractionId)
+          const attractionFavs = apiFavorites.filter(fav => fav.entityType === 1)
+          const result = await Promise.all(
+            attractionFavs.map((fav) => fetchAttractionById(fav.entityId.toString()))
+          )
+          setLocalItems(result.filter((item): item is Attraction => item !== null))
+        }
+      } catch (err) {
+        console.error('Failed to load favorites:', err)
+        setLoadError('Не удалось загрузить избранное. Попробуйте позже.')
       } finally {
         setIsLoadingLocal(false)
       }
     }
 
-    void loadLocalFavorites()
-  }, [])
+    loadLocalFavorites()
+  }, [user?.id])
 
   const localItemIdSet = useMemo(() => new Set(localItems.map((item) => item.id)), [localItems])
 

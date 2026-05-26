@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { rooms } from '../data/rooms'
+import { roomApi } from '../api'
+import { rooms as mockRooms } from '../data/rooms'
 import RoomDetailModal from '../components/RoomDetailModal/RoomDetailModal'
 import { useAuth } from '../context/AuthContext'
 import type { Product } from '../types/product'
 import type { BookingData } from '../types/cart'
+import type { Room } from '../api'
 import '../styles/rooms.css'
 import '../styles/catalog.css'
 
@@ -15,9 +17,32 @@ type Props = {
 export default function Rooms({ onAddBookingToCart }: Props) {
   const { user } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
+  const [rooms, setRooms] = useState<Room[]>(mockRooms as any)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [selectedRoom, setSelectedRoom] = useState<number | null>(null)
   const [currentImageIndex, setCurrentImageIndex] = useState<Record<number, number>>({})
   const [bookingRoom, setBookingRoom] = useState<any>(null)
+
+  // Load rooms from API
+  useEffect(() => {
+    const loadRooms = async () => {
+      setIsLoading(true)
+      setError(null)
+      try {
+        const data = await roomApi.getAll()
+        setRooms(data)
+      } catch (err) {
+        console.error('Failed to load rooms:', err)
+        setError('Не удалось загрузить номера')
+        setRooms(mockRooms as any)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadRooms()
+  }, [])
 
   // Открытие номера по ID из URL параметров
   useEffect(() => {
@@ -30,7 +55,7 @@ export default function Rooms({ onAddBookingToCart }: Props) {
       // Удалить параметр из URL после открытия
       setSearchParams({})
     }
-  }, [searchParams, setSearchParams])
+  }, [searchParams, setSearchParams, rooms])
 
   const handlePrevImage = (roomId: number, totalImages: number) => {
     setCurrentImageIndex((prev) => ({

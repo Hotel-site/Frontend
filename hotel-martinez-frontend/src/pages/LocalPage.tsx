@@ -8,6 +8,7 @@ import SearchBar from '../components/SearchBar/SearchBar'
 import ErrorState from '../components/ErrorState/ErrorState'
 import LoadingState from '../components/LoadingState/LoadingState'
 import { useAttractions } from '../hooks/useAttractions'
+import { attractionApi, type Attraction as ApiAttraction } from '../api'
 import { fetchAttractionById, MAX_PRICE } from '../data/attractions'
 import type { Attraction } from '../types/local'
 import styles from '../styles/LocalPage.module.css'
@@ -43,6 +44,22 @@ export default function LocalPage() {
   const [detailAttraction, setDetailAttraction] = useState<Attraction | null>(null)
   const mapSectionRef = useRef<HTMLElement | null>(null)
   const cardRefs = useRef<Record<string, HTMLLIElement | null>>({})
+
+  // Load attractions from API on mount
+  useEffect(() => {
+    const loadAttractions = async () => {
+      try {
+        const apiAttractions = await attractionApi.getAll()
+        // Map API attractions to local type if needed
+        // This depends on your needs - you might integrate with useAttractions hook
+      } catch (err) {
+        console.error('Failed to load attractions from API:', err)
+        // Fallback to existing data
+      }
+    }
+
+    loadAttractions()
+  }, [])
 
   const onMarkerSelect = (id: string) => {
     setSelectedAttractionId(id)

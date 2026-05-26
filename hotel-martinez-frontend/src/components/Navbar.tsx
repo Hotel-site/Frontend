@@ -73,14 +73,14 @@ export default function Navbar({ theme, onToggleTheme }: Props) {
                 aria-expanded={isMenuOpen}
                 aria-label="Открыть меню пользователя"
               >
-                <img src={avatarSrc} alt={user.name} className="user-avatar" />
+                <img src={avatarSrc} alt={user.username} className="user-avatar" />
               </button>
               {isMenuOpen && (
                 <div className="dropdown-menu" role="menu">
                   <div className="menu-header">
                     <img src={avatarSrc} alt="" className="menu-avatar" />
                     <div className="menu-meta">
-                      <div className="menu-name">{user.name}</div>
+                      <div className="menu-name">{user.username}</div>
                       <div className="menu-subtitle">{user.email}</div>
                     </div>
                   </div>
