@@ -13,6 +13,10 @@ export default function Navbar({ theme, onToggleTheme }: Props) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
+  const avatarSrc = user
+    ? (user.avatar ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(user.email)}`)
+    : ''
+
   const handleAvatarClick = () => {
     setIsMenuOpen(!isMenuOpen)
   }
@@ -29,12 +33,20 @@ export default function Navbar({ theme, onToggleTheme }: Props) {
       }
     }
 
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsMenuOpen(false)
+      }
+    }
+
     if (isMenuOpen) {
       document.addEventListener('mousedown', handleClickOutside)
+      document.addEventListener('keydown', handleKeyDown)
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('keydown', handleKeyDown)
     }
   }, [isMenuOpen])
 
@@ -54,35 +66,71 @@ export default function Navbar({ theme, onToggleTheme }: Props) {
         <div className="navbar-right">
           {isAuthenticated && user ? (
             <div className="user-menu" ref={menuRef}>
-              <button 
-                className="avatar-btn" 
+              <button
+                className="avatar-btn"
                 onClick={handleAvatarClick}
+                aria-haspopup="menu"
+                aria-expanded={isMenuOpen}
+                aria-label="Открыть меню пользователя"
               >
-                <img src={user.avatar} alt={user.name} className="user-avatar" />
+                <img src={avatarSrc} alt={user.username} className="user-avatar" />
               </button>
               {isMenuOpen && (
-                <div className="dropdown-menu">
-                  <div className="menu-header">{user.name}</div>
-                  <NavLink to="/favorites" className="menu-item" onClick={() => setIsMenuOpen(false)}>
-                    ❤️ Избранное
+                <div className="dropdown-menu" role="menu">
+                  <div className="menu-header">
+                    <img src={avatarSrc} alt="" className="menu-avatar" />
+                    <div className="menu-meta">
+                      <div className="menu-name">{user.username}</div>
+                      <div className="menu-subtitle">{user.email}</div>
+                    </div>
+                  </div>
+
+                  <NavLink
+                    to="/favorites"
+                    className={({ isActive }) => `menu-item ${isActive ? 'active' : ''}`}
+                    onClick={() => setIsMenuOpen(false)}
+                    role="menuitem"
+                  >
+                    <span className="menu-icon" aria-hidden>
+                      ❤️
+                    </span>
+                    <span className="menu-label">Избранное</span>
                   </NavLink>
-                  <NavLink to="/cart" className="menu-item" onClick={() => setIsMenuOpen(false)}>
-                    🛒 Корзина
+                  <NavLink
+                    to="/cart"
+                    className={({ isActive }) => `menu-item ${isActive ? 'active' : ''}`}
+                    onClick={() => setIsMenuOpen(false)}
+                    role="menuitem"
+                  >
+                    <span className="menu-icon" aria-hidden>
+                      🛒
+                    </span>
+                    <span className="menu-label">Корзина</span>
                   </NavLink>
-                  <NavLink to="/settings" className="menu-item" onClick={() => setIsMenuOpen(false)}>
-                    ⚙️ Настройки
-                  </NavLink>
+
                   {user.role === 'admin' && (
                     <>
-                      <div className="menu-divider"></div>
-                      <NavLink to="/admin" className="menu-item admin-item" onClick={() => setIsMenuOpen(false)}>
-                        👑 Администратор
+                      <div className="menu-divider" />
+                      <NavLink
+                        to="/admin"
+                        className={({ isActive }) => `menu-item admin-item ${isActive ? 'active' : ''}`}
+                        onClick={() => setIsMenuOpen(false)}
+                        role="menuitem"
+                      >
+                        <span className="menu-icon" aria-hidden>
+                          👑
+                        </span>
+                        <span className="menu-label">Администратор</span>
                       </NavLink>
                     </>
                   )}
-                  <div className="menu-divider"></div>
-                  <button className="menu-item logout-item" onClick={handleLogout}>
-                    Выход
+
+                  <div className="menu-divider" />
+                  <button className="menu-item logout-item" onClick={handleLogout} role="menuitem">
+                    <span className="menu-icon" aria-hidden>
+                      ⎋
+                    </span>
+                    <span className="menu-label">Выход</span>
                   </button>
                 </div>
               )}

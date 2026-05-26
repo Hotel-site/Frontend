@@ -6,7 +6,8 @@ import SearchBar from '../components/SearchBar/SearchBar'
 import Pagination from '../components/Pagination/Pagination'
 import CatalogFiltersPanel, { BUDGET_RANGES, type BudgetType } from '../components/CatalogFiltersPanel/CatalogFiltersPanel'
 import { useAuth } from '../context/AuthContext'
-import { products } from '../data/products'
+import { productApi } from '../api'
+import { products as mockProducts } from '../data/products'
 import type { Product } from '../types/product'
 import type { BookingData } from '../types/cart'
 import '../styles/catalog.css'
@@ -21,6 +22,9 @@ type Props = {
 export default function Catalog({ favorites, onToggleFavorite, onAddToCart, onAddBookingToCart }: Props) {
   const { user } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
+  const [products, setProducts] = useState<Product[]>(mockProducts)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('Все')
   const [minPrice, setMinPrice] = useState(0)
@@ -35,6 +39,26 @@ export default function Catalog({ favorites, onToggleFavorite, onAddToCart, onAd
 
   const isAutomaticPriceChange = useRef(false)
 
+  // Load products from API
+  useEffect(() => {
+    const loadProducts = async () => {
+      setIsLoading(true)
+      setError(null)
+      try {
+        const data = await productApi.getAll()
+        setProducts(data)
+      } catch (err) {
+        console.error('Failed to load products:', err)
+        setError('Не удалось загрузить товары')
+        setProducts(mockProducts)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadProducts()
+  }, [])
+
   // Открытие товара по ID из URL параметров
   useEffect(() => {
     const productId = searchParams.get('productId')
@@ -46,7 +70,7 @@ export default function Catalog({ favorites, onToggleFavorite, onAddToCart, onAd
       // Удалить параметр из URL после открытия
       setSearchParams({})
     }
-  }, [searchParams, setSearchParams])
+  }, [searchParams, setSearchParams, products])
 
   const categories = useMemo(
     () => ['Все', ...Array.from(new Set(products.map((p) => p.category)))],

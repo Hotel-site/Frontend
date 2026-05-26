@@ -5,7 +5,7 @@ import '../styles/Auth.css'
 
 export default function Auth() {
   const [isRegister, setIsRegister] = useState(false)
-  const [name, setName] = useState('')
+  const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -27,12 +27,16 @@ export default function Auth() {
           setError('Пароль должен быть минимум 8 символов')
           return
         }
-        if (!name.trim()) {
-          setError('Введите имя')
+        if (!username.trim()) {
+          setError('Введите имя пользователя')
           return
         }
-        await register(name, email, password)
+        await register(username, email, password)
       } else {
+        if (password.length < 8) {
+          setError('Пароль должен быть минимум 8 символов')
+          return
+        }
         await login(email, password)
       }
       navigate('/')
@@ -44,7 +48,7 @@ export default function Auth() {
   const toggleMode = () => {
     setIsRegister(!isRegister)
     setError('')
-    setName('')
+    setUsername('')
     setEmail('')
     setPassword('')
     setConfirmPassword('')
@@ -63,15 +67,14 @@ export default function Auth() {
           <form onSubmit={handleSubmit} className="auth-form">
             {isRegister && (
               <div className="auth-field">
-                <label htmlFor="name" className="auth-label">
-                  Имя:
+                <label htmlFor="username" className="auth-label">
+                  Имя пользователя:
                 </label>
                 <input
-                  id="name"
+                  id="username"
                   type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Ваше имя"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
                   disabled={isLoading}
                   className="auth-input"
                 />
