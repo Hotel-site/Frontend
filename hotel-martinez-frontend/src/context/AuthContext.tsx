@@ -33,7 +33,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     setIsLoading(true)
     try {
-      // Имитация API запроса
       await new Promise((resolve) => setTimeout(resolve, 500))
 
       if (!email || !password) {
@@ -42,6 +41,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (!email.includes('@')) {
         throw new Error('Введите валидный email')
+      }
+
+      if (password.length < 8) {
+        throw new Error('Пароль должен быть минимум 8 символов')
       }
 
       const role: UserRole = email === 'admin@hotel.com' ? 'admin' : 'user'
@@ -73,8 +76,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error('Введите валидный email')
       }
 
-      if (password.length < 6) {
-        throw new Error('Пароль должен быть не менее 6 символов')
+      if (password.length < 8) {
+        throw new Error('Пароль должен быть минимум 8 символов')
       }
 
       const role: UserRole = email === 'admin@hotel.com' ? 'admin' : 'user'

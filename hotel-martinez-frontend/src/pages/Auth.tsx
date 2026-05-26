@@ -33,6 +33,10 @@ export default function Auth() {
         }
         await register(name, email, password)
       } else {
+        if (password.length < 8) {
+          setError('Пароль должен быть минимум 8 символов')
+          return
+        }
         await login(email, password)
       }
       navigate('/')
