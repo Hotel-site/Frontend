@@ -1,4 +1,5 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { productApi } from '../../api'
 import type { Product } from '../../types/product'
 import styles from './DetailModal.module.css'
 
@@ -9,8 +10,74 @@ type ProductDetailModalProps = {
 
 export default function ProductDetailModal({ product, onClose }: ProductDetailModalProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [fullProduct, setFullProduct] = useState<Product | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const lastRequestedIdRef = useRef<number | null>(null)
 
-  const images = product?.images?.length ? product.images : (product ? [product.image] : [])
+  useEffect(() => {
+    if (!product) {
+      lastRequestedIdRef.current = null
+      setFullProduct(null)
+      setIsLoading(false)
+      return
+    }
+
+    lastRequestedIdRef.current = null
+    setFullProduct(null)
+  }, [product?.id])
+
+  // Load full product details by ID when modal opens
+  useEffect(() => {
+    const productId = product?.id
+    if (!productId) {
+      return
+    }
+
+    if (fullProduct?.id === productId) {
+      return
+    }
+
+    if (lastRequestedIdRef.current === productId) {
+      return
+    }
+
+    lastRequestedIdRef.current = productId
+
+    let cancelled = false
+    setIsLoading(true)
+
+    productApi
+      .getById(productId)
+      .then((data) => {
+        if (cancelled) return
+        setFullProduct(data)
+      })
+      .catch((err) => {
+        console.error('Failed to load product details:', err)
+        if (cancelled) return
+        setFullProduct(product)
+      })
+      .finally(() => {
+        if (cancelled) return
+        setIsLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [product?.id, fullProduct?.id])
+
+  const displayProduct = product
+    ? fullProduct && fullProduct.id === product.id
+      ? fullProduct
+      : product
+    : null
+
+  const images = displayProduct?.images?.length
+    ? displayProduct.images
+    : displayProduct
+      ? [displayProduct.image]
+      : []
 
   const renderDescription = (text: string) => {
     const lines = text.split(/\r?\n/)
@@ -95,7 +162,7 @@ export default function ProductDetailModal({ product, onClose }: ProductDetailMo
   }
 
   useEffect(() => {
-    if (!product) {
+    if (!displayProduct) {
       return
     }
 
@@ -111,19 +178,25 @@ export default function ProductDetailModal({ product, onClose }: ProductDetailMo
 
     document.addEventListener('keydown', onEsc)
     return () => document.removeEventListener('keydown', onEsc)
-  }, [product, onClose, images.length])
+  }, [displayProduct, onClose, images.length])
 
   useEffect(() => {
-    if (product) {
+    if (displayProduct) {
       setCurrentImageIndex(0)
       document.body.style.overflow = 'hidden'
       return () => {
         document.body.style.overflow = ''
       }
     }
-  }, [product])
+  }, [displayProduct])
 
-  if (!product) {
+  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      onClose()
+    }
+  }
+
+  if (!displayProduct) {
     return null
   }
 
@@ -133,9 +206,9 @@ export default function ProductDetailModal({ product, onClose }: ProductDetailMo
       role="dialog"
       aria-modal="true"
       aria-labelledby="product-detail-title"
-      onClick={onClose}
+      onClick={handleOverlayClick}
     >
-      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+      <div className={styles.modal}>
         <button
           type="button"
           aria-label="Закрыть детальную информацию"
@@ -145,76 +218,85 @@ export default function ProductDetailModal({ product, onClose }: ProductDetailMo
           x
         </button>
 
-        <div className={styles.content}>
-          <div className={styles.imageGallery}>
-            <img
-              src={images[currentImageIndex]}
-              alt={`${product.title} - фото ${currentImageIndex + 1}`}
-              className={styles.productImage}
-            />
-
-            {images.length > 1 && (
-              <>
-                <button
-                  type="button"
-                  className={styles.navButtonPrev}
-                  onClick={() =>
-                    setCurrentImageIndex((prev) => (prev > 0 ? prev - 1 : images.length - 1))
-                  }
-                  aria-label="Предыдущее фото"
-                >
-                  ‹
-                </button>
-
-                <button
-                  type="button"
-                  className={styles.navButtonNext}
-                  onClick={() =>
-                    setCurrentImageIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0))
-                  }
-                  aria-label="Следующее фото"
-                >
-                  ›
-                </button>
-
-                <div className={styles.imageIndicators}>
-                  {images.map((_, index) => (
-                    <button
-                      key={index}
-                      type="button"
-                      className={`${styles.indicator} ${index === currentImageIndex ? styles.indicatorActive : ''}`}
-                      onClick={() => setCurrentImageIndex(index)}
-                      aria-label={`Перейти на фото ${index + 1}`}
-                      aria-current={index === currentImageIndex}
-                    />
-                  ))}
-                </div>
-              </>
-            )}
+        {isLoading && (
+          <div className={styles.loadingOverlay}>
+            <div className={styles.spinner} />
+            <p>Загружаем полную информацию...</p>
           </div>
+        )}
 
-          <div className={styles.details}>
-            <h2 id="product-detail-title">{product.title}</h2>
+        {!isLoading && (
+          <div className={styles.content}>
+            <div className={styles.imageGallery}>
+              <img
+                src={images[currentImageIndex]}
+                alt={`${displayProduct.title} - фото ${currentImageIndex + 1}`}
+                className={styles.productImage}
+              />
 
-            <div className={styles.productInfo}>
-              <p className={styles.category}>Категория: {product.category}</p>
-              <p className={styles.price}>
-                Цена: {product.price.toLocaleString('de-DE')} €
-              </p>
+              {images.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    className={styles.navButtonPrev}
+                    onClick={() =>
+                      setCurrentImageIndex((prev) => (prev > 0 ? prev - 1 : images.length - 1))
+                    }
+                    aria-label="Предыдущее фото"
+                  >
+                    ‹
+                  </button>
+
+                  <button
+                    type="button"
+                    className={styles.navButtonNext}
+                    onClick={() =>
+                      setCurrentImageIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0))
+                    }
+                    aria-label="Следующее фото"
+                  >
+                    ›
+                  </button>
+
+                  <div className={styles.imageIndicators}>
+                    {images.map((_, index) => (
+                      <button
+                        key={index}
+                        type="button"
+                        className={`${styles.indicator} ${index === currentImageIndex ? styles.indicatorActive : ''}`}
+                        onClick={() => setCurrentImageIndex(index)}
+                        aria-label={`Перейти на фото ${index + 1}`}
+                        aria-current={index === currentImageIndex}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
 
-            <div className={styles.rating}>
-              <span>★★★★★ (15 отзывов)</span>
-            </div>
+            <div className={styles.details}>
+              <h2 id="product-detail-title">{displayProduct.title}</h2>
 
-            {product.description && (
-              <div className={styles.description}>
-                <h3>Описание</h3>
-                {renderDescription(product.description)}
+              <div className={styles.productInfo}>
+                <p className={styles.category}>Категория: {displayProduct.category}</p>
+                <p className={styles.price}>
+                  Цена: {displayProduct.price.toLocaleString('de-DE')} €
+                </p>
               </div>
-            )}
+
+              <div className={styles.rating}>
+                <span>★★★★★ (15 отзывов)</span>
+              </div>
+
+              {displayProduct.description && (
+                <div className={styles.description}>
+                  <h3>Описание</h3>
+                  {renderDescription(displayProduct.description)}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   )
