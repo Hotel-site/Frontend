@@ -1,13 +1,14 @@
-﻿import { useMemo, useState, useEffect, useRef } from 'react'
+﻿import { useMemo, useState, useEffect, useRef, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import ProductCard from '../components/Cards/ProductCard'
 import ProductDetailModal from '../components/DetailModal/ProductDetailModal'
 import SearchBar from '../components/SearchBar/SearchBar'
 import Pagination from '../components/Pagination/Pagination'
 import CatalogFiltersPanel, { BUDGET_RANGES, type BudgetType } from '../components/CatalogFiltersPanel/CatalogFiltersPanel'
+import LoadingState from '../components/LoadingState/LoadingState'
+import ErrorState from '../components/ErrorState/ErrorState'
 import { useAuth } from '../context/AuthContext'
 import { productApi } from '../api'
-import { products as mockProducts } from '../data/products'
 import type { Product } from '../types/product'
 import type { BookingData } from '../types/cart'
 import '../styles/catalog.css'
@@ -15,14 +16,14 @@ import '../styles/catalog.css'
 type Props = {
   favorites: number[]
   onToggleFavorite: (id: number) => void
-  onAddToCart: (id: number) => void
+  onAddToCart: (product: Product) => void
   onAddBookingToCart?: (product: Product, bookingData: BookingData) => void
 }
 
 export default function Catalog({ favorites, onToggleFavorite, onAddToCart, onAddBookingToCart }: Props) {
   const { user } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
-  const [products, setProducts] = useState<Product[]>(mockProducts)
+  const [products, setProducts] = useState<Product[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
@@ -35,27 +36,26 @@ export default function Catalog({ favorites, onToggleFavorite, onAddToCart, onAd
   const [bookingProduct, setBookingProduct] = useState<Product | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
 
-  const ITEMS_PER_PAGE = 12 
+  const ITEMS_PER_PAGE = 12
 
   const isAutomaticPriceChange = useRef(false)
 
+  const loadProducts = useCallback(async () => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      const data = await productApi.getAll()
+      setProducts(data)
+    } catch (err) {
+      console.error('Failed to load products:', err)
+      setError('Не удалось загрузить товары')
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
   // Load products from API
   useEffect(() => {
-    const loadProducts = async () => {
-      setIsLoading(true)
-      setError(null)
-      try {
-        const data = await productApi.getAll()
-        setProducts(data)
-      } catch (err) {
-        console.error('Failed to load products:', err)
-        setError('Не удалось загрузить товары')
-        setProducts(mockProducts)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
     loadProducts()
   }, [])
 
@@ -74,13 +74,13 @@ export default function Catalog({ favorites, onToggleFavorite, onAddToCart, onAd
 
   const categories = useMemo(
     () => ['Все', ...Array.from(new Set(products.map((p) => p.category)))],
-    []
+    [products]
   )
 
-  const maxProductPrice = useMemo(
-    () => Math.max(...products.map((p) => p.price)),
-    []
-  )
+  const maxProductPrice = useMemo(() => {
+    if (!products.length) return 0
+    return Math.max(...products.map((p) => p.price))
+  }, [products])
 
   useEffect(() => {
     setMaxPrice(maxProductPrice)
@@ -168,7 +168,7 @@ export default function Catalog({ favorites, onToggleFavorite, onAddToCart, onAd
     }
 
     return result
-  }, [query, category, minPrice, maxPrice, budget, sortBy])
+  }, [products, query, category, minPrice, maxPrice, budget, sortBy])
 
   // Пагинация
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE)
@@ -193,7 +193,6 @@ export default function Catalog({ favorites, onToggleFavorite, onAddToCart, onAd
 
   return (
     <section className="catalog">
-      <ProductDetailModal product={selectedProduct} onClose={() => setSelectedProduct(null)} />
       <div className="catalog-container">
         <div className="catalog-main">
           <div className="catalog-header">
@@ -207,7 +206,13 @@ export default function Catalog({ favorites, onToggleFavorite, onAddToCart, onAd
             <SearchBar value={query} onChange={setQuery} />
           </div>
 
-          {filtered.length === 0 ? (
+          {isLoading && <LoadingState title="Загружаем каталог" message="Получаем товары из базы данных..." />}
+
+          {!isLoading && error && (
+            <ErrorState title="Не удалось загрузить каталог" message={error} onRetry={loadProducts} />
+          )}
+
+          {!isLoading && !error && filtered.length === 0 ? (
             <div className="catalog-empty-state">
               <p className="empty-emoji">😢</p>
               <p className="empty-title">Ничего не найдено</p>
@@ -215,8 +220,9 @@ export default function Catalog({ favorites, onToggleFavorite, onAddToCart, onAd
               <button className="empty-reset-btn" onClick={handleResetFilters}>
                 Очистить все фильтры
               </button>
-            </div>):
-            (<div className="catalog-grid">
+            </div>
+          ) : !isLoading && !error ? (
+            <div className="catalog-grid">
               {paginatedItems.map((p) => (
                 <ProductCard
                   key={p.id}
@@ -224,12 +230,12 @@ export default function Catalog({ favorites, onToggleFavorite, onAddToCart, onAd
                   isFavorite={favorites.includes(p.id)}
                   onToggleFavorite={onToggleFavorite}
                   onViewDetails={() => setSelectedProduct(p)}
-                  onAddToCart={() => onAddToCart(p.id)}
+                  onAddToCart={onAddToCart}
                   onRequestBooking={() => setBookingProduct(p)}
                 />
               ))}
             </div>
-          )}
+          ) : null}
 
           {filtered.length > 0 && totalPages > 1 && (
             <Pagination page={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
@@ -274,7 +280,7 @@ export default function Catalog({ favorites, onToggleFavorite, onAddToCart, onAd
 
             <div className="booking-modal__user-info">
               <p>
-                <strong>От:</strong> {user?.name} ({user?.email})
+                <strong>От:</strong> {user?.username || 'Гость'} ({user?.email || 'не указан'})
               </p>
             </div>
 

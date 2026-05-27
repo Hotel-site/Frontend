@@ -1,5 +1,5 @@
 export { authApi, type AuthResponse, type LoginRequest, type RegisterRequest } from './authApi'
-export { productApi, type Product } from './productApi'
+export { productApi, type ProductDto } from './productApi'
 export { roomApi, type Room } from './roomApi'
 export { attractionApi, type Attraction, type Location } from './attractionApi'
 export { favoriteApi, type Favorite, type CreateFavoriteDTO } from './favoriteApi'
