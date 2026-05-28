@@ -58,9 +58,6 @@ export default function Favorites({ favorites, onToggleFavorite }: Props) {
   const localItemIdSet = useMemo(() => new Set(localItems.map((item) => item.id)), [localItems])
 
   const removeLocalFavorite = (id: string) => {
-    const currentIds = readLocalFavoriteIds()
-    const updatedIds = currentIds.filter((favId) => favId !== id)
-    saveLocalFavoriteIds(updatedIds)
     window.dispatchEvent(new Event('local-favorites-updated'))
     setLocalItems((prev) => prev.filter((item) => item.id !== id))
   }

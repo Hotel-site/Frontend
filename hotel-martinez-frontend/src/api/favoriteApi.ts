@@ -14,7 +14,7 @@ export interface CreateFavoriteDTO {
 }
 
 export const favoriteApi = {
-  getUserFavorites: async (userId: number): Promise<Favorite[]> => {
+  getUserFavorites: async (userId: string): Promise<Favorite[]> => {
     const response = await apiClient.get<Favorite[]>(`/favorite/user/${userId}`)
     return response.data
   },
