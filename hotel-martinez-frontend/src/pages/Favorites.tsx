@@ -14,7 +14,20 @@ type Props = {
 }
 
 function readLocalFavoriteIds(): string[] {
-  return []
+  try {
+    const stored = localStorage.getItem('local-favorites')
+    return stored ? JSON.parse(stored) : []
+  } catch {
+    return []
+  }
+}
+
+function saveLocalFavoriteIds(ids: string[]): void {
+  try {
+    localStorage.setItem('local-favorites', JSON.stringify(ids))
+  } catch {
+    // Silently fail if localStorage is unavailable
+  }
 }
 
 export default function Favorites({ favorites, onToggleFavorite }: Props) {
@@ -43,11 +56,22 @@ export default function Favorites({ favorites, onToggleFavorite }: Props) {
     }
 
     void loadLocalFavorites()
+
+    // Listen for updates from other pages
+    const handleFavoritesUpdated = () => {
+      void loadLocalFavorites()
+    }
+
+    window.addEventListener('local-favorites-updated', handleFavoritesUpdated)
+    return () => window.removeEventListener('local-favorites-updated', handleFavoritesUpdated)
   }, [])
 
   const localItemIdSet = useMemo(() => new Set(localItems.map((item) => item.id)), [localItems])
 
   const removeLocalFavorite = (id: string) => {
+    const currentIds = readLocalFavoriteIds()
+    const updatedIds = currentIds.filter((favId) => favId !== id)
+    saveLocalFavoriteIds(updatedIds)
     window.dispatchEvent(new Event('local-favorites-updated'))
     setLocalItems((prev) => prev.filter((item) => item.id !== id))
   }

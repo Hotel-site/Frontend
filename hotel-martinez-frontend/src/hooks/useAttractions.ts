@@ -15,7 +15,20 @@ const defaultQuery: AttractionQueryParams = {
 }
 
 function readFavoriteIds(): string[] {
-  return []
+  try {
+    const stored = localStorage.getItem('local-favorites')
+    return stored ? JSON.parse(stored) : []
+  } catch {
+    return []
+  }
+}
+
+function saveFavoriteIds(ids: string[]): void {
+  try {
+    localStorage.setItem('local-favorites', JSON.stringify(ids))
+  } catch {
+    // Silently fail if localStorage is unavailable
+  }
 }
 
 export function useAttractions() {
@@ -29,6 +42,7 @@ export function useAttractions() {
   const [favoriteIds, setFavoriteIds] = useState<string[]>(() => readFavoriteIds())
 
   useEffect(() => {
+    saveFavoriteIds(favoriteIds)
     window.dispatchEvent(new Event('local-favorites-updated'))
   }, [favoriteIds])
 
