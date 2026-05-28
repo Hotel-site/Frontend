@@ -6,7 +6,7 @@ type Props = {
   product: Product
   isFavorite: boolean
   onToggleFavorite: (id: number) => void
-  onAddToCart?: (id: number) => void
+  onAddToCart?: (product: Product) => void
   onViewDetails?: (product: Product) => void
   onRequestBooking?: (product: Product) => void
 }
@@ -26,7 +26,7 @@ export default function ProductCard({
       onRequestBooking?.(product)
     } else {
       setIsAddedToCart(true)
-      onAddToCart?.(product.id)
+      onAddToCart?.(product)
       setTimeout(() => setIsAddedToCart(false), 600)
     }
   }

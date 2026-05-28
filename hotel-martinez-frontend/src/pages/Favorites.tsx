@@ -3,9 +3,11 @@ import { Link } from 'react-router-dom'
 import ProductCard from '../components/Cards/ProductCard'
 import ErrorState from '../components/ErrorState/ErrorState'
 import LoadingState from '../components/LoadingState/LoadingState'
-import { products } from '../data/products'
+import { useAuth } from '../context/AuthContext'
+import { favoriteApi, productApi } from '../api'
 import { fetchAttractionById } from '../data/attractions'
 import type { Attraction } from '../types/local'
+import type { Product } from '../types/product'
 import '../styles/catalog.css'
 
 type Props = {
@@ -13,25 +15,10 @@ type Props = {
   onToggleFavorite: (id: number) => void
 }
 
-function readLocalFavoriteIds(): string[] {
-  try {
-    const stored = localStorage.getItem('local-favorites')
-    return stored ? JSON.parse(stored) : []
-  } catch {
-    return []
-  }
-}
-
-function saveLocalFavoriteIds(ids: string[]): void {
-  try {
-    localStorage.setItem('local-favorites', JSON.stringify(ids))
-  } catch {
-    // Silently fail if localStorage is unavailable
-  }
-}
-
 export default function Favorites({ favorites, onToggleFavorite }: Props) {
-  const favProducts = products.filter((p) => favorites.includes(p.id))
+  const { user } = useAuth()
+  const [allProducts, setAllProducts] = useState<Product[]>([])
+  const favProducts = useMemo(() => allProducts.filter((p) => favorites.includes(p.id)), [allProducts, favorites])
   const [localItems, setLocalItems] = useState<Attraction[]>([])
   const [isLoadingLocal, setIsLoadingLocal] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -40,31 +27,33 @@ export default function Favorites({ favorites, onToggleFavorite }: Props) {
   const totalCount = favProducts.length + localCount
 
   useEffect(() => {
-    const loadLocalFavorites = async () => {
+    const loadFavorites = async () => {
       setIsLoadingLocal(true)
       setLoadError(null)
 
       try {
-        const ids = readLocalFavoriteIds()
-        const result = await Promise.all(ids.map((id) => fetchAttractionById(id)))
-        setLocalItems(result.filter((item): item is Attraction => item !== null))
-      } catch {
-        setLoadError('Не удалось загрузить локальное избранное. Попробуйте позже.')
+        // Load products (for local favorites state)
+        const products = await productApi.getAll()
+        setAllProducts(products)
+
+        // Load from API if user is authenticated (local attractions favorites)
+        if (user?.id) {
+          const apiFavorites = await favoriteApi.getUserFavorites(user.id)
+          // Map API favorites to attractions (for entityType === 1, entityId is attractionId)
+          const attractionFavs = apiFavorites.filter((fav) => fav.entityType === 1)
+          const result = await Promise.all(attractionFavs.map((fav) => fetchAttractionById(fav.entityId.toString())))
+          setLocalItems(result.filter((item): item is Attraction => item !== null))
+        }
+      } catch (err) {
+        console.error('Failed to load favorites:', err)
+        setLoadError('Не удалось загрузить избранное. Попробуйте позже.')
       } finally {
         setIsLoadingLocal(false)
       }
     }
 
-    void loadLocalFavorites()
-
-    // Listen for updates from other pages
-    const handleFavoritesUpdated = () => {
-      void loadLocalFavorites()
-    }
-
-    window.addEventListener('local-favorites-updated', handleFavoritesUpdated)
-    return () => window.removeEventListener('local-favorites-updated', handleFavoritesUpdated)
-  }, [])
+    loadFavorites()
+  }, [user?.id])
 
   const localItemIdSet = useMemo(() => new Set(localItems.map((item) => item.id)), [localItems])
 

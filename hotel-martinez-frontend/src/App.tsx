@@ -17,7 +17,6 @@ import PageErrorBoundary from './components/PageErrorBoundary'
 import { AuthProvider } from './context/AuthContext'
 import type { CartItem, BookingData } from './types/cart'
 import type { Product } from './types/product'
-import { products } from './data/products'
 import './styles/app.css'
 
 export default function App() {
@@ -33,12 +32,9 @@ export default function App() {
     setFavorites((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
   }
 
-  const onAddToCart = (id: number) => {
-    const product = products.find((p) => p.id === id)
-    if (product) {
-      const item: CartItem = { type: 'product', id, item: product }
-      setCart((prev) => [...prev, item])
-    }
+  const onAddToCart = (product: Product) => {
+    const item: CartItem = { type: 'product', id: product.id, item: product }
+    setCart((prev) => [...prev, item])
   }
 
   const onAddBookingToCart = (product: Product, bookingData: BookingData) => {

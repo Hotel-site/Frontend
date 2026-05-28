@@ -1,5 +1,7 @@
-import { useMemo } from 'react'
+import { useMemo, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
+import { orderApi } from '../api'
 import type { CartItem } from '../types/cart'
 import '../styles/cart.css'
 
@@ -10,6 +12,32 @@ type Props = {
 }
 
 export default function Cart({ cartItems, onRemoveFromCart, onCheckout }: Props) {
+  const { user } = useAuth()
+  const [serverCart, setServerCart] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  // Load cart from API
+  useEffect(() => {
+    const loadCart = async () => {
+      if (!user?.id) return
+      setIsLoading(true)
+      setError(null)
+      try {
+        const cart = await orderApi.getUserCart(user.id)
+        setServerCart(cart)
+      } catch (err) {
+        console.error('Failed to load cart:', err)
+        // Don't show error if cart is empty (404)
+        setError(null)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadCart()
+  }, [user?.id])
+
   const uniqueItems = useMemo(() => {
     const countMap = new Map<string, { item: CartItem; count: number; product: any }>()
     cartItems.forEach((cartItem) => {
@@ -38,6 +66,8 @@ export default function Cart({ cartItems, onRemoveFromCart, onCheckout }: Props)
     <section className="cart">
       <div className="container">
         <h1>🛒 Корзина</h1>
+        
+        {error && <div style={{ color: '#ff5b5b', marginBottom: '1rem' }}>{error}</div>}
 
         {cartItems.length === 0 ? (
           <div className="empty-cart">
