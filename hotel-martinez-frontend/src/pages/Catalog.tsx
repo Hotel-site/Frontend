@@ -8,7 +8,7 @@ import CatalogFiltersPanel, { BUDGET_RANGES, type BudgetType } from '../componen
 import LoadingState from '../components/LoadingState/LoadingState'
 import ErrorState from '../components/ErrorState/ErrorState'
 import { useAuth } from '../context/AuthContext'
-import { productApi } from '../api'
+import { categoryApi, productApi } from '../api'
 import type { Product } from '../types/product'
 import type { BookingData } from '../types/cart'
 import '../styles/catalog.css'
@@ -28,6 +28,7 @@ export default function Catalog({ favorites, onToggleFavorite, onAddToCart, onAd
   const [error, setError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('Все')
+  const [categoryOptions, setCategoryOptions] = useState<string[]>(['Все'])
   const [minPrice, setMinPrice] = useState(0)
   const [maxPrice, setMaxPrice] = useState(0) 
   const [budget, setBudget] = useState<BudgetType>('all')
@@ -59,6 +60,26 @@ export default function Catalog({ favorites, onToggleFavorite, onAddToCart, onAd
     loadProducts()
   }, [])
 
+  // Load categories from API (so filters can show categories even if no products yet)
+  useEffect(() => {
+    let cancelled = false
+
+    categoryApi
+      .getAll()
+      .then((data) => {
+        if (cancelled) return
+        const names = data.map((c) => c.name).filter((x): x is string => typeof x === 'string' && x.length > 0)
+        setCategoryOptions(['Все', ...Array.from(new Set(names))])
+      })
+      .catch((err) => {
+        console.warn('Failed to load categories:', err)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   // Открытие товара по ID из URL параметров
   useEffect(() => {
     const productId = searchParams.get('productId')
@@ -72,10 +93,20 @@ export default function Catalog({ favorites, onToggleFavorite, onAddToCart, onAd
     }
   }, [searchParams, setSearchParams, products])
 
-  const categories = useMemo(
-    () => ['Все', ...Array.from(new Set(products.map((p) => p.category)))],
-    [products]
-  )
+  const categories = useMemo(() => {
+    const merged = new Set<string>()
+    merged.add('Все')
+
+    for (const c of categoryOptions) {
+      if (c && c !== 'Все') merged.add(c)
+    }
+
+    for (const c of products.map((p) => p.category)) {
+      if (c && c !== 'Все') merged.add(c)
+    }
+
+    return Array.from(merged)
+  }, [products, categoryOptions])
 
   const maxProductPrice = useMemo(() => {
     if (!products.length) return 0

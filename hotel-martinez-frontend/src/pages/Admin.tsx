@@ -4,6 +4,7 @@ import { products } from '../data/products'
 import { rooms } from '../data/rooms'
 import { DAYS } from '../data/menus'
 import { attractions } from '../data/attractions'
+import { categoryApi } from '../api'
 import type { HotelCategory } from '../types/product'
 import type { Attraction } from '../types/local'
 import ErrorState from '../components/ErrorState/ErrorState'
@@ -317,6 +318,7 @@ function ProductsTab({
   setNewImageUrl
 }: ProductsTabProps) {
   const DEFAULT_CATEGORIES = ['SPA & Wellness', 'Рестораны', 'Трансфер', 'События', 'Мерч']
+  const [defaultCategories, setDefaultCategories] = useState<string[]>(DEFAULT_CATEGORIES)
   const [formData, setFormData] = useState(editingProduct ? {
     title: editingProduct.title,
     price: editingProduct.price,
@@ -327,8 +329,29 @@ function ProductsTab({
   } : null)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [newCategory, setNewCategory] = useState('')
-  const [categories, setCategories] = useState(DEFAULT_CATEGORIES)
+  const [categories, setCategories] = useState<string[]>(DEFAULT_CATEGORIES)
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+
+    categoryApi
+      .getAll()
+      .then((data) => {
+        if (cancelled) return
+        const names = data.map((c) => c.name).filter((x): x is string => typeof x === 'string' && x.length > 0)
+        if (!names.length) return
+        setDefaultCategories(names)
+        setCategories(names)
+      })
+      .catch((err) => {
+        console.warn('Failed to load categories:', err)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const handleSave = () => {
     console.log('Сохранено:', formData)
@@ -391,10 +414,12 @@ function ProductsTab({
   }
 
   const addNewProduct = () => {
+    const firstCategory = (categories[0] ?? defaultCategories[0] ?? 'Мерч') as HotelCategory
+
     setNewProductData({
       title: '',
       price: 0,
-      category: categories[0] as HotelCategory,
+      category: firstCategory,
       description: '',
       images: [],
       image: '',
@@ -468,7 +493,7 @@ function ProductsTab({
           setFormData(null)
           setCategoryDropdownOpen(false)
           setNewCategory('')
-          setCategories(DEFAULT_CATEGORIES)
+          setCategories(defaultCategories)
         }}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
@@ -478,7 +503,7 @@ function ProductsTab({
                 setFormData(null)
                 setCategoryDropdownOpen(false)
                 setNewCategory('')
-                setCategories(DEFAULT_CATEGORIES)
+                setCategories(defaultCategories)
               }}>✕</button>
             </div>
             
@@ -719,7 +744,7 @@ function ProductsTab({
           setNewProductImageIndex(0)
           setCategoryDropdownOpen(false)
           setNewCategory('')
-          setCategories(DEFAULT_CATEGORIES)
+          setCategories(defaultCategories)
         }}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
@@ -730,7 +755,7 @@ function ProductsTab({
                 setNewProductImageIndex(0)
                 setCategoryDropdownOpen(false)
                 setNewCategory('')
-                setCategories(DEFAULT_CATEGORIES)
+                setCategories(defaultCategories)
               }}>✕</button>
             </div>
             
