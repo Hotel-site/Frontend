@@ -4,8 +4,8 @@ import ProductCard from '../components/Cards/ProductCard'
 import ErrorState from '../components/ErrorState/ErrorState'
 import LoadingState from '../components/LoadingState/LoadingState'
 import { useAuth } from '../context/AuthContext'
-import { favoriteApi, productApi } from '../api'
-import { fetchAttractionById } from '../data/attractions'
+import { attractionApi, favoriteApi, productApi } from '../api'
+import type { Favorite } from '../api'
 import type { Attraction } from '../types/local'
 import type { Product } from '../types/product'
 import '../styles/catalog.css'
@@ -17,14 +17,45 @@ type Props = {
 
 export default function Favorites({ favorites, onToggleFavorite }: Props) {
   const { user } = useAuth()
-  const [allProducts, setAllProducts] = useState<Product[]>([])
-  const favProducts = useMemo(() => allProducts.filter((p) => favorites.includes(p.id)), [allProducts, favorites])
+  const [favoriteProducts, setFavoriteProducts] = useState<Product[]>([])
   const [localItems, setLocalItems] = useState<Attraction[]>([])
+  const [localFavorites, setLocalFavorites] = useState<Array<{ favorite: Favorite; item: Attraction }>>([])
   const [isLoadingLocal, setIsLoadingLocal] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
 
   const localCount = localItems.length
-  const totalCount = favProducts.length + localCount
+  const totalCount = favoriteProducts.length + localCount
+
+  const mapApiAttractionToUi = (item: Awaited<ReturnType<typeof attractionApi.getById>>): Attraction => ({
+    id: item.id.toString(),
+    name: item.name,
+    shortDescription: item.shortDescription,
+    description: item.description,
+    category: 'culture',
+    address: item.location.address,
+    coords: {
+      lat: item.location.latitude,
+      lng: item.location.longitude,
+    },
+    distanceKm: item.distance,
+    price: item.price,
+    openingHours: {
+      monday: '00:00-23:59',
+      tuesday: '00:00-23:59',
+      wednesday: '00:00-23:59',
+      thursday: '00:00-23:59',
+      friday: '00:00-23:59',
+      saturday: '00:00-23:59',
+      sunday: '00:00-23:59',
+    },
+    rating: 0,
+    images: item.images.map((image) => image.url).filter((url): url is string => Boolean(url)),
+    partnerContact: {
+      phone: item.contacts.phone,
+      email: item.contacts.email,
+      bookingUrl: item.contacts.bookingUrl,
+    },
+  })
 
   useEffect(() => {
     const loadFavorites = async () => {
@@ -32,18 +63,48 @@ export default function Favorites({ favorites, onToggleFavorite }: Props) {
       setLoadError(null)
 
       try {
-        // Load products (for local favorites state)
-        const products = await productApi.getAll()
-        setAllProducts(products)
+        const userId = user?.id ? Number(user.id) : NaN
 
-        // Load from API if user is authenticated (local attractions favorites)
-        if (user?.id) {
-          const apiFavorites = await favoriteApi.getUserFavorites(user.id)
-          // Map API favorites to attractions (for entityType === 1, entityId is attractionId)
-          const attractionFavs = apiFavorites.filter((fav) => fav.entityType === 1)
-          const result = await Promise.all(attractionFavs.map((fav) => fetchAttractionById(fav.entityId.toString())))
-          setLocalItems(result.filter((item): item is Attraction => item !== null))
-        }
+        const favoriteProductIds = Array.from(new Set(favorites))
+        const productFavoritesPromise = Promise.all(
+          favoriteProductIds.map(async (productId) => {
+            try {
+              return await productApi.getById(productId)
+            } catch (error) {
+              console.warn(`Failed to load favorite product ${productId}:`, error)
+              return null
+            }
+          })
+        )
+
+        const attractionFavoritesPromise = Number.isFinite(userId)
+          ? favoriteApi.getUserFavorites(userId).then(async (apiFavorites) => {
+              const attractionFavs = apiFavorites.filter((fav) => fav.entityType === 2)
+              const mappedFavorites = await Promise.all(
+                attractionFavs.map(async (fav) => {
+                  try {
+                    const item = await attractionApi.getById(fav.entityId)
+                    return { favorite: fav, item: mapApiAttractionToUi(item) }
+                  } catch (error) {
+                    console.warn(`Failed to load favorite attraction ${fav.entityId}:`, error)
+                    return null
+                  }
+                })
+              )
+              return mappedFavorites.filter(
+                (entry): entry is { favorite: Favorite; item: Attraction } => entry !== null
+              )
+            })
+          : Promise.resolve([] as Array<{ favorite: Favorite; item: Attraction }>)
+
+        const [productResults, attractionResults] = await Promise.all([
+          productFavoritesPromise,
+          attractionFavoritesPromise,
+        ])
+
+        setFavoriteProducts(productResults.filter((item): item is Product => item !== null))
+        setLocalFavorites(attractionResults)
+        setLocalItems(attractionResults.map((entry) => entry.item))
       } catch (err) {
         console.error('Failed to load favorites:', err)
         setLoadError('Не удалось загрузить избранное. Попробуйте позже.')
@@ -53,11 +114,16 @@ export default function Favorites({ favorites, onToggleFavorite }: Props) {
     }
 
     loadFavorites()
-  }, [user?.id])
+  }, [favorites, user?.id])
 
   const localItemIdSet = useMemo(() => new Set(localItems.map((item) => item.id)), [localItems])
 
-  const removeLocalFavorite = (id: string) => {
+  const removeLocalFavorite = async (id: string) => {
+    const pair = localFavorites.find((entry) => entry.item.id === id)
+    if (pair) {
+      await favoriteApi.removeFavorite(pair.favorite.id)
+      setLocalFavorites((prev) => prev.filter((entry) => entry.item.id !== id))
+    }
     window.dispatchEvent(new Event('local-favorites-updated'))
     setLocalItems((prev) => prev.filter((item) => item.id !== id))
   }
@@ -93,11 +159,11 @@ export default function Favorites({ favorites, onToggleFavorite }: Props) {
           </div>
         ) : !isLoadingLocal ? (
           <>
-            {favProducts.length > 0 && (
+            {favoriteProducts.length > 0 && (
               <>
                 <h2 style={{ margin: '24px 0 16px' }}>Товары</h2>
                 <div className="grid">
-                  {favProducts.map((p) => (
+                  {favoriteProducts.map((p) => (
                     <ProductCard key={p.id} product={p} isFavorite={true} onToggleFavorite={onToggleFavorite} />
                   ))}
                 </div>
