@@ -1,9 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { products } from '../data/products'
-import { rooms } from '../data/rooms'
+import { roomApi } from '../api'
+import type { Room } from '../types/room'
+
+type AdminRoom = Room & { capacity?: number; size?: number }
 import { DAYS } from '../data/menus'
 import { attractions } from '../data/attractions'
+import { categoryApi } from '../api'
 import type { HotelCategory } from '../types/product'
 import type { Attraction } from '../types/local'
 import ErrorState from '../components/ErrorState/ErrorState'
@@ -21,7 +25,7 @@ export default function Admin() {
   const { user, logout } = useAuth()
   const [activeTab, setActiveTab] = useState<Tab>('dashboard')
   const [editingProduct, setEditingProduct] = useState<(typeof products)[0] | null>(null)
-  const [editingRoom, setEditingRoom] = useState<(typeof rooms)[0] | null>(null)
+  const [editingRoom, setEditingRoom] = useState<AdminRoom | null>(null)
   const [editingMenu, setEditingMenu] = useState<(typeof DAYS)[0] | null>(null)
   const [editingAttraction, setEditingAttraction] = useState<Attraction | null>(null)
   const [confirmDelete, setConfirmDelete] = useState<ConfirmDelete>(null)
@@ -43,7 +47,6 @@ export default function Admin() {
     capacity: number
     size: number
     description: string
-    longDescription: string
     images: string[]
     amenities: string[]
   } | null>(null)
@@ -52,6 +55,7 @@ export default function Admin() {
   const [isAddingAttraction, setIsAddingAttraction] = useState(false)
   const [newAttractionData, setNewAttractionData] = useState<Attraction | null>(null)
   const [newAttractionImageIndex, setNewAttractionImageIndex] = useState(0)
+  const [roomsList, setRoomsList] = useState<Room[]>([])
 
   useEffect(() => {
     if (editingProduct || editingRoom || editingMenu || editingAttraction || confirmDelete || isAddingProduct || isAddingRoom || isAddingAttraction) {
@@ -87,6 +91,21 @@ export default function Admin() {
     }
   }, [editingProduct, editingRoom, editingMenu, editingAttraction, confirmDelete, isAddingProduct, isAddingRoom, isAddingAttraction])
 
+  useEffect(() => {
+    let cancelled = false
+    roomApi
+      .getAll()
+      .then((data) => {
+        if (cancelled) return
+        setRoomsList(data)
+      })
+      .catch((err) => console.warn('Failed to load rooms for admin:', err))
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   if (!user || user.role !== 'admin') {
     return (
       <ErrorState
@@ -104,7 +123,7 @@ export default function Admin() {
         <div className="admin-header-content">
           <h1>Панель администратора</h1>
           <div className="admin-user-info">
-            <span>{user?.name} ({user?.email})</span>
+            <span>{user?.username} ({user?.email})</span>
             <button className="btn-logout" onClick={logout}>
               Выход
             </button>
@@ -147,7 +166,7 @@ export default function Admin() {
         </nav>
 
         <main className="admin-main">
-          {activeTab === 'dashboard' && <DashboardTab />}
+          {activeTab === 'dashboard' && <DashboardTab roomsCount={roomsList.length} />}
           {activeTab === 'products' && (
             <ProductsTab 
               editingProduct={editingProduct} 
@@ -165,6 +184,7 @@ export default function Admin() {
           )}
           {activeTab === 'rooms' && (
             <RoomsTab 
+              rooms={roomsList}
               editingRoom={editingRoom} 
               setEditingRoom={setEditingRoom} 
               setConfirmDelete={setConfirmDelete}
@@ -252,7 +272,7 @@ function ConfirmDeleteDialog({ item, onConfirm, onCancel }: ConfirmDeleteDialogP
   )
 }
 
-function DashboardTab() {
+function DashboardTab({ roomsCount }: { roomsCount: number }) {
   return (
     <div className="admin-tab">
       <h2>📊 Статистика</h2>
@@ -263,7 +283,7 @@ function DashboardTab() {
         </div>
         <div className="stat-card">
           <h3>Всего номеров</h3>
-          <p className="stat-number">{rooms.length}</p>
+          <p className="stat-number">{roomsCount}</p>
         </div>
         <div className="stat-card">
           <h3>Дни меню</h3>
@@ -317,6 +337,7 @@ function ProductsTab({
   setNewImageUrl
 }: ProductsTabProps) {
   const DEFAULT_CATEGORIES = ['SPA & Wellness', 'Рестораны', 'Трансфер', 'События', 'Мерч']
+  const [defaultCategories, setDefaultCategories] = useState<string[]>(DEFAULT_CATEGORIES)
   const [formData, setFormData] = useState(editingProduct ? {
     title: editingProduct.title,
     price: editingProduct.price,
@@ -327,8 +348,29 @@ function ProductsTab({
   } : null)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [newCategory, setNewCategory] = useState('')
-  const [categories, setCategories] = useState(DEFAULT_CATEGORIES)
+  const [categories, setCategories] = useState<string[]>(DEFAULT_CATEGORIES)
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+
+    categoryApi
+      .getAll()
+      .then((data) => {
+        if (cancelled) return
+        const names = data.map((c) => c.name).filter((x): x is string => typeof x === 'string' && x.length > 0)
+        if (!names.length) return
+        setDefaultCategories(names)
+        setCategories(names)
+      })
+      .catch((err) => {
+        console.warn('Failed to load categories:', err)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const handleSave = () => {
     console.log('Сохранено:', formData)
@@ -391,10 +433,12 @@ function ProductsTab({
   }
 
   const addNewProduct = () => {
+    const firstCategory = (categories[0] ?? defaultCategories[0] ?? 'Мерч') as HotelCategory
+
     setNewProductData({
       title: '',
       price: 0,
-      category: categories[0] as HotelCategory,
+      category: firstCategory,
       description: '',
       images: [],
       image: '',
@@ -468,7 +512,7 @@ function ProductsTab({
           setFormData(null)
           setCategoryDropdownOpen(false)
           setNewCategory('')
-          setCategories(DEFAULT_CATEGORIES)
+          setCategories(defaultCategories)
         }}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
@@ -478,7 +522,7 @@ function ProductsTab({
                 setFormData(null)
                 setCategoryDropdownOpen(false)
                 setNewCategory('')
-                setCategories(DEFAULT_CATEGORIES)
+                setCategories(defaultCategories)
               }}>✕</button>
             </div>
             
@@ -719,7 +763,7 @@ function ProductsTab({
           setNewProductImageIndex(0)
           setCategoryDropdownOpen(false)
           setNewCategory('')
-          setCategories(DEFAULT_CATEGORIES)
+          setCategories(defaultCategories)
         }}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
@@ -730,7 +774,7 @@ function ProductsTab({
                 setNewProductImageIndex(0)
                 setCategoryDropdownOpen(false)
                 setNewCategory('')
-                setCategories(DEFAULT_CATEGORIES)
+                setCategories(defaultCategories)
               }}>✕</button>
             </div>
             
@@ -936,8 +980,9 @@ function ProductsTab({
 }
 
 type RoomsTabProps = {
-  editingRoom: (typeof rooms)[0] | null
-  setEditingRoom: (room: (typeof rooms)[0] | null) => void
+  rooms: AdminRoom[]
+  editingRoom: AdminRoom | null
+  setEditingRoom: (room: AdminRoom | null) => void
   setConfirmDelete: (item: ConfirmDelete) => void
   isAddingRoom: boolean
   setIsAddingRoom: (value: boolean) => void
@@ -947,7 +992,6 @@ type RoomsTabProps = {
     capacity: number
     size: number
     description: string
-    longDescription: string
     images: string[]
     amenities: string[]
   } | null
@@ -959,6 +1003,7 @@ type RoomsTabProps = {
 }
 
 function RoomsTab({ 
+  rooms,
   editingRoom, 
   setEditingRoom, 
   setConfirmDelete,
@@ -977,13 +1022,14 @@ function RoomsTab({
     capacity: editingRoom.capacity,
     size: editingRoom.size,
     description: editingRoom.description,
-    longDescription: editingRoom.longDescription,
     images: editingRoom.images || [],
     amenities: editingRoom.amenities || [],
   } : null)
   const [newImageUrl, setNewImageUrl] = useState('')
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [newAmenity, setNewAmenity] = useState('')
+
+  const localRooms: AdminRoom[] = rooms ?? []
 
   const handleSave = () => {
     console.log('Сохранено:', formData)
@@ -1040,7 +1086,6 @@ function RoomsTab({
       capacity: 1,
       size: 0,
       description: '',
-      longDescription: '',
       images: [],
       amenities: [],
     })
@@ -1068,7 +1113,7 @@ function RoomsTab({
             </tr>
           </thead>
           <tbody>
-            {rooms.map((room) => (
+            {localRooms.map((room: AdminRoom) => (
               <tr key={room.id}>
                 <td>{room.id}</td>
                 <td>{room.title}</td>
@@ -1084,7 +1129,6 @@ function RoomsTab({
                       capacity: room.capacity,
                       size: room.size,
                       description: room.description,
-                      longDescription: room.longDescription,
                       images: room.images || [],
                       amenities: room.amenities || [],
                     })
@@ -1173,15 +1217,7 @@ function RoomsTab({
                   ></textarea>
                 </div>
 
-                <div className="form-group">
-                  <label>Полное описание</label>
-                  <textarea 
-                    value={formData.longDescription}
-                    onChange={(e) => setFormData({...formData, longDescription: e.target.value})}
-                    rows={4}
-                    placeholder="Введите полное описание номера"
-                  ></textarea>
-                </div>
+                {/* Полного описания больше нет — используем единое `description` */}
 
                 <div className="form-group">
                   <label>Удобства номера</label>
@@ -1358,10 +1394,7 @@ function RoomsTab({
                       </div>
                     </div>
 
-                    <div className="room-preview-section">
-                      <h3>Описание</h3>
-                      <p className="room-preview-long-desc">{formData.longDescription}</p>
-                    </div>
+                    {/* Детальное описание убрано — используется `description` выше */}
 
                     <div className="room-preview-specs">
                       <div className="room-spec-item">
@@ -1483,15 +1516,7 @@ function RoomsTab({
                   />
                 </div>
 
-                <div className="form-group">
-                  <label>Полное описание</label>
-                  <textarea 
-                    value={newRoomData.longDescription}
-                    onChange={(e) => setNewRoomData({...newRoomData, longDescription: e.target.value})}
-                    placeholder="Введите полное описание"
-                    rows={4}
-                  />
-                </div>
+                {/* Полного описания больше нет — используем единое `description` */}
 
                 <div className="form-group">
                   <label>Удобства (добавьте список)</label>
@@ -1650,12 +1675,7 @@ function RoomsTab({
                       </div>
                     </div>
 
-                    {newRoomData.longDescription && (
-                      <div className="room-preview-section">
-                        <h3>Описание</h3>
-                        <p className="room-preview-long-desc">{newRoomData.longDescription}</p>
-                      </div>
-                    )}
+                    {/* Поле `description` отображается выше в preview */}
 
                     <div className="room-preview-specs">
                       <div className="room-spec-item">

@@ -284,10 +284,6 @@ export default function ProductDetailModal({ product, onClose }: ProductDetailMo
                 </p>
               </div>
 
-              <div className={styles.rating}>
-                <span>★★★★★ (15 отзывов)</span>
-              </div>
-
               {displayProduct.description && (
                 <div className={styles.description}>
                   <h3>Описание</h3>
