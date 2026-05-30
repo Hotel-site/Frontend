@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { roomApi } from '../api'
-import { rooms as mockRooms } from '../data/rooms'
 import RoomDetailModal from '../components/RoomDetailModal/RoomDetailModal'
 import { useAuth } from '../context/AuthContext'
 import type { Product } from '../types/product'
 import type { BookingData } from '../types/cart'
-import type { Room } from '../api'
+import type { Room } from '../types/room'
 import '../styles/rooms.css'
 import '../styles/catalog.css'
 
@@ -17,32 +16,56 @@ type Props = {
 export default function Rooms({ onAddBookingToCart }: Props) {
   const { user } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
-  const [rooms, setRooms] = useState<Room[]>(mockRooms as any)
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [rooms, setRooms] = useState<Room[]>([])
   const [selectedRoom, setSelectedRoom] = useState<number | null>(null)
+  const [selectedRoomDetails, setSelectedRoomDetails] = useState<Room | null>(null)
   const [currentImageIndex, setCurrentImageIndex] = useState<Record<number, number>>({})
   const [bookingRoom, setBookingRoom] = useState<any>(null)
 
   // Load rooms from API
   useEffect(() => {
     const loadRooms = async () => {
-      setIsLoading(true)
-      setError(null)
       try {
         const data = await roomApi.getAll()
         setRooms(data)
       } catch (err) {
         console.error('Failed to load rooms:', err)
-        setError('Не удалось загрузить номера')
-        setRooms(mockRooms as any)
-      } finally {
-        setIsLoading(false)
+        setRooms([])
       }
     }
 
     loadRooms()
   }, [])
+
+  useEffect(() => {
+    if (!selectedRoom) {
+      setSelectedRoomDetails(null)
+      return
+    }
+
+    const previewRoom = rooms.find((room) => room.id === selectedRoom) ?? null
+    setSelectedRoomDetails(previewRoom)
+
+    let cancelled = false
+
+    roomApi
+      .getById(selectedRoom)
+      .then((data) => {
+        if (!cancelled) {
+          setSelectedRoomDetails(data)
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to load room details:', err)
+        if (!cancelled) {
+          setSelectedRoomDetails(previewRoom)
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [rooms, selectedRoom])
 
   // Открытие номера по ID из URL параметров
   useEffect(() => {
@@ -130,22 +153,10 @@ export default function Rooms({ onAddBookingToCart }: Props) {
                 <div className="room-header">
                   <div>
                     <h2 className="room-title">{room.title}</h2>
-                    <p className="room-description">{room.description}</p>
                   </div>
                   <div className="room-price">
                     <span className="price-value">{room.price}€</span>
                     <span className="price-unit">/ ночь</span>
-                  </div>
-                </div>
-
-                <div className="room-specs">
-                  <div className="spec">
-                    <span className="spec-icon">👥</span>
-                    <span>Гостей: {room.capacity}</span>
-                  </div>
-                  <div className="spec">
-                    <span className="spec-icon">📏</span>
-                    <span>{room.size} м²</span>
                   </div>
                 </div>
 
@@ -173,9 +184,9 @@ export default function Rooms({ onAddBookingToCart }: Props) {
         </div>
       </div>
 
-      {selectedRoom && (
+      {selectedRoom && selectedRoomDetails && (
         <RoomDetailModal
-          room={rooms.find((r) => r.id === selectedRoom)!}
+          room={selectedRoomDetails}
           onClose={() => setSelectedRoom(null)}
         />
       )}
@@ -197,7 +208,7 @@ export default function Rooms({ onAddBookingToCart }: Props) {
 
             <div className="booking-modal__user-info">
               <p>
-                <strong>От:</strong> {user?.name} ({user?.email})
+                <strong>От:</strong> {user?.username} ({user?.email})
               </p>
             </div>
 
