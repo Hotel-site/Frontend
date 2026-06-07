@@ -1,4 +1,5 @@
 import apiClient from './apiClient'
+import type { BookingData } from '../types/cart'
 
 export interface OrderItemDTO {
   id: number
@@ -14,6 +15,7 @@ export interface CartItemReq {
   userId: number
   item: OrderItemDTO
   price: number
+  bookingData?: BookingData
 }
 
 export interface QuantityReq {

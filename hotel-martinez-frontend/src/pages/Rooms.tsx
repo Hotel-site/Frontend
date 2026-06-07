@@ -213,7 +213,7 @@ export default function Rooms({ onAddBookingToCart }: Props) {
             </div>
 
             <form
-              onSubmit={(e) => {
+              onSubmit={async (e) => {
                 e.preventDefault()
                 const formData = new FormData(e.currentTarget as HTMLFormElement)
                 const dateTime = formData.get('dateTime') as string
@@ -229,13 +229,18 @@ export default function Rooms({ onAddBookingToCart }: Props) {
                   requiresBooking: true,
                 }
 
-                onAddBookingToCart?.(roomAsProduct, {
-                  dateTime,
-                  notes,
-                })
+                try {
+                  await onAddBookingToCart?.(roomAsProduct, {
+                    dateTime,
+                    notes,
+                  })
 
-                alert(`Спасибо за бронирование ${bookingRoom.title}!\nВаша бронь добавлена в корзину.`)
-                setBookingRoom(null)
+                  alert(`Спасибо за бронирование ${bookingRoom.title}!\nВаша бронь добавлена в корзину.`)
+                  setBookingRoom(null)
+                } catch (error) {
+                  console.error('Failed to add room booking to cart:', error)
+                  alert('Не удалось добавить бронирование в корзину')
+                }
               }}
               className="booking-form"
             >
