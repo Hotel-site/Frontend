@@ -1,4 +1,4 @@
-export type Category = 'culture' | 'nature' | 'food' | 'shopping' | 'family' | 'nightlife'
+export type Category = string
 export type SortBy = 'distance' | 'rating' | 'priceAsc' | 'priceDesc'
 export type ViewMode = 'grid' | 'list' | 'map'
 

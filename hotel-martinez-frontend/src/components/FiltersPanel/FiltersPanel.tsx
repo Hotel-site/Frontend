@@ -10,6 +10,7 @@ type FiltersPanelProps = {
   maxAvailablePrice: number
   openNow: boolean
   sortBy: SortBy
+  categories: string[]
   onCategoryChange: (value: Category | 'all') => void
   onDistanceChange: (value: number) => void
   onMinPriceChange: (value: number) => void
@@ -17,16 +18,6 @@ type FiltersPanelProps = {
   onOpenNowChange: (value: boolean) => void
   onSortByChange: (value: SortBy) => void
 }
-
-const categoryOptions: Array<{ value: Category | 'all'; label: string }> = [
-  { value: 'all', label: translate('allCategories') },
-  { value: 'culture', label: 'Культура' },
-  { value: 'nature', label: 'Природа' },
-  { value: 'food', label: 'Еда' },
-  { value: 'shopping', label: 'Шопинг' },
-  { value: 'family', label: 'Семейный отдых' },
-  { value: 'nightlife', label: 'Ночная жизнь' },
-]
 
 const PRICE_RANGES = (
   maxAvailablePrice: number,
@@ -59,6 +50,7 @@ export default function FiltersPanel({
   maxAvailablePrice,
   openNow,
   sortBy,
+  categories,
   onCategoryChange,
   onDistanceChange,
   onMinPriceChange,
@@ -71,9 +63,10 @@ export default function FiltersPanel({
       <label className={styles.field}>
         Категория
         <select value={category} onChange={(event) => onCategoryChange(event.target.value as Category | 'all')}>
-          {categoryOptions.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
+          <option value="all">{translate('allCategories')}</option>
+          {categories.map((cat) => (
+            <option key={cat} value={cat}>
+              {cat}
             </option>
           ))}
         </select>

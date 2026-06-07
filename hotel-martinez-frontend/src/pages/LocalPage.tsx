@@ -8,8 +8,8 @@ import SearchBar from '../components/SearchBar/SearchBar'
 import ErrorState from '../components/ErrorState/ErrorState'
 import LoadingState from '../components/LoadingState/LoadingState'
 import { useAttractions } from '../hooks/useAttractions'
-import { attractionApi, type Attraction as ApiAttraction } from '../api'
 import { fetchAttractionById, MAX_PRICE } from '../data/attractions'
+import { categoryApi, type CategoryDto } from '../api'
 import type { Attraction } from '../types/local'
 import styles from '../styles/LocalPage.module.css'
 import { translate } from '../utils/i18n'
@@ -42,23 +42,28 @@ export default function LocalPage() {
 
   const [selectedAttractionId, setSelectedAttractionId] = useState<string | null>(null)
   const [detailAttraction, setDetailAttraction] = useState<Attraction | null>(null)
+  const [categoryOptions, setCategoryOptions] = useState<string[]>([])
   const mapSectionRef = useRef<HTMLElement | null>(null)
   const cardRefs = useRef<Record<string, HTMLLIElement | null>>({})
 
-  // Load attractions from API on mount
+  // Load categories from API
   useEffect(() => {
-    const loadAttractions = async () => {
-      try {
-        const apiAttractions = await attractionApi.getAll()
-        // Map API attractions to local type if needed
-        // This depends on your needs - you might integrate with useAttractions hook
-      } catch (err) {
-        console.error('Failed to load attractions from API:', err)
-        // Fallback to existing data
-      }
-    }
+    let cancelled = false
 
-    loadAttractions()
+    categoryApi
+      .getAll()
+      .then((data: CategoryDto[]) => {
+        if (cancelled) return
+        const names = data.map((c: CategoryDto) => c.name).filter((x: string): x is string => typeof x === 'string' && x.length > 0)
+        setCategoryOptions(Array.from(new Set(names)))
+      })
+      .catch((err: any) => {
+        console.warn('Failed to load categories:', err)
+      })
+
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   const onMarkerSelect = (id: string) => {
@@ -109,6 +114,7 @@ export default function LocalPage() {
           maxAvailablePrice={MAX_PRICE}
           openNow={query.openNow}
           sortBy={query.sortBy}
+          categories={categoryOptions}
           onCategoryChange={updateCategory}
           onDistanceChange={updateMaxDistance}
           onMinPriceChange={updateMinPrice}
