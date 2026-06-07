@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { roomApi } from '../api'
 import RoomDetailModal from '../components/RoomDetailModal/RoomDetailModal'
+import LoadingState from '../components/LoadingState/LoadingState'
+import ErrorState from '../components/ErrorState/ErrorState'
 import { useAuth } from '../context/AuthContext'
 import type { Product } from '../types/product'
 import type { BookingData } from '../types/cart'
@@ -17,25 +19,30 @@ export default function Rooms({ onAddBookingToCart }: Props) {
   const { user } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const [rooms, setRooms] = useState<Room[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [selectedRoom, setSelectedRoom] = useState<number | null>(null)
   const [selectedRoomDetails, setSelectedRoomDetails] = useState<Room | null>(null)
   const [currentImageIndex, setCurrentImageIndex] = useState<Record<number, number>>({})
   const [bookingRoom, setBookingRoom] = useState<any>(null)
 
-  // Load rooms from API
-  useEffect(() => {
-    const loadRooms = async () => {
-      try {
-        const data = await roomApi.getAll()
-        setRooms(data)
-      } catch (err) {
-        console.error('Failed to load rooms:', err)
-        setRooms([])
-      }
+  const loadRooms = useCallback(async () => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      const data = await roomApi.getAll()
+      setRooms(data)
+    } catch (err) {
+      console.error('Failed to load rooms:', err)
+      setError('Не удалось загрузить список номеров. Пожалуйста, попробуйте позже.')
+    } finally {
+      setIsLoading(false)
     }
-
-    loadRooms()
   }, [])
+
+  useEffect(() => {
+    loadRooms()
+  }, [loadRooms])
 
   useEffect(() => {
     if (!selectedRoom) {
@@ -102,6 +109,19 @@ export default function Rooms({ onAddBookingToCart }: Props) {
           Выберите идеальное жилье для вашего отпуска в Канне
         </p>
 
+        {isLoading && <LoadingState title="Загружаем номера" message="Ищем лучшие варианты размещения для вас..." />}
+
+        {!isLoading && error && (
+          <ErrorState 
+            emoji="(>_<)"
+            imageUrl="/cry.gif"
+            title="Ошибка загрузки номеров" 
+            message={error} 
+            onRetry={loadRooms} 
+          />
+        )}
+
+        {!isLoading && !error && (
         <div className="rooms__grid">
           {rooms.map((room) => (
             <div key={room.id} className="room-card" onClick={() => setSelectedRoom(room.id)}>
@@ -173,6 +193,7 @@ export default function Rooms({ onAddBookingToCart }: Props) {
             </div>
           ))}
         </div>
+        )}
 
         <div className="booking-section">
           <h2>Готовы к бронированию?</h2>

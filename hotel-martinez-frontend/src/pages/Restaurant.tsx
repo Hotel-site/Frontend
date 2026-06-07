@@ -1,11 +1,32 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import '../styles/restaurant.css'
 import { DAYS } from '../data/menus'
 import { DRINKS } from '../data/drinks'
-
+import LoadingState from '../components/LoadingState/LoadingState'
+import ErrorState from '../components/ErrorState/ErrorState'
 
 export default function Restaurant() {
   const [activeDay, setActiveDay] = useState<string>('mon')
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const loadMenu = useCallback(async () => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      // Имитация загрузки, так как данные пока статические
+      await new Promise(resolve => setTimeout(resolve, 800))
+      setIsLoading(false)
+    } catch (err) {
+      setError('Не удалось загрузить меню ресторана.')
+      setIsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    loadMenu()
+  }, [loadMenu])
+
   const dayMenu = DAYS.find((d) => d.day === activeDay)!
   const dayDrinks = DRINKS.find((d) => d.day === activeDay)?.items ?? []
 
@@ -28,6 +49,19 @@ export default function Restaurant() {
         ))}
       </div>
 
+      {isLoading && <LoadingState title="Загружаем меню" message="Подготавливаем список блюд от нашего шеф-повара..." />}
+
+      {!isLoading && error && (
+        <ErrorState 
+          emoji="(>_<)"
+          imageUrl="/cry.gif"
+          title="Ошибка загрузки меню" 
+          message={error} 
+          onRetry={loadMenu} 
+        />
+      )}
+
+      {!isLoading && !error && (
       <section className="menu">
         {dayMenu.sections.map((section) => (
           <div className="menu-section" key={section.category}>
@@ -60,6 +94,7 @@ export default function Restaurant() {
           </ul>
         </div>
       </section>
+      )}
     </div>
   )
 }

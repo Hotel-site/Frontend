@@ -124,38 +124,38 @@ export default function LocalPage() {
         />
 
         <div>
-          <p className={styles.resultsInfo}>Найдено: {total}</p>
+          {loading && <LoadingState title="Загружаем развлечения" message="Формируем подборку активностей рядом с отелем." />}
+          
+          {!loading && error && (
+            <ErrorState
+              emoji="(>_<)"
+              imageUrl="/cry.gif"
+              title="Ошибка загрузки развлечений"
+              message={error}
+              onRetry={() => void reload()}
+            />
+          )}
 
-          {viewMode === 'map' ? (
-            <section ref={mapSectionRef} className={styles.mapInline} aria-label="Карта развлечений">
-              <Suspense fallback={<div className={styles.mapFallback}>{translate('loadingMap')}</div>}>
-                <MapView attractions={items} selectedId={selectedAttractionId} onMarkerSelect={onMarkerSelect} />
-              </Suspense>
-            </section>
-          ) : (
+          {!loading && !error && (
             <>
-              {loading && <LoadingState title="Загружаем развлечения" message="Формируем подборку активностей рядом с отелем." />}
-              {error && (
+              {renderedItems.length === 0 ? (
                 <ErrorState
-                  emoji="(>_<)"
-                  title="Ошибка загрузки развлечений"
-                  message={error}
+                  emoji="(o_o)"
+                  imageUrl="/cry.gif"
+                  title={translate('noResults')}
+                  message="Попробуйте изменить дистанцию, категорию или убрать фильтр «Открыто сейчас»."
                   onRetry={() => void reload()}
                 />
-              )}
-
-              {!loading && !error && renderedItems.length === 0 && (
-                <div className={styles.emptyState} role="status" aria-live="polite">
-                  <p className={styles.emptyEmoji} aria-hidden="true">
-                    (o_o)
-                  </p>
-                  <p className={styles.emptyTitle}>{translate('noResults')}</p>
-                  <p className={styles.emptyHint}>Попробуйте изменить дистанцию, категорию или убрать фильтр «Открыто сейчас».</p>
-                </div>
-              )}
-
-              {!loading && !error && (
+              ) : viewMode === 'map' ? (
+                <section ref={mapSectionRef} className={styles.mapInline} aria-label="Карта развлечений">
+                  <p className={styles.resultsInfo}>Найдено: {total}</p>
+                  <Suspense fallback={<div className={styles.mapFallback}>{translate('loadingMap')}</div>}>
+                    <MapView attractions={items} selectedId={selectedAttractionId} onMarkerSelect={onMarkerSelect} />
+                  </Suspense>
+                </section>
+              ) : (
                 <>
+                  <p className={styles.resultsInfo}>Найдено: {total}</p>
                   <ul className={clsx(styles.list, styles.grid)}>
                     {renderedItems.map((attraction) => (
                       <AttractionCard

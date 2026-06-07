@@ -161,7 +161,7 @@ function AppShell() {
               <Route path="/auth" element={<Auth />} />
               <Route path="/catalog" element={<Catalog favorites={favoriteIds} onToggleFavorite={onToggleFavorite} onAddToCart={onAddToCart} onAddBookingToCart={onAddBookingToCart} />} />
               <Route path="/favorites" element={<Favorites favorites={favoriteIds} onToggleFavorite={onToggleFavorite} />} />
-              <Route path="/cart" element={<Cart cartItems={cart} onRemoveFromCart={onRemoveFromCart} onCheckout={onCheckout} />} />
+              <Route path="/cart" element={<Cart onCheckout={onCheckout} />} />
               <Route path="/about" element={<About />} />
               <Route path="/restaurant" element={<Restaurant />} />
               <Route path="/rooms" element={<Rooms onAddBookingToCart={onAddBookingToCart} />} />

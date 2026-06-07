@@ -1,4 +1,4 @@
-﻿import { useMemo, useState, useEffect, useRef, useCallback } from 'react'
+﻿﻿import { useMemo, useState, useEffect, useRef, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import ProductCard from '../components/Cards/ProductCard'
 import ProductDetailModal from '../components/DetailModal/ProductDetailModal'
@@ -240,18 +240,23 @@ export default function Catalog({ favorites, onToggleFavorite, onAddToCart, onAd
           {isLoading && <LoadingState title="Загружаем каталог" message="Получаем товары из базы данных..." />}
 
           {!isLoading && error && (
-            <ErrorState title="Не удалось загрузить каталог" message={error} onRetry={loadProducts} />
+            <ErrorState 
+              emoji="(>_<)"
+              imageUrl="/cry.gif"
+              title="Не удалось загрузить каталог" 
+              message={error} 
+              onRetry={loadProducts} 
+            />
           )}
 
           {!isLoading && !error && filtered.length === 0 ? (
-            <div className="catalog-empty-state">
-              <p className="empty-emoji">😢</p>
-              <p className="empty-title">Ничего не найдено</p>
-              <p className="empty-hint">Попробуйте изменить фильтры или поисковый запрос</p>
-              <button className="empty-reset-btn" onClick={handleResetFilters}>
-                Очистить все фильтры
-              </button>
-            </div>
+            <ErrorState 
+              emoji="(o_o)"
+              imageUrl="/cry.gif"
+              title="Ничего не найдено" 
+              message="Попробуйте изменить фильтры или поисковый запрос" 
+              onRetry={handleResetFilters} 
+            />
           ) : !isLoading && !error ? (
             <div className="catalog-grid">
               {paginatedItems.map((p) => (
