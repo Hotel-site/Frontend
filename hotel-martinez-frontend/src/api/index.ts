@@ -2,6 +2,7 @@ export { authApi, type AuthResponse, type LoginRequest, type RegisterRequest } f
 export { productApi, type ProductDto } from './productApi'
 export { roomApi, type Room } from './roomApi'
 export { attractionApi, type Attraction, type Location } from './attractionApi'
+export { categoryApi, type CategoryDto } from './categoryApi'
 export { favoriteApi, type Favorite, type CreateFavoriteDTO } from './favoriteApi'
 export { orderApi, type Order, type OrderItemDTO, type CartItemReq } from './orderApi'
 export { userApi, type UserProfile } from './userApi'

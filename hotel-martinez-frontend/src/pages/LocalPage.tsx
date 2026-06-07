@@ -9,7 +9,7 @@ import ErrorState from '../components/ErrorState/ErrorState'
 import LoadingState from '../components/LoadingState/LoadingState'
 import { useAttractions } from '../hooks/useAttractions'
 import { fetchAttractionById, MAX_PRICE } from '../data/attractions'
-import { categoryApi } from '../api/categoryApi'
+import { categoryApi, type CategoryDto } from '../api'
 import type { Attraction } from '../types/local'
 import styles from '../styles/LocalPage.module.css'
 import { translate } from '../utils/i18n'
@@ -52,12 +52,12 @@ export default function LocalPage() {
 
     categoryApi
       .getAll()
-      .then((data) => {
+      .then((data: CategoryDto[]) => {
         if (cancelled) return
-        const names = data.map((c) => c.name).filter((x): x is string => typeof x === 'string' && x.length > 0)
+        const names = data.map((c: CategoryDto) => c.name).filter((x: string): x is string => typeof x === 'string' && x.length > 0)
         setCategoryOptions(Array.from(new Set(names)))
       })
-      .catch((err) => {
+      .catch((err: any) => {
         console.warn('Failed to load categories:', err)
       })
 
