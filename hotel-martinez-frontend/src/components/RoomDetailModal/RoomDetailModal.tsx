@@ -142,7 +142,6 @@ export default function RoomDetailModal({ room, onClose }: RoomDetailModalProps)
           <div className="details-header">
             <div>
               <h2 className="details-title">{room.title}</h2>
-              <p className="details-short-desc">{room.description}</p>
             </div>
             <div className="details-price">
               <span className="price-value">{room.price}€</span>
@@ -152,24 +151,7 @@ export default function RoomDetailModal({ room, onClose }: RoomDetailModalProps)
 
           <div className="details-section">
             <h3>Описание</h3>
-            <p className="details-long-desc">{room.longDescription}</p>
-          </div>
-
-          <div className="details-specs">
-            <div className="spec-item">
-              <span className="spec-icon">👥</span>
-              <div>
-                <span className="spec-label">Гостей</span>
-                <span className="spec-value">{room.capacity}</span>
-              </div>
-            </div>
-            <div className="spec-item">
-              <span className="spec-icon">📏</span>
-              <div>
-                <span className="spec-label">Площадь</span>
-                <span className="spec-value">{room.size} м²</span>
-              </div>
-            </div>
+            <p className="details-long-desc">{room.description}</p>
           </div>
 
           <div className="details-amenities">

@@ -1,10 +1,13 @@
-﻿export type HotelCategory =
+﻿export type KnownHotelCategory =
   | 'Номера'
   | 'SPA & Wellness'
   | 'Рестораны'
   | 'Трансфер'
   | 'События'
   | 'Мерч'
+
+// Allow categories coming from DB while keeping autocomplete for known values.
+export type HotelCategory = KnownHotelCategory | (string & {})
 
 export interface Product {
   id: number

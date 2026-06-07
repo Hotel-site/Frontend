@@ -8,6 +8,6 @@ export type CategoryDto = {
 export const categoryApi = {
   getAll: async (): Promise<CategoryDto[]> => {
     const response = await apiClient.get<CategoryDto[]>('/category/all')
-    return response.data || []
+    return response.data
   },
 }
