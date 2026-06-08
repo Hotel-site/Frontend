@@ -1,13 +1,61 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import '../styles/restaurant.css'
-import { DAYS } from '../data/menus'
-import { DRINKS } from '../data/drinks'
+import { dishApi } from '../api'
+import LoadingState from '../components/LoadingState/LoadingState'
+import ErrorState from '../components/ErrorState/ErrorState'
+import type { Dish, DayOfWeek, MealType } from '../types/dish'
+import { dayOfWeekLabels, dayOfWeekKeys, mealTypeLabels } from '../types/dish'
 
+const DAYS_OF_WEEK = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const
+const MEAL_ORDER: MealType[] = ['Breakfast', 'Lunch', 'Dinner', 'Dessert', 'Drinks']
 
 export default function Restaurant() {
   const [activeDay, setActiveDay] = useState<string>('mon')
-  const dayMenu = DAYS.find((d) => d.day === activeDay)!
-  const dayDrinks = DRINKS.find((d) => d.day === activeDay)?.items ?? []
+  const [dishes, setDishes] = useState<Dish[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const loadDishes = useCallback(async () => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      const data = await dishApi.getAll()
+      setDishes(data)
+    } catch (err) {
+      console.error('Failed to load dishes:', err)
+      setError('Не удалось загрузить меню')
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    loadDishes()
+  }, [loadDishes])
+
+  const currentDayOfWeek = useMemo(() => {
+    return dayOfWeekKeys[activeDay] as DayOfWeek
+  }, [activeDay])
+
+  const dayDishes = useMemo(() => {
+    return dishes.filter(d => d.dayOfWeek === currentDayOfWeek)
+  }, [dishes, currentDayOfWeek])
+
+  const groupedByMeal = useMemo(() => {
+    const grouped = new Map<MealType, Dish[]>()
+    
+    MEAL_ORDER.forEach(meal => {
+      grouped.set(meal, [])
+    })
+
+    dayDishes.forEach(dish => {
+      const mealDishes = grouped.get(dish.meal) || []
+      grouped.set(dish.meal, mealDishes)
+      mealDishes.push(dish)
+    })
+
+    return grouped
+  }, [dayDishes])
 
   return (
     <div className="restaurant-page container">
@@ -17,49 +65,45 @@ export default function Restaurant() {
       </header>
 
       <div className="day-tabs">
-        {DAYS.map((d) => (
+        {DAYS_OF_WEEK.map((dayKey) => (
           <button
-            key={d.day}
-            className={`day-tab${activeDay === d.day ? ' day-tab--active' : ''}`}
-            onClick={() => setActiveDay(d.day)}
+            key={dayKey}
+            className={`day-tab${activeDay === dayKey ? ' day-tab--active' : ''}`}
+            onClick={() => setActiveDay(dayKey)}
           >
-            {d.label}
+            {dayOfWeekLabels[dayOfWeekKeys[dayKey]]}
           </button>
         ))}
       </div>
 
-      <section className="menu">
-        {dayMenu.sections.map((section) => (
-          <div className="menu-section" key={section.category}>
-            <h2>{section.category}</h2>
-            <ul>
-              {section.items.map((it) => (
-                <li className="menu-item" key={it.id}>
-                  <div>
-                    <div className="menu-item__name">{it.name}</div>
-                    {it.description && <div className="menu-item__desc">{it.description}</div>}
-                  </div>
-                  <div className="menu-item__price">{it.price}€</div>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
+      {isLoading && <LoadingState />}
+      {error && <ErrorState title="Ошибка загрузки меню" message={error} />}
 
-        <div className="menu-section">
-          <h2>Напитки</h2>
-          <ul>
-            {dayDrinks.map((drink) => (
-              <li className="menu-item" key={drink.id}>
-                <div>
-                  <div className="menu-item__name">{drink.name}</div>
-                </div>
-                <div className="menu-item__price">{drink.price}€</div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
+      {!isLoading && !error && (
+        <section className="menu">
+          {MEAL_ORDER.map((meal) => {
+            const mealDishes = groupedByMeal.get(meal) || []
+            if (mealDishes.length === 0) return null
+
+            return (
+              <div className="menu-section" key={meal}>
+                <h2>{mealTypeLabels[meal]}</h2>
+                <ul>
+                  {mealDishes.map((dish) => (
+                    <li className="menu-item" key={dish.id}>
+                      <div>
+                        <div className="menu-item__name">{dish.name}</div>
+                        {dish.description && <div className="menu-item__desc">{dish.description}</div>}
+                      </div>
+                      <div className="menu-item__price">€{dish.price.toFixed(2)}</div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )
+          })}
+        </section>
+      )}
     </div>
   )
 }
