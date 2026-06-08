@@ -43,6 +43,58 @@ const toUiProduct = (dto: ProductDto): UiProduct => {
   }
 }
 
+type CreateProductPayload = {
+  name: string
+  description?: string | null
+  categoryId?: number | null
+  price: number
+  images?: { url: string }[]
+  stock: number
+  requireBooking: boolean
+}
+
+type UpdateProductPayload = {
+  id: number
+  name?: string | null
+  description?: string | null
+  categoryId?: number | null
+  price: number
+  images?: { url: string }[]
+  stock: number
+  requireBooking: boolean
+  status?: number
+}
+
+const toCreatePayload = (ui: UiProduct): CreateProductPayload => {
+  const categoryId = (ui as any).categoryId ?? null
+  
+  return {
+    name: ui.title,
+    description: ui.description ?? null,
+    categoryId: categoryId,
+    price: ui.price,
+    images: (ui.images ?? []).map((url) => ({ url })),
+    stock: 999,
+    requireBooking: Boolean(ui.requiresBooking),
+  }
+}
+
+const toUpdatePayload = (id: number, ui: UiProduct): UpdateProductPayload => {
+  const categoryId = (ui as any).categoryId ?? null
+  
+  return {
+    id,
+    name: ui.title,
+    description: ui.description ?? null,
+    categoryId: categoryId,
+    price: ui.price,
+    images: (ui.images ?? []).map((url) => ({ url })),
+    stock: 999,
+    requireBooking: Boolean(ui.requiresBooking),
+    status: 1,
+  }
+}
+
 export const productApi = {
   getAll: async (): Promise<UiProduct[]> => {
     const response = await apiClient.get<ProductDto[]>('/product/all')
@@ -52,5 +104,17 @@ export const productApi = {
   getById: async (id: number): Promise<UiProduct> => {
     const response = await apiClient.get<ProductDto>(`/product/${id}`)
     return toUiProduct(response.data)
+  },
+
+  create: async (payload: UiProduct): Promise<void> => {
+    await apiClient.post('/product', toCreatePayload(payload))
+  },
+
+  update: async (id: number, payload: UiProduct): Promise<void> => {
+    await apiClient.put(`/product/${id}`, toUpdatePayload(id, payload))
+  },
+
+  remove: async (id: number): Promise<void> => {
+    await apiClient.delete(`/product/${id}`)
   },
 }

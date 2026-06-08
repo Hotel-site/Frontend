@@ -67,7 +67,6 @@ export const authApi = {
 }
 
 function extractErrorMessage(error: any, fallback: string): string {
-  // Пробуем достать message из разных мест в ответе бека
   const data = error.response?.data
 
   if (typeof data === 'string' && data.trim()) {
@@ -75,7 +74,6 @@ function extractErrorMessage(error: any, fallback: string): string {
   }
 
   if (data && typeof data === 'object') {
-    // Проверяем разные возможные поля с сообщением
     if (data.message && typeof data.message === 'string') {
       return data.message
     }
@@ -85,7 +83,6 @@ function extractErrorMessage(error: any, fallback: string): string {
     if (data.detail && typeof data.detail === 'string') {
       return data.detail
     }
-    // Если есть массив ошибок (например, validation errors)
     if (Array.isArray(data.errors) && data.errors.length > 0) {
       const first = data.errors[0]
       if (typeof first === 'string') return first
@@ -93,7 +90,6 @@ function extractErrorMessage(error: any, fallback: string): string {
     }
   }
 
-  // Fallback на статус код, если есть
   if (error.response?.status) {
     const status = error.response.status
     if (status === 400) return 'Проверьте введённые данные'
@@ -103,7 +99,6 @@ function extractErrorMessage(error: any, fallback: string): string {
     if (status === 500) return 'Ошибка сервера. Попробуйте позже'
   }
 
-  // Статус текст (e.g., "Unauthorized", "Bad Request")
   if (error.response?.statusText) {
     return error.response.statusText
   }

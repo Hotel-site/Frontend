@@ -1,121 +1,63 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../context/AuthContext'
-import { products } from '../data/products'
-import { roomApi } from '../api'
+import { productApi } from '../api/productApi'
+import { roomApi } from '../api/roomApi'
+import { dishApi } from '../api/dishApi'
+import { attractionApi } from '../api/attractionApi'
+import { categoryApi, type CategoryDto } from '../api'
 import type { Room } from '../types/room'
-
-type AdminRoom = Room & { capacity?: number; size?: number }
-import { DAYS } from '../data/menus'
-import { attractions } from '../data/attractions'
-import { categoryApi } from '../api'
-import type { HotelCategory } from '../types/product'
-import type { Attraction } from '../types/local'
+import type { Dish, DayOfWeek, MealType } from '../types/dish'
+import type { Product as UiProduct } from '../types/product'
+import type { AttractionBackendDto, OpeningHour } from '../api/attractionApi'
 import ErrorState from '../components/ErrorState/ErrorState'
 import '../styles/admin.css'
 
 type Tab = 'products' | 'rooms' | 'menus' | 'attractions' | 'dashboard'
+type ConfirmDelete = { type: string; id: number | string; name: string } | null
 
-type ConfirmDelete = {
-  type: 'product' | 'room' | 'menu' | 'attraction'
-  id: number | string
-  name: string
-} | null
+const DAY_LABELS: Record<string, string> = { Monday: 'Понедельник', Tuesday: 'Вторник', Wednesday: 'Среда', Thursday: 'Четверг', Friday: 'Пятница', Saturday: 'Суббота', Sunday: 'Воскресенье' }
+const MEAL_ORDER: MealType[] = ['Breakfast', 'Lunch', 'Dinner', 'Drinks', 'Dessert']
+const mealTypeLabels: Record<MealType, string> = { Breakfast: 'Завтрак', Lunch: 'Обед', Dinner: 'Ужин', Drinks: 'Напитки', Dessert: 'Десерты' }
 
 export default function Admin() {
   const { user, logout } = useAuth()
-  const [activeTab, setActiveTab] = useState<Tab>('dashboard')
-  const [editingProduct, setEditingProduct] = useState<(typeof products)[0] | null>(null)
-  const [editingRoom, setEditingRoom] = useState<AdminRoom | null>(null)
-  const [editingMenu, setEditingMenu] = useState<(typeof DAYS)[0] | null>(null)
-  const [editingAttraction, setEditingAttraction] = useState<Attraction | null>(null)
-  const [confirmDelete, setConfirmDelete] = useState<ConfirmDelete>(null)
-  const [isAddingProduct, setIsAddingProduct] = useState(false)
-  const [isAddingRoom, setIsAddingRoom] = useState(false)
-  const [newProductData, setNewProductData] = useState<{
-    title: string
-    price: number
-    category: HotelCategory
-    description: string
-    images: string[]
-    image: string
-  } | null>(null)
-  const [newProductImageIndex, setNewProductImageIndex] = useState(0)
-  const [newImageUrl, setNewImageUrl] = useState('')
-  const [newRoomData, setNewRoomData] = useState<{
-    title: string
-    price: number
-    capacity: number
-    size: number
-    description: string
-    images: string[]
-    amenities: string[]
-  } | null>(null)
-  const [newRoomImageIndex, setNewRoomImageIndex] = useState(0)
-  const [newRoomImageUrl, setNewRoomImageUrl] = useState('')
-  const [isAddingAttraction, setIsAddingAttraction] = useState(false)
-  const [newAttractionData, setNewAttractionData] = useState<Attraction | null>(null)
-  const [newAttractionImageIndex, setNewAttractionImageIndex] = useState(0)
-  const [roomsList, setRoomsList] = useState<Room[]>([])
+  const [tab, setTab] = useState<Tab>('dashboard')
+  const [confirm, setConfirm] = useState<ConfirmDelete>(null)
+  const [cats, setCats] = useState<CategoryDto[]>([])
+  const [products, setProducts] = useState<UiProduct[]>([])
+  const [rooms, setRooms] = useState<Room[]>([])
+  const [dishes, setDishes] = useState<Dish[]>([])
+  const [attractions, setAttractions] = useState<AttractionBackendDto[]>([])
+  const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    if (editingProduct || editingRoom || editingMenu || editingAttraction || confirmDelete || isAddingProduct || isAddingRoom || isAddingAttraction) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = 'auto'
-    }
-    
-    return () => {
-      document.body.style.overflow = 'auto'
-    }
-  }, [editingProduct, editingRoom, editingMenu, editingAttraction, confirmDelete, isAddingProduct, isAddingRoom, isAddingAttraction])
-
-  useEffect(() => {
-    const handleEscapeKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setEditingProduct(null)
-        setEditingRoom(null)
-        setEditingMenu(null)
-        setEditingAttraction(null)
-        setConfirmDelete(null)
-        setIsAddingProduct(false)
-        setIsAddingRoom(false)
-        setIsAddingAttraction(false)
-      }
-    }
-
-    if (editingProduct || editingRoom || editingMenu || editingAttraction || confirmDelete || isAddingProduct || isAddingRoom || isAddingAttraction) {
-      document.addEventListener('keydown', handleEscapeKey)
-      return () => {
-        document.removeEventListener('keydown', handleEscapeKey)
-      }
-    }
-  }, [editingProduct, editingRoom, editingMenu, editingAttraction, confirmDelete, isAddingProduct, isAddingRoom, isAddingAttraction])
-
-  useEffect(() => {
-    let cancelled = false
-    roomApi
-      .getAll()
-      .then((data) => {
-        if (cancelled) return
-        setRoomsList(data)
-      })
-      .catch((err) => console.warn('Failed to load rooms for admin:', err))
-
-    return () => {
-      cancelled = true
-    }
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const [cat, p, r, d, a] = await Promise.all([categoryApi.getAll(), productApi.getAll(), roomApi.getAll(), dishApi.getAll(), attractionApi.getAll()])
+      setCats(cat ?? []); setProducts(p ?? []); setRooms(r ?? []); setDishes(d ?? []); setAttractions(a ?? [])
+    } catch (e) { console.error(e) } finally { setLoading(false) }
   }, [])
+  useEffect(() => { load() }, [load])
+
+  const del = async (item: ConfirmDelete) => {
+    if (!item) return
+    try {
+      if (item.type === 'product') await productApi.remove(item.id as number)
+      else if (item.type === 'room') await roomApi.remove(item.id as number)
+      else if (item.type === 'dish') await dishApi.remove(item.id as number)
+      else if (item.type === 'attraction') await attractionApi.remove(item.id as number)
+      await load()
+    } catch (err: any) { alert('Ошибка: ' + (err?.response?.data?.message || err?.message)) }
+    setConfirm(null)
+  }
 
   if (!user || user.role !== 'admin') {
-    return (
-      <ErrorState
-        title="Страница не найдена"
-        message={"Путь указан неверно. Проверьте адрес и попробуйте снова."}
-        emoji="(x_x)"
-        imageUrl="/cry.gif"
-      />
-    )
+    return <ErrorState title="Страница не найдена" message="Путь указан неверно." emoji="(x_x)" imageUrl="/cry.gif" />
   }
+
+  const nav = (['dashboard', 'products', 'rooms', 'menus', 'attractions'] as Tab[]).map(t => ({
+    t, label: t === 'dashboard' ? '📊 Статистика' : t === 'products' ? '🛍️ Продукты' : t === 'rooms' ? '🏨 Номера' : t === 'menus' ? '🍽️ Меню' : '🗺️ Гид по городу'
+  }))
 
   return (
     <div className="admin-container">
@@ -124,2982 +66,573 @@ export default function Admin() {
           <h1>Панель администратора</h1>
           <div className="admin-user-info">
             <span>{user?.username} ({user?.email})</span>
-            <button className="btn-logout" onClick={logout}>
-              Выход
-            </button>
+            <button className="btn-logout" onClick={logout}>Выход</button>
           </div>
         </div>
       </header>
-
       <div className="admin-layout">
         <nav className="admin-nav">
-          <button
-            className={`nav-btn ${activeTab === 'dashboard' ? 'active' : ''}`}
-            onClick={() => setActiveTab('dashboard')}
-          >
-            📊 Статистика
-          </button>
-          <button
-            className={`nav-btn ${activeTab === 'products' ? 'active' : ''}`}
-            onClick={() => setActiveTab('products')}
-          >
-            🛍️ Продукты
-          </button>
-          <button
-            className={`nav-btn ${activeTab === 'rooms' ? 'active' : ''}`}
-            onClick={() => setActiveTab('rooms')}
-          >
-            🏨 Номера
-          </button>
-          <button
-            className={`nav-btn ${activeTab === 'menus' ? 'active' : ''}`}
-            onClick={() => setActiveTab('menus')}
-          >
-            🍽️ Меню
-          </button>
-          <button
-            className={`nav-btn ${activeTab === 'attractions' ? 'active' : ''}`}
-            onClick={() => setActiveTab('attractions')}
-          >
-            🗺️ Гид по городу
-          </button>
+          {nav.map(n => <button key={n.t} className={`nav-btn ${tab === n.t ? 'active' : ''}`} onClick={() => setTab(n.t)}>{n.label}</button>)}
         </nav>
-
         <main className="admin-main">
-          {activeTab === 'dashboard' && <DashboardTab roomsCount={roomsList.length} />}
-          {activeTab === 'products' && (
-            <ProductsTab 
-              editingProduct={editingProduct} 
-              setEditingProduct={setEditingProduct} 
-              setConfirmDelete={setConfirmDelete}
-              isAddingProduct={isAddingProduct}
-              setIsAddingProduct={setIsAddingProduct}
-              newProductData={newProductData}
-              setNewProductData={setNewProductData}
-              newProductImageIndex={newProductImageIndex}
-              setNewProductImageIndex={setNewProductImageIndex}
-              newImageUrl={newImageUrl}
-              setNewImageUrl={setNewImageUrl}
-            />
+          {loading ? (
+            <div className="admin-loading"><div className="loading-spinner"></div><p>Загрузка данных...</p></div>
+          ) : (
+            <>
+              {tab === 'dashboard' && <Dashboard products={products.length} rooms={rooms.length} dishes={dishes.length} attractions={attractions.length} />}
+              {tab === 'products' && <ProductsTab items={products} cats={cats} del={del} load={load} />}
+              {tab === 'rooms' && <RoomsTab items={rooms} del={del} load={load} />}
+              {tab === 'menus' && <MenusTab items={dishes} del={del} load={load} />}
+              {tab === 'attractions' && <AttractionsTab items={attractions} cats={cats} del={del} load={load} />}
+            </>
           )}
-          {activeTab === 'rooms' && (
-            <RoomsTab 
-              rooms={roomsList}
-              editingRoom={editingRoom} 
-              setEditingRoom={setEditingRoom} 
-              setConfirmDelete={setConfirmDelete}
-              isAddingRoom={isAddingRoom}
-              setIsAddingRoom={setIsAddingRoom}
-              newRoomData={newRoomData}
-              setNewRoomData={setNewRoomData}
-              newRoomImageIndex={newRoomImageIndex}
-              setNewRoomImageIndex={setNewRoomImageIndex}
-              newRoomImageUrl={newRoomImageUrl}
-              setNewRoomImageUrl={setNewRoomImageUrl}
-            />
-          )}
-          {activeTab === 'menus' && <MenusTab editingMenu={editingMenu} setEditingMenu={setEditingMenu} setConfirmDelete={setConfirmDelete} />}
-          {activeTab === 'attractions' && <AttractionsTab editingAttraction={editingAttraction} setEditingAttraction={setEditingAttraction} setConfirmDelete={setConfirmDelete} isAddingAttraction={isAddingAttraction} setIsAddingAttraction={setIsAddingAttraction} newAttractionData={newAttractionData} setNewAttractionData={setNewAttractionData} newAttractionImageIndex={newAttractionImageIndex} setNewAttractionImageIndex={setNewAttractionImageIndex} />}
         </main>
       </div>
-
-      {confirmDelete && (
-        <ConfirmDeleteDialog
-          item={confirmDelete}
-          onConfirm={() => {
-            console.log(`Удалён ${confirmDelete.type}: ${confirmDelete.name}`)
-            setConfirmDelete(null)
-          }}
-          onCancel={() => setConfirmDelete(null)}
-        />
+      {confirm && (
+        <div className="modal-overlay" onClick={() => setConfirm(null)}>
+          <div className="confirm-dialog" onClick={e => e.stopPropagation()}>
+            <div className="confirm-icon">{confirm.type === 'product' ? '🛍️' : confirm.type === 'room' ? '🏨' : confirm.type === 'dish' ? '🍽️' : '🗺️'}</div>
+            <h3>Подтверждение удаления</h3>
+            <p>Удалить <strong>"{confirm.name}"</strong>?</p>
+            <p className="confirm-warning">⚠️ Это действие невозможно отменить</p>
+            <div className="confirm-buttons">
+              <button className="btn-cancel" onClick={() => setConfirm(null)}>Отменить</button>
+              <button className="btn-delete-confirm" onClick={() => del(confirm)}>Удалить</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
 }
 
-interface ConfirmDeleteDialogProps {
-  item: Exclude<ConfirmDelete, null>
-  onConfirm: () => void
-  onCancel: () => void
-}
-
-function ConfirmDeleteDialog({ item, onConfirm, onCancel }: ConfirmDeleteDialogProps) {
-  const getIcon = () => {
-    switch (item.type) {
-      case 'product':
-        return '🛍️'
-      case 'room':
-        return '🏨'
-      case 'menu':
-        return '🍽️'
-      case 'attraction':
-        return '🗺️'
-    }
-  }
-
-  const getTypeLabel = () => {
-    switch (item.type) {
-      case 'product':
-        return 'товар'
-      case 'room':
-        return 'номер'
-      case 'menu':
-        return 'меню'
-      case 'attraction':
-        return 'достопримечательность'
-    }
-  }
-
-  return (
-    <div className="modal-overlay" onClick={onCancel}>
-      <div className="confirm-dialog" onClick={(e) => e.stopPropagation()}>
-        <div className="confirm-icon">{getIcon()}</div>
-        <h3>Подтверждение удаления</h3>
-        <p>
-          Вы уверены, что хотите удалить {getTypeLabel()} <strong>"{item.name}"</strong>?
-        </p>
-        <p className="confirm-warning">⚠️ Это действие невозможно отменить</p>
-        <div className="confirm-buttons">
-          <button className="btn-cancel" onClick={onCancel}>
-            Отменить
-          </button>
-          <button className="btn-delete-confirm" onClick={onConfirm}>
-            Удалить
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function DashboardTab({ roomsCount }: { roomsCount: number }) {
+function Dashboard({ products, rooms, dishes, attractions }: { products: number; rooms: number; dishes: number; attractions: number }) {
   return (
     <div className="admin-tab">
       <h2>📊 Статистика</h2>
       <div className="stats-grid">
-        <div className="stat-card">
-          <h3>Всего продуктов</h3>
-          <p className="stat-number">{products.length}</p>
-        </div>
-        <div className="stat-card">
-          <h3>Всего номеров</h3>
-          <p className="stat-number">{roomsCount}</p>
-        </div>
-        <div className="stat-card">
-          <h3>Дни меню</h3>
-          <p className="stat-number">{DAYS.length}</p>
-        </div>
-        <div className="stat-card">
-          <h3>Достопримечательности</h3>
-          <p className="stat-number">{attractions.length}</p>
-        </div>
-        <div className="stat-card">
-          <h3>Статус системы</h3>
-          <p className="stat-status">🟢 Активна</p>
-        </div>
+        <div className="stat-card"><h3>Всего продуктов</h3><p className="stat-number">{products}</p></div>
+        <div className="stat-card"><h3>Всего номеров</h3><p className="stat-number">{rooms}</p></div>
+        <div className="stat-card"><h3>Блюд в меню</h3><p className="stat-number">{dishes}</p></div>
+        <div className="stat-card"><h3>Достопримечательности</h3><p className="stat-number">{attractions}</p></div>
+        <div className="stat-card"><h3>Статус системы</h3><p className="stat-status">🟢 Активна</p></div>
       </div>
     </div>
   )
 }
 
-type ProductsTabProps = {
-  editingProduct: (typeof products)[0] | null
-  setEditingProduct: (product: (typeof products)[0] | null) => void
-  setConfirmDelete: (item: ConfirmDelete) => void
-  isAddingProduct: boolean
-  setIsAddingProduct: (value: boolean) => void
-  newProductData: {
-    title: string
-    price: number
-    category: HotelCategory
-    description: string
-    images: string[]
-    image: string
-  } | null
-  setNewProductData: (data: any) => void
-  newProductImageIndex: number
-  setNewProductImageIndex: (index: number | ((prev: number) => number)) => void
-  newImageUrl: string
-  setNewImageUrl: (url: string) => void
+function Modal({ title, onClose, children, big = false }: { title: string; onClose: () => void; children: React.ReactNode; big?: boolean }) {
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className={big ? "modal-content" : "modal-content modal-small"} onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3>{title}</h3>
+          <button className="modal-close" onClick={onClose}>✕</button>
+        </div>
+        {children}
+      </div>
+    </div>
+  )
 }
 
-function ProductsTab({ 
-  editingProduct, 
-  setEditingProduct, 
-  setConfirmDelete,
-  isAddingProduct,
-  setIsAddingProduct,
-  newProductData,
-  setNewProductData,
-  newProductImageIndex,
-  setNewProductImageIndex,
-  newImageUrl,
-  setNewImageUrl
-}: ProductsTabProps) {
-  const DEFAULT_CATEGORIES = ['SPA & Wellness', 'Рестораны', 'Трансфер', 'События', 'Мерч']
-  const [defaultCategories, setDefaultCategories] = useState<string[]>(DEFAULT_CATEGORIES)
-  const [formData, setFormData] = useState(editingProduct ? {
-    title: editingProduct.title,
-    price: editingProduct.price,
-    category: editingProduct.category,
-    description: editingProduct.description || '',
-    images: editingProduct.images || [],
-    image: editingProduct.image,
-  } : null)
-  const [currentImageIndex, setCurrentImageIndex] = useState(0)
-  const [newCategory, setNewCategory] = useState('')
-  const [categories, setCategories] = useState<string[]>(DEFAULT_CATEGORIES)
-  const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false)
+function ProductsTab({ items, cats, del, load }: { items: UiProduct[]; cats: CategoryDto[]; del: (c: ConfirmDelete) => void; load: () => Promise<void> }) {
+  const [edit, setEdit] = useState<UiProduct | null>(null)
+  const [adding, setAdding] = useState(false)
+  const [form, setForm] = useState<{ title: string; price: number; desc: string; imgs: string[]; catName: string; catId: number | null } | null>(null)
+  const [url, setUrl] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [imgIdx, setImgIdx] = useState(0)
 
-  useEffect(() => {
-    let cancelled = false
-
-    categoryApi
-      .getAll()
-      .then((data) => {
-        if (cancelled) return
-        const names = data.map((c) => c.name).filter((x): x is string => typeof x === 'string' && x.length > 0)
-        if (!names.length) return
-        setDefaultCategories(names)
-        setCategories(names)
-      })
-      .catch((err) => {
-        console.warn('Failed to load categories:', err)
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
-  const handleSave = () => {
-    console.log('Сохранено:', formData)
-    setEditingProduct(null)
+  const openEdit = (p: UiProduct) => {
+    setEdit(p)
+    const c = cats.find(x => x.name === p.category)
+    setForm({ title: p.title, price: p.price, desc: p.description || '', imgs: p.images || [], catName: p.category, catId: c?.id ?? null })
+    setUrl(''); setImgIdx(0)
   }
 
-  const addImage = () => {
-    if (newImageUrl.trim() && formData) {
-      const newImages = [...(formData.images || []), newImageUrl]
-      setFormData({
-        ...formData,
-        images: newImages,
-        image: newImages[0]
-      })
-      setNewImageUrl('')
-    }
+  const saveEdit = async () => {
+    if (!edit || !form) return; setSaving(true)
+    try {
+      await productApi.update(edit.id, { ...edit, title: form.title, price: form.price, description: form.desc, images: form.imgs, category: form.catName as any, image: form.imgs[0] || '', categoryId: form.catId } as any)
+      await load(); setEdit(null); setForm(null)
+    } catch (e: any) { alert('Ошибка: ' + (e?.response?.data?.message || e?.message)) } finally { setSaving(false) }
   }
 
-  const deleteImage = (index: number) => {
-    if (formData) {
-      const newImages = formData.images.filter((_, i) => i !== index)
-      setFormData({
-        ...formData,
-        images: newImages,
-        image: newImages.length > 0 ? newImages[0] : formData.image 
-      })
-    }
-  }
-
-  const moveImageUp = (index: number) => {
-    if (formData && index > 0) {
-      const newImages = [...formData.images]
-      ;[newImages[index - 1], newImages[index]] = [newImages[index], newImages[index - 1]]
-      setFormData({
-        ...formData,
-        images: newImages,
-        image: newImages[0] 
-      })
-    }
-  }
-
-  const moveImageDown = (index: number) => {
-    if (formData && index < formData.images.length - 1) {
-      const newImages = [...formData.images]
-      ;[newImages[index], newImages[index + 1]] = [newImages[index + 1], newImages[index]]
-      setFormData({
-        ...formData,
-        images: newImages,
-        image: newImages[0] 
-      })
-    }
-  }
-
-  const addCategory = () => {
-    if (newCategory.trim() && !categories.includes(newCategory)) {
-      setCategories([...categories, newCategory])
-      setFormData(formData ? {...formData, category: newCategory as HotelCategory} : null)
-      setNewCategory('')
-    }
-  }
-
-  const addNewProduct = () => {
-    const firstCategory = (categories[0] ?? defaultCategories[0] ?? 'Мерч') as HotelCategory
-
-    setNewProductData({
-      title: '',
-      price: 0,
-      category: firstCategory,
-      description: '',
-      images: [],
-      image: '',
-    })
-    setIsAddingProduct(true)
-    setCategoryDropdownOpen(false)
+  const create = async () => {
+    if (!form) return; setSaving(true)
+    try {
+      await productApi.create({ id: 0, title: form.title, price: form.price, description: form.desc, images: form.imgs, image: form.imgs[0] || '', category: form.catName as any, categoryId: form.catId } as any)
+      await load(); setAdding(false); setForm(null)
+    } catch (e: any) { alert('Ошибка: ' + (e?.response?.data?.message || e?.message)) } finally { setSaving(false) }
   }
 
   return (
     <div className="admin-tab">
-      <div className="tab-header">
-        <h2>🛍️ Управление продуктами</h2>
-        <button 
-          className="btn-primary"
-          onClick={() => addNewProduct()}
-        >
-          + Добавить продукт
-        </button>
-      </div>
+      <div className="tab-header"><h2>🛍️ Управление продуктами</h2><button className="btn-primary" onClick={() => { const c = cats[0]; setForm({ title: '', price: 0, desc: '', imgs: [], catName: c?.name || '', catId: c?.id ?? null }); setAdding(true) }}>+ Добавить продукт</button></div>
+      <div className="items-table"><table>
+        <thead><tr><th>ID</th><th>Название</th><th>Категория</th><th>Цена</th><th>Действия</th></tr></thead>
+        <tbody>{items.map(p => <tr key={p.id}><td>{p.id}</td><td>{p.title}</td><td>{p.category}</td><td>{p.price} €</td><td className="action-cell"><button className="btn-small btn-edit" onClick={() => openEdit(p)}>✏️ Редакт.</button><button className="btn-small btn-delete" onClick={() => del({ type: 'product', id: p.id, name: p.title })}>🗑️ Удалить</button></td></tr>)}</tbody>
+      </table></div>
 
-      <div className="items-table">
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Название</th>
-              <th>Категория</th>
-              <th>Цена</th>
-              <th>Описание</th>
-              <th>Действия</th>
-            </tr>
-          </thead>
-          <tbody>
-            {products.map((product) => (
-              <tr key={product.id}>
-                <td>{product.id}</td>
-                <td>{product.title}</td>
-                <td>{product.category}</td>
-                <td>{product.price} €</td>
-                <td className="description-cell">{(product.description || '').substring(0, 50)}...</td>
-                <td className="action-cell">
-                  <button className="btn-small btn-edit" onClick={() => {
-                    setEditingProduct(product)
-                    setFormData({
-                      title: product.title,
-                      price: product.price,
-                      category: product.category,
-                      description: product.description || '',
-                      images: product.images || [],
-                      image: product.images && product.images.length > 0 ? product.images[0] : product.image,
-                    })
-                    setNewImageUrl('')
-                  }}>
-                    ✏️ Редакт.
-                  </button>
-                  <button className="btn-small btn-delete" onClick={() => setConfirmDelete({
-                    type: 'product',
-                    id: product.id,
-                    name: product.title,
-                  })}>🗑️ Удалить</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {editingProduct && formData && (
-        <div className="modal-overlay" onClick={() => {
-          setEditingProduct(null)
-          setFormData(null)
-          setCategoryDropdownOpen(false)
-          setNewCategory('')
-          setCategories(defaultCategories)
-        }}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>✏️ Редактирование товара</h3>
-              <button className="modal-close" onClick={() => {
-                setEditingProduct(null)
-                setFormData(null)
-                setCategoryDropdownOpen(false)
-                setNewCategory('')
-                setCategories(defaultCategories)
-              }}>✕</button>
-            </div>
-            
-            <div className="modal-body">
-              <div className="modal-body-form">
-                <div className="form-group">
-                  <label>Название товара</label>
-                  <input 
-                    type="text" 
-                    value={formData.title}
-                    onChange={(e) => setFormData({...formData, title: e.target.value})}
-                    placeholder="Введите название"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Цена</label>
-                  <input 
-                    type="number" 
-                    value={formData.price}
-                    onChange={(e) => setFormData({...formData, price: parseFloat(e.target.value)})}
-                    placeholder="Введите цену"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Категория</label>
-                  <div className="custom-dropdown">
-                    <button 
-                      type="button"
-                      className="custom-dropdown-btn"
-                      onClick={() => setCategoryDropdownOpen(!categoryDropdownOpen)}
-                    >
-                      {formData.category}
-                      <span className="dropdown-arrow">▼</span>
-                    </button>
-                    {categoryDropdownOpen && (
-                      <div className="custom-dropdown-menu">
-                        {categories.map((cat) => (
-                          <button 
-                            key={cat}
-                            type="button"
-                            className={`dropdown-item ${formData.category === cat ? 'active' : ''}`}
-                            onClick={() => {
-                              setFormData({...formData, category: cat as HotelCategory})
-                              setCategoryDropdownOpen(false)
-                            }}
-                          >
-                            {cat}
-                          </button>
-                        ))}
-                        <div className="dropdown-divider"></div>
-                        <div className="dropdown-add-category">
-                          <input 
-                            type="text"
-                            value={newCategory}
-                            onChange={(e) => setNewCategory(e.target.value)}
-                            placeholder="Новая категория"
-                            onClick={(e) => e.stopPropagation()}
-                            onKeyPress={(e) => {
-                              if (e.key === 'Enter') {
-                                addCategory()
-                                setCategoryDropdownOpen(false)
-                              }
-                            }}
-                          />
-                          <button 
-                            type="button"
-                            className="dropdown-add-btn"
-                            onClick={() => {
-                              addCategory()
-                              setCategoryDropdownOpen(false)
-                            }}
-                          >
-                            + Добавить
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label>Описание</label>
-                  <textarea 
-                    value={formData.description}
-                    onChange={(e) => setFormData({...formData, description: e.target.value})}
-                    rows={6}
-                    placeholder="Введите описание товара"
-                  ></textarea>
-                </div>
-
-                <div className="form-group">
-                  <label>Фотографии товара</label>
-                  <div className="images-manager">
-                    {formData.images && formData.images.length > 0 && (
-                      <div className="images-list">
-                        {formData.images.map((img, index) => (
-                          <div key={index} className="image-item">
-                            <img src={img} alt={`Product ${index + 1}`} />
-                            <div className="image-controls">
-                              {index > 0 && (
-                                <button 
-                                  type="button"
-                                  className="btn-image-control"
-                                  onClick={() => moveImageUp(index)}
-                                  title="Переместить вверх"
-                                >
-                                  ⬆️
-                                </button>
-                              )}
-                              {index < formData.images.length - 1 && (
-                                <button 
-                                  type="button"
-                                  className="btn-image-control"
-                                  onClick={() => moveImageDown(index)}
-                                  title="Переместить вниз"
-                                >
-                                  ⬇️
-                                </button>
-                              )}
-                              <button 
-                                type="button"
-                                className="btn-image-delete"
-                                onClick={() => deleteImage(index)}
-                                title="Удалить фото"
-                              >
-                                🗑️
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    <div className="add-image-form">
-                      <input 
-                        type="text"
-                        value={newImageUrl}
-                        onChange={(e) => setNewImageUrl(e.target.value)}
-                        placeholder="Вставьте URL фотографии"
-                        onKeyPress={(e) => e.key === 'Enter' && addImage()}
-                      />
-                      <button 
-                        type="button"
-                        className="btn-primary"
-                        onClick={addImage}
-                      >
-                        + Добавить фото
-                      </button>
-                    </div>
-                  </div>
+      {(edit && form) && (
+        <Modal title="✏️ Редактирование товара" onClose={() => { setEdit(null); setForm(null) }} big>
+          <div className="modal-body">
+            <div className="modal-body-form">
+              <div className="form-group"><label>Название товара</label><input type="text" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="Введите название" /></div>
+              <div className="form-group"><label>Цена (€)</label><input type="number" value={form.price} onChange={e => setForm({ ...form, price: +e.target.value || 0 })} placeholder="Введите цену" /></div>
+              <div className="form-group">
+                <label>Категория</label>
+                <div className="custom-dropdown">
+                  <select value={form.catId ?? ''} onChange={e => { const c = cats.find(x => x.id === +e.target.value); if (c) setForm({ ...form, catName: c.name, catId: c.id }) }} className="custom-dropdown-btn" style={{ width: '100%', padding: '10px', background: '#1a2332', color: '#c8c8d8', border: '1px solid rgba(102,126,234,0.3)', borderRadius: '8px' }}>
+                    <option value="" disabled>Выберите категорию</option>
+                    {cats.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
                 </div>
               </div>
-
-              <div className="modal-body-preview">
-                <div className="preview-card">
-                  <div className="preview-gallery">
-                    <img 
-                      src={formData.images && formData.images.length > 0 ? formData.images[currentImageIndex] : formData.image || editingProduct.image} 
-                      alt={formData.title} 
-                      className="preview-image-large"
-                    />
-                    
-                    {formData.images && formData.images.length > 1 && (
-                      <>
-                        <button
-                          className="preview-nav-button preview-nav-prev"
-                          onClick={() => setCurrentImageIndex((prev) => (prev > 0 ? prev - 1 : formData.images!.length - 1))}
-                          aria-label="Предыдущее фото"
-                        >
-                          ‹
-                        </button>
-
-                        <button
-                          className="preview-nav-button preview-nav-next"
-                          onClick={() => setCurrentImageIndex((prev) => (prev < formData.images!.length - 1 ? prev + 1 : 0))}
-                          aria-label="Следующее фото"
-                        >
-                          ›
-                        </button>
-
-                        <div className="preview-indicators">
-                          {formData.images.map((_, index) => (
-                            <button
-                              key={index}
-                              className={`preview-indicator ${index === currentImageIndex ? 'preview-indicator-active' : ''}`}
-                              onClick={() => setCurrentImageIndex(index)}
-                              aria-label={`Фото ${index + 1}`}
-                            />
-                          ))}
-                        </div>
-                      </>
-                    )}
-                  </div>
-
-                  <div className="preview-details">
-                    <h2 className="preview-title">{formData.title || '(название товара)'}</h2>
-                    
-                    <div className="preview-info">
-                      <p className="preview-category">Категория: {formData.category}</p>
-                      <p className="preview-price">Цена: {formData.price.toLocaleString('de-DE')} €</p>
-                    </div>
-
-                    <div className="preview-rating">
-                      <span>★★★★★ (15 отзывов)</span>
-                    </div>
-
-                    {formData.description && (
-                      <div className="preview-description-section">
-                        <h3 className="preview-description-title">Описание</h3>
-                        <p className="preview-description">{formData.description}</p>
-                      </div>
-                    )}
-                  </div>
+              <div className="form-group"><label>Описание</label><textarea value={form.desc} onChange={e => setForm({ ...form, desc: e.target.value })} rows={6} placeholder="Введите описание товара" /></div>
+              <div className="form-group">
+                <label>Фотографии товара</label>
+                <div className="images-manager">
+                  {form.imgs.length > 0 && <div className="images-list">{form.imgs.map((img, i) => <div key={i} className="image-item"><img src={img} alt="" /><div className="image-controls"><button type="button" className="btn-image-delete" onClick={() => setForm({ ...form, imgs: form.imgs.filter((_, j) => j !== i) })} title="Удалить">🗑️</button></div></div>)}</div>}
+                  <div className="add-image-form"><input type="text" value={url} onChange={e => setUrl(e.target.value)} placeholder="URL фотографии" onKeyPress={e => e.key === 'Enter' && url.trim() && (setForm({ ...form, imgs: [...form.imgs, url] }), setUrl(''))} /><button type="button" className="btn-primary" onClick={() => { if (url.trim()) { setForm({ ...form, imgs: [...form.imgs, url] }); setUrl('') } }}>+ Добавить фото</button></div>
                 </div>
               </div>
             </div>
-
-            <div className="modal-footer">
-              <button className="btn-cancel" onClick={() => {
-                setEditingProduct(null)
-                setFormData(null)
-              }}>
-                Отменить
-              </button>
-              <button className="btn-primary" onClick={handleSave}>
-                💾 Сохранить
-              </button>
+            <div className="modal-body-preview">
+              <div className="preview-card">
+                <div className="preview-gallery">
+                  <img src={form.imgs[imgIdx] || '/placeholder.png'} alt={form.title} className="preview-image-large" />
+                  {form.imgs.length > 1 && (<>
+                    <button className="preview-nav-button preview-nav-prev" onClick={() => setImgIdx(i => (i > 0 ? i - 1 : form.imgs.length - 1))}>‹</button>
+                    <button className="preview-nav-button preview-nav-next" onClick={() => setImgIdx(i => (i < form.imgs.length - 1 ? i + 1 : 0))}>›</button>
+                    <div className="preview-indicators">{form.imgs.map((_, idx) => <button key={idx} className={`preview-indicator ${idx === imgIdx ? 'preview-indicator-active' : ''}`} onClick={() => setImgIdx(idx)} />)}</div>
+                  </>)}
+                </div>
+                <div className="preview-details">
+                  <h2 className="preview-title">{form.title || '(название товара)'}</h2>
+                  <div className="preview-info"><p className="preview-category">Категория: {form.catName}</p><p className="preview-price">{form.price.toLocaleString('de-DE')} €</p></div>
+                  <div className="preview-rating"><span>★★★★★ (15 отзывов)</span></div>
+                  {form.desc && <div className="preview-description-section"><h3 className="preview-description-title">Описание</h3><p className="preview-description">{form.desc}</p></div>}
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+          <div className="modal-footer">
+            <button className="btn-cancel" onClick={() => { setEdit(null); setForm(null) }}>Отменить</button>
+            <button className="btn-primary" onClick={saveEdit} disabled={saving}>{saving ? '💾 Сохранение...' : '💾 Сохранить'}</button>
+          </div>
+        </Modal>
       )}
 
-      {isAddingProduct && newProductData && (
-        <div className="modal-overlay" onClick={() => {
-          setIsAddingProduct(false)
-          setNewProductData(null)
-          setNewProductImageIndex(0)
-          setCategoryDropdownOpen(false)
-          setNewCategory('')
-          setCategories(defaultCategories)
-        }}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>➕ Добавление нового товара</h3>
-              <button className="modal-close" onClick={() => {
-                setIsAddingProduct(false)
-                setNewProductData(null)
-                setNewProductImageIndex(0)
-                setCategoryDropdownOpen(false)
-                setNewCategory('')
-                setCategories(defaultCategories)
-              }}>✕</button>
-            </div>
-            
-            <div className="modal-body">
-              <div className="modal-body-form">
-                <div className="form-group">
-                  <label>Название товара</label>
-                  <input 
-                    type="text" 
-                    value={newProductData.title}
-                    onChange={(e) => setNewProductData({...newProductData, title: e.target.value})}
-                    placeholder="Введите название"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Цена</label>
-                  <input 
-                    type="number" 
-                    value={newProductData.price}
-                    onChange={(e) => setNewProductData({...newProductData, price: parseFloat(e.target.value) || 0})}
-                    placeholder="Введите цену"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Категория</label>
-                  <div className="custom-dropdown">
-                    <button 
-                      type="button"
-                      className="custom-dropdown-btn"
-                      onClick={() => setCategoryDropdownOpen(!categoryDropdownOpen)}
-                    >
-                      {newProductData.category}
-                      <span className="dropdown-arrow">▼</span>
-                    </button>
-                    {categoryDropdownOpen && (
-                      <div className="custom-dropdown-menu">
-                        {categories.map((cat) => (
-                          <button 
-                            key={cat}
-                            type="button"
-                            className={`dropdown-item ${newProductData.category === cat ? 'active' : ''}`}
-                            onClick={() => {
-                              setNewProductData({...newProductData, category: cat as HotelCategory})
-                              setCategoryDropdownOpen(false)
-                            }}
-                          >
-                            {cat}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label>Описание</label>
-                  <textarea 
-                    value={newProductData.description}
-                    onChange={(e) => setNewProductData({...newProductData, description: e.target.value})}
-                    placeholder="Введите описание"
-                    rows={4}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Изображение (URL)</label>
-                  <input 
-                    type="text" 
-                    value={newProductData.image}
-                    onChange={(e) => setNewProductData({...newProductData, image: e.target.value})}
-                    placeholder="https://..."
-                  />
-                  <button 
-                    type="button"
-                    className="btn-primary"
-                    onClick={() => {
-                      if (newProductData.image.trim() && !newProductData.images.includes(newProductData.image)) {
-                        const newImages = [...newProductData.images, newProductData.image]
-                        setNewProductData({
-                          ...newProductData,
-                          images: newImages
-                        })
-                        setNewProductImageIndex(newImages.length - 1)
-                      }
-                    }}
-                  >
-                    + Добавить фото
-                  </button>
-                </div>
-
-                {newProductData.images.length > 0 && (
-                  <div className="images-list">
-                    <h4>Добавленные фото:</h4>
-                    {newProductData.images.map((img, idx) => (
-                      <div key={idx} className="image-item">
-                        <img src={img} alt={`Product ${idx}`} style={{maxHeight: '80px'}} />
-                        <button
-                          className="btn-image-delete"
-                          onClick={() => {
-                            const newImages = newProductData.images.filter((_, i) => i !== idx)
-                            setNewProductData({
-                              ...newProductData,
-                              images: newImages
-                            })
-                            if (newProductImageIndex >= newImages.length && newImages.length > 0) {
-                              setNewProductImageIndex(newImages.length - 1)
-                            }
-                          }}
-                          title="Удалить"
-                        >
-                          🗑️
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
+      {(adding && form) && (
+        <Modal title="➕ Добавление нового товара" onClose={() => { setAdding(false); setForm(null) }} big>
+          <div className="modal-body">
+            <div className="modal-body-form">
+              <div className="form-group"><label>Название товара</label><input type="text" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="Введите название" /></div>
+              <div className="form-group"><label>Цена (€)</label><input type="number" value={form.price} onChange={e => setForm({ ...form, price: +e.target.value || 0 })} placeholder="Введите цену" /></div>
+              <div className="form-group">
+                <label>Категория</label>
+                <select value={form.catId ?? ''} onChange={e => { const c = cats.find(x => x.id === +e.target.value); if (c) setForm({ ...form, catName: c.name, catId: c.id }) }} style={{ width: '100%', padding: '10px', background: '#1a2332', color: '#c8c8d8', border: '1px solid rgba(102,126,234,0.3)', borderRadius: '8px' }}>
+                  <option value="" disabled>Выберите категорию</option>
+                  {cats.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
               </div>
-
-              <div className="modal-body-preview">
-                <div className="preview-card">
-                  <div className="preview-gallery">
-                    <img 
-                      src={newProductData.images && newProductData.images.length > 0 ? newProductData.images[newProductImageIndex] : newProductData.image || '/placeholder.png'} 
-                      alt={newProductData.title || 'товар'} 
-                      className="preview-image-large"
-                    />
-                    
-                    {newProductData.images && newProductData.images.length > 1 && (
-                      <>
-                        <button
-                          className="preview-nav-button preview-nav-prev"
-                          onClick={() => setNewProductImageIndex((prev: number) => (prev > 0 ? prev - 1 : newProductData.images!.length - 1))}
-                          aria-label="Предыдущее фото"
-                        >
-                          ‹
-                        </button>
-
-                        <button
-                          className="preview-nav-button preview-nav-next"
-                          onClick={() => setNewProductImageIndex((prev: number) => (prev < newProductData.images!.length - 1 ? prev + 1 : 0))}
-                          aria-label="Следующее фото"
-                        >
-                          ›
-                        </button>
-
-                        <div className="preview-indicators">
-                          {newProductData.images.map((_, index) => (
-                            <button
-                              key={index}
-                              className={`preview-indicator ${index === newProductImageIndex ? 'preview-indicator-active' : ''}`}
-                              onClick={() => setNewProductImageIndex(index)}
-                              aria-label={`Фото ${index + 1}`}
-                            />
-                          ))}
-                        </div>
-                      </>
-                    )}
-                  </div>
-
-                  <div className="preview-details">
-                    <h2 className="preview-title">{newProductData.title || '(название товара)'}</h2>
-                    
-                    <div className="preview-info">
-                      <p className="preview-category">Категория: {newProductData.category}</p>
-                      <p className="preview-price">Цена: {newProductData.price.toLocaleString('de-DE')} €</p>
-                    </div>
-
-                    {newProductData.description && (
-                      <div className="preview-description-section">
-                        <h3 className="preview-description-title">Описание</h3>
-                        <p className="preview-description">{newProductData.description}</p>
-                      </div>
-                    )}
-                  </div>
+              <div className="form-group"><label>Описание</label><textarea value={form.desc} onChange={e => setForm({ ...form, desc: e.target.value })} rows={4} placeholder="Введите описание" /></div>
+              <div className="form-group">
+                <label>Изображение (URL)</label>
+                <input type="text" value={url} onChange={e => setUrl(e.target.value)} placeholder="https://..." />
+                <button type="button" className="btn-primary" onClick={() => { if (url.trim()) { setForm({ ...form, imgs: [...form.imgs, url] }); setUrl('') } }}>+ Добавить фото</button>
+              </div>
+              {form.imgs.length > 0 && <div className="images-list">{form.imgs.map((img, i) => <div key={i} className="image-item"><img src={img} alt="" style={{ maxHeight: '80px' }} /><button className="btn-image-delete" onClick={() => setForm({ ...form, imgs: form.imgs.filter((_, j) => j !== i) })}>🗑️</button></div>)}</div>}
+            </div>
+            <div className="modal-body-preview">
+              <div className="preview-card">
+                <div className="preview-gallery"><img src={form.imgs[imgIdx] || '/placeholder.png'} alt={form.title || 'товар'} className="preview-image-large" /></div>
+                <div className="preview-details">
+                  <h2 className="preview-title">{form.title || '(название товара)'}</h2>
+                  <div className="preview-info"><p className="preview-category">Категория: {form.catName}</p><p className="preview-price">{form.price.toLocaleString('de-DE')} €</p></div>
+                  {form.desc && <div className="preview-description-section"><h3 className="preview-description-title">Описание</h3><p className="preview-description">{form.desc}</p></div>}
                 </div>
               </div>
-            </div>
-
-            <div className="modal-footer">
-              <button className="btn-cancel" onClick={() => {
-                setIsAddingProduct(false)
-                setNewProductData(null)
-                setNewProductImageIndex(0)
-              }}>
-                Отменить
-              </button>
-              <button className="btn-primary" onClick={() => {
-                console.log('Новый товар добавлен:', newProductData)
-                setIsAddingProduct(false)
-                setNewProductData(null)
-                setNewProductImageIndex(0)
-              }}>
-                ✅ Создать товар
-              </button>
             </div>
           </div>
-        </div>
+          <div className="modal-footer">
+            <button className="btn-cancel" onClick={() => { setAdding(false); setForm(null) }}>Отменить</button>
+            <button className="btn-primary" onClick={create} disabled={saving}>{saving ? '✅ Создание...' : '✅ Создать товар'}</button>
+          </div>
+        </Modal>
       )}
     </div>
   )
 }
 
-type RoomsTabProps = {
-  rooms: AdminRoom[]
-  editingRoom: AdminRoom | null
-  setEditingRoom: (room: AdminRoom | null) => void
-  setConfirmDelete: (item: ConfirmDelete) => void
-  isAddingRoom: boolean
-  setIsAddingRoom: (value: boolean) => void
-  newRoomData: {
-    title: string
-    price: number
-    capacity: number
-    size: number
-    description: string
-    images: string[]
-    amenities: string[]
-  } | null
-  setNewRoomData: (data: any) => void
-  newRoomImageIndex: number
-  setNewRoomImageIndex: (index: number | ((prev: number) => number)) => void
-  newRoomImageUrl: string
-  setNewRoomImageUrl: (url: string) => void
-}
+function RoomsTab({ items, del, load }: { items: Room[]; del: (c: ConfirmDelete) => void; load: () => Promise<void> }) {
+  const [edit, setEdit] = useState<Room | null>(null)
+  const [adding, setAdding] = useState(false)
+  const [form, setForm] = useState<{ title: string; price: number; desc: string; imgs: string[]; amenities: string[] } | null>(null)
+  const [url, setUrl] = useState('')
+  const [amenity, setAmenity] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [imgIdx, setImgIdx] = useState(0)
 
-function RoomsTab({ 
-  rooms,
-  editingRoom, 
-  setEditingRoom, 
-  setConfirmDelete,
-  isAddingRoom,
-  setIsAddingRoom,
-  newRoomData,
-  setNewRoomData,
-  newRoomImageIndex,
-  setNewRoomImageIndex,
-  newRoomImageUrl,
-  setNewRoomImageUrl
-}: RoomsTabProps) {
-  const [formData, setFormData] = useState(editingRoom ? {
-    title: editingRoom.title,
-    price: editingRoom.price,
-    capacity: editingRoom.capacity,
-    size: editingRoom.size,
-    description: editingRoom.description,
-    images: editingRoom.images || [],
-    amenities: editingRoom.amenities || [],
-  } : null)
-  const [newImageUrl, setNewImageUrl] = useState('')
-  const [currentImageIndex, setCurrentImageIndex] = useState(0)
-  const [newAmenity, setNewAmenity] = useState('')
+  const openEdit = (r: Room) => { setEdit(r); setForm({ title: r.title, price: r.price, desc: r.description, imgs: r.images || [], amenities: r.amenities || [] }); setUrl(''); setAmenity(''); setImgIdx(0) }
 
-  const localRooms: AdminRoom[] = rooms ?? []
-
-  const handleSave = () => {
-    console.log('Сохранено:', formData)
-    setEditingRoom(null)
-  }
-
-  const addImage = () => {
-    if (newImageUrl.trim() && formData) {
-      const newImages = [...(formData.images || []), newImageUrl]
-      setFormData({
-        ...formData,
-        images: newImages,
+  const saveEdit = async () => {
+    if (!edit || !form) return; setSaving(true)
+    try {
+      await roomApi.update(edit.id, {
+        id: edit.id, title: form.title, price: form.price,
+        description: form.desc, images: form.imgs, amenities: form.amenities,
       })
-      setNewImageUrl('')
+      await load(); setEdit(null); setForm(null)
     }
+    catch (e: any) { alert('Ошибка: ' + (e?.response?.data?.message || e?.message)) } finally { setSaving(false) }
   }
 
-  const deleteImage = (index: number) => {
-    if (formData) {
-      const newImages = formData.images.filter((_, i) => i !== index)
-      setFormData({
-        ...formData,
-        images: newImages,
+  const create = async () => {
+    if (!form) return; setSaving(true)
+    try {
+      await roomApi.create({
+        id: 0, title: form.title, price: form.price,
+        description: form.desc, images: form.imgs, amenities: form.amenities,
       })
+      await load(); setAdding(false); setForm(null)
     }
-  }
-
-  const moveImageUp = (index: number) => {
-    if (formData && index > 0) {
-      const newImages = [...formData.images]
-      ;[newImages[index - 1], newImages[index]] = [newImages[index], newImages[index - 1]]
-      setFormData({
-        ...formData,
-        images: newImages,
-      })
-    }
-  }
-
-  const moveImageDown = (index: number) => {
-    if (formData && index < formData.images.length - 1) {
-      const newImages = [...formData.images]
-      ;[newImages[index], newImages[index + 1]] = [newImages[index + 1], newImages[index]]
-      setFormData({
-        ...formData,
-        images: newImages,
-      })
-    }
-  }
-
-  const addNewRoom = () => {
-    setNewRoomData({
-      title: '',
-      price: 0,
-      capacity: 1,
-      size: 0,
-      description: '',
-      images: [],
-      amenities: [],
-    })
-    setIsAddingRoom(true)
-    setNewRoomImageIndex(0)
+    catch (e: any) { alert('Ошибка: ' + (e?.response?.data?.message || e?.message)) } finally { setSaving(false) }
   }
 
   return (
     <div className="admin-tab">
-      <div className="tab-header">
-        <h2>🏨 Управление номерами</h2>
-        <button className="btn-primary" onClick={() => addNewRoom()}>+ Добавить номер</button>
-      </div>
+      <div className="tab-header"><h2>🏨 Управление номерами</h2><button className="btn-primary" onClick={() => { setForm({ title: '', price: 0, desc: '', imgs: [], amenities: [] }); setAdding(true) }}>+ Добавить номер</button></div>
+      <div className="items-table"><table>
+        <thead><tr><th>ID</th><th>Название</th><th>Цена/ночь</th><th>Описание</th><th>Действия</th></tr></thead>
+        <tbody>{items.map(r => <tr key={r.id}><td>{r.id}</td><td>{r.title}</td><td>€{r.price}</td><td className="description-cell">{(r.description || '').substring(0, 50)}...</td><td className="action-cell"><button className="btn-small btn-edit" onClick={() => openEdit(r)}>✏️ Редакт.</button><button className="btn-small btn-delete" onClick={() => del({ type: 'room', id: r.id, name: r.title })}>🗑️ Удалить</button></td></tr>)}</tbody>
+      </table></div>
 
-      <div className="items-table">
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Название</th>
-              <th>Цена/ночь</th>
-              <th>Описание</th>
-              <th>Мест</th>
-              <th>Действия</th>
-            </tr>
-          </thead>
-          <tbody>
-            {localRooms.map((room: AdminRoom) => (
-              <tr key={room.id}>
-                <td>{room.id}</td>
-                <td>{room.title}</td>
-                <td>€{room.price}</td>
-                <td className="description-cell">{room.description}</td>
-                <td>{room.capacity}</td>
-                <td className="action-cell">
-                  <button className="btn-small btn-edit" onClick={() => {
-                    setEditingRoom(room)
-                    setFormData({
-                      title: room.title,
-                      price: room.price,
-                      capacity: room.capacity,
-                      size: room.size,
-                      description: room.description,
-                      images: room.images || [],
-                      amenities: room.amenities || [],
-                    })
-                    setNewImageUrl('')
-                    setNewAmenity('')
-                  }}>
-                    ✏️ Редакт.
-                  </button>
-                  <button className="btn-small btn-delete" onClick={() => setConfirmDelete({
-                    type: 'room',
-                    id: room.id,
-                    name: room.title,
-                  })}>🗑️ Удалить</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {editingRoom && formData && (
-        <div className="modal-overlay" onClick={() => {
-          setEditingRoom(null)
-          setFormData(null)
-        }}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>✏️ Редактирование номера</h3>
-              <button className="modal-close" onClick={() => {
-                setEditingRoom(null)
-                setFormData(null)
-              }}>✕</button>
-            </div>
-
-            <div className="modal-body">
-              <div className="modal-body-form">
-                <div className="form-group">
-                  <label>Название номера</label>
-                  <input 
-                    type="text" 
-                    value={formData.title}
-                    onChange={(e) => setFormData({...formData, title: e.target.value})}
-                    placeholder="Введите название"
-                  />
-                </div>
-
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Цена за ночь (€)</label>
-                    <input 
-                      type="number" 
-                      value={formData.price}
-                      onChange={(e) => setFormData({...formData, price: parseFloat(e.target.value)})}
-                      placeholder="Введите цену"
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label>Вместимость (человек)</label>
-                    <input 
-                      type="number" 
-                      value={formData.capacity}
-                      onChange={(e) => setFormData({...formData, capacity: parseInt(e.target.value)})}
-                      placeholder="Введите количество"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Площадь номера (м²)</label>
-                    <input 
-                      type="number" 
-                      value={formData.size}
-                      onChange={(e) => setFormData({...formData, size: parseInt(e.target.value)})}
-                      placeholder="Введите площадь"
-                    />
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label>Описание номера</label>
-                  <textarea 
-                    value={formData.description}
-                    onChange={(e) => setFormData({...formData, description: e.target.value})}
-                    rows={2}
-                    placeholder="Введите описание номера"
-                    className="textarea-short"
-                  ></textarea>
-                </div>
-
-                {/* Полного описания больше нет — используем единое `description` */}
-
-                <div className="form-group">
-                  <label>Удобства номера</label>
-                  <div className="amenities-manager">
-                    {formData.amenities && formData.amenities.length > 0 && (
-                      <div className="amenities-list">
-                        {formData.amenities.map((amenity, index) => (
-                          <div key={index} className="amenity-item">
-                            <span>{amenity}</span>
-                            <button 
-                              type="button"
-                              className="btn-amenity-delete"
-                              onClick={() => setFormData({
-                                ...formData,
-                                amenities: formData.amenities.filter((_, i) => i !== index)
-                              })}
-                              title="Удалить"
-                            >
-                              ✗
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    <div className="add-amenity-form">
-                      <input 
-                        type="text"
-                        value={newAmenity}
-                        onChange={(e) => setNewAmenity(e.target.value)}
-                        placeholder="Новое удобство"
-                        onKeyPress={(e) => {
-                          if (e.key === 'Enter' && newAmenity.trim()) {
-                            setFormData({
-                              ...formData,
-                              amenities: [...formData.amenities, newAmenity]
-                            })
-                            setNewAmenity('')
-                          }
-                        }}
-                      />
-                      <button 
-                        type="button"
-                        className="btn-primary"
-                        onClick={() => {
-                          if (newAmenity.trim()) {
-                            setFormData({
-                              ...formData,
-                              amenities: [...formData.amenities, newAmenity]
-                            })
-                            setNewAmenity('')
-                          }
-                        }}
-                        title="Добавить удобство (или нажмите Enter)"
-                        style={{whiteSpace: 'nowrap'}}
-                      >
-                        + Добавить
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label>Фотографии номера</label>
-                  <div className="images-manager">
-                    {formData.images && formData.images.length > 0 && (
-                      <div className="images-list">
-                        {formData.images.map((img, index) => (
-                          <div key={index} className="image-item">
-                            <img src={img} alt={`Room ${index + 1}`} />
-                            <div className="image-controls">
-                              {index > 0 && (
-                                <button 
-                                  type="button"
-                                  className="btn-image-control"
-                                  onClick={() => moveImageUp(index)}
-                                  title="Переместить вверх"
-                                >
-                                  ⬆️
-                                </button>
-                              )}
-                              {index < formData.images.length - 1 && (
-                                <button 
-                                  type="button"
-                                  className="btn-image-control"
-                                  onClick={() => moveImageDown(index)}
-                                  title="Переместить вниз"
-                                >
-                                  ⬇️
-                                </button>
-                              )}
-                              <button 
-                                type="button"
-                                className="btn-image-delete"
-                                onClick={() => deleteImage(index)}
-                                title="Удалить фото"
-                              >
-                                🗑️
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    <div className="add-image-form">
-                      <input 
-                        type="text"
-                        value={newImageUrl}
-                        onChange={(e) => setNewImageUrl(e.target.value)}
-                        placeholder="Вставьте URL фотографии"
-                        onKeyPress={(e) => e.key === 'Enter' && addImage()}
-                      />
-                      <button 
-                        type="button"
-                        className="btn-primary"
-                        onClick={addImage}
-                      >
-                        + Добавить фото
-                      </button>
-                    </div>
-                  </div>
+      {(edit && form) && (
+        <Modal title="✏️ Редактирование номера" onClose={() => { setEdit(null); setForm(null) }} big>
+          <div className="modal-body">
+            <div className="modal-body-form">
+              <div className="form-group"><label>Название номера</label><input type="text" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="Введите название" /></div>
+              <div className="form-group"><label>Цена за ночь (€)</label><input type="number" value={form.price} onChange={e => setForm({ ...form, price: +e.target.value || 0 })} placeholder="Введите цену" /></div>
+              <div className="form-group"><label>Описание номера</label><textarea value={form.desc} onChange={e => setForm({ ...form, desc: e.target.value })} rows={3} placeholder="Введите описание" /></div>
+              <div className="form-group">
+                <label>Удобства номера</label>
+                <div className="amenities-manager">
+                  {form.amenities.length > 0 && <div className="amenities-list">{form.amenities.map((a, i) => <div key={i} className="amenity-item"><span>{a}</span><button type="button" className="btn-amenity-delete" onClick={() => setForm({ ...form, amenities: form.amenities.filter((_, j) => j !== i) })}>✗</button></div>)}</div>}
+                  <div className="add-amenity-form"><input type="text" value={amenity} onChange={e => setAmenity(e.target.value)} placeholder="Новое удобство" onKeyPress={e => e.key === 'Enter' && amenity.trim() && (setForm({ ...form, amenities: [...form.amenities, amenity.trim()] }), setAmenity(''))} /><button type="button" className="btn-primary" onClick={() => { if (amenity.trim()) { setForm({ ...form, amenities: [...form.amenities, amenity.trim()] }); setAmenity('') } }}>+ Добавить</button></div>
                 </div>
               </div>
-
-              <div className="modal-body-preview">
-                <div className="preview-card preview-card-room">
-                  <div className="preview-gallery">
-                    <img 
-                      src={formData.images && formData.images.length > 0 ? formData.images[currentImageIndex] : editingRoom.images[0]} 
-                      alt={formData.title} 
-                      className="preview-image-large"
-                    />
-                    
-                    {formData.images && formData.images.length > 1 && (
-                      <>
-                        <button
-                          className="preview-nav-button preview-nav-prev"
-                          onClick={() => setCurrentImageIndex((prev) => (prev > 0 ? prev - 1 : formData.images!.length - 1))}
-                          aria-label="Предыдущее фото"
-                        >
-                          ‹
-                        </button>
-
-                        <button
-                          className="preview-nav-button preview-nav-next"
-                          onClick={() => setCurrentImageIndex((prev) => (prev < formData.images!.length - 1 ? prev + 1 : 0))}
-                          aria-label="Следующее фото"
-                        >
-                          ›
-                        </button>
-
-                        <div className="preview-indicators">
-                          {formData.images.map((_, index) => (
-                            <button
-                              key={index}
-                              className={`preview-indicator ${index === currentImageIndex ? 'preview-indicator-active' : ''}`}
-                              onClick={() => setCurrentImageIndex(index)}
-                              aria-label={`Фото ${index + 1}`}
-                            />
-                          ))}
-                        </div>
-                      </>
-                    )}
-                  </div>
-
-                  <div className="preview-details">
-                    <div className="room-preview-header">
-                      <div>
-                        <h2 className="preview-title">{formData.title || '(название номера)'}</h2>
-                        <p className="room-preview-desc">{formData.description}</p>
-                      </div>
-                      <div className="room-preview-price">
-                        <span className="room-preview-price-value">€{formData.price}</span>
-                        <span className="room-preview-price-unit">/ ночь</span>
-                      </div>
-                    </div>
-
-                    {/* Детальное описание убрано — используется `description` выше */}
-
-                    <div className="room-preview-specs">
-                      <div className="room-spec-item">
-                        <span className="room-spec-icon">👥</span>
-                        <div>
-                          <span className="room-spec-label">Гостей</span>
-                          <span className="room-spec-value">{formData.capacity}</span>
-                        </div>
-                      </div>
-                      <div className="room-spec-item">
-                        <span className="room-spec-icon">📏</span>
-                        <div>
-                          <span className="room-spec-label">Площадь</span>
-                          <span className="room-spec-value">{formData.size} м²</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {formData.amenities && formData.amenities.length > 0 && (
-                      <div className="room-preview-amenities">
-                        <h3>Удобства</h3>
-                        <div className="amenities-grid">
-                          {formData.amenities.map((amenity, idx) => (
-                            <div key={idx} className="amenity-badge">
-                              <span className="amenity-check">✓</span>
-                              {amenity}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
+              <div className="form-group">
+                <label>Фотографии номера</label>
+                <div className="images-manager">
+                  {form.imgs.length > 0 && <div className="images-list">{form.imgs.map((img, i) => <div key={i} className="image-item"><img src={img} alt="" /><div className="image-controls"><button type="button" className="btn-image-delete" onClick={() => setForm({ ...form, imgs: form.imgs.filter((_, j) => j !== i) })} title="Удалить">🗑️</button></div></div>)}</div>}
+                  <div className="add-image-form"><input type="text" value={url} onChange={e => setUrl(e.target.value)} placeholder="URL фотографии" onKeyPress={e => e.key === 'Enter' && url.trim() && (setForm({ ...form, imgs: [...form.imgs, url] }), setUrl(''))} /><button type="button" className="btn-primary" onClick={() => { if (url.trim()) { setForm({ ...form, imgs: [...form.imgs, url] }); setUrl('') } }}>+ Добавить фото</button></div>
                 </div>
               </div>
             </div>
-
-            <div className="modal-footer">
-              <button className="btn-cancel" onClick={() => {
-                setEditingRoom(null)
-                setFormData(null)
-              }}>
-                Отменить
-              </button>
-              <button className="btn-primary" onClick={handleSave}>
-                💾 Сохранить
-              </button>
+            <div className="modal-body-preview">
+              <div className="preview-card preview-card-room">
+                <div className="preview-gallery">
+                  <img src={form.imgs[imgIdx] || (edit.images[0] ?? '/placeholder.png')} alt={form.title} className="preview-image-large" />
+                  {form.imgs.length > 1 && (<>
+                    <button className="preview-nav-button preview-nav-prev" onClick={() => setImgIdx(i => (i > 0 ? i - 1 : form.imgs.length - 1))}>‹</button>
+                    <button className="preview-nav-button preview-nav-next" onClick={() => setImgIdx(i => (i < form.imgs.length - 1 ? i + 1 : 0))}>›</button>
+                    <div className="preview-indicators">{form.imgs.map((_, idx) => <button key={idx} className={`preview-indicator ${idx === imgIdx ? 'preview-indicator-active' : ''}`} onClick={() => setImgIdx(idx)} />)}</div>
+                  </>)}
+                </div>
+                <div className="preview-details">
+                  <div className="room-preview-header"><div><h2 className="preview-title">{form.title || '(название номера)'}</h2><p className="room-preview-desc">{form.desc}</p></div><div className="room-preview-price"><span className="room-preview-price-value">€{form.price}</span><span className="room-preview-price-unit">/ ночь</span></div></div>
+                  {form.amenities.length > 0 && <div className="room-preview-amenities"><h3>Удобства</h3><div className="amenities-grid">{form.amenities.map((a, i) => <div key={i} className="amenity-badge"><span className="amenity-check">✓</span>{a}</div>)}</div></div>}
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+          <div className="modal-footer">
+            <button className="btn-cancel" onClick={() => { setEdit(null); setForm(null) }}>Отменить</button>
+            <button className="btn-primary" onClick={saveEdit} disabled={saving}>{saving ? '💾 Сохранение...' : '💾 Сохранить'}</button>
+          </div>
+        </Modal>
       )}
 
-      {isAddingRoom && newRoomData && (
-        <div className="modal-overlay" onClick={() => {
-          setIsAddingRoom(false)
-          setNewRoomData(null)
-          setNewRoomImageIndex(0)
-        }}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>➕ Добавление нового номера</h3>
-              <button className="modal-close" onClick={() => {
-                setIsAddingRoom(false)
-                setNewRoomData(null)
-                setNewRoomImageIndex(0)
-              }}>✕</button>
-            </div>
-            
-            <div className="modal-body">
-              <div className="modal-body-form">
-                <div className="form-group">
-                  <label>Название номера</label>
-                  <input 
-                    type="text" 
-                    value={newRoomData.title}
-                    onChange={(e) => setNewRoomData({...newRoomData, title: e.target.value})}
-                    placeholder="Введите название"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Цена за ночь (€)</label>
-                  <input 
-                    type="number" 
-                    value={newRoomData.price}
-                    onChange={(e) => setNewRoomData({...newRoomData, price: parseFloat(e.target.value) || 0})}
-                    placeholder="Введите цену"
-                  />
-                </div>
-
-                <div style={{display: 'flex', gap: '15px'}}>
-                  <div className="form-group" style={{flex: 1}}>
-                    <label>Вместимость (чел.)</label>
-                    <input 
-                      type="number" 
-                      value={newRoomData.capacity}
-                      onChange={(e) => setNewRoomData({...newRoomData, capacity: parseInt(e.target.value) || 1})}
-                      placeholder="Количество человек"
-                    />
-                  </div>
-
-                  <div className="form-group" style={{flex: 1}}>
-                    <label>Площадь (м²)</label>
-                    <input 
-                      type="number" 
-                      value={newRoomData.size}
-                      onChange={(e) => setNewRoomData({...newRoomData, size: parseFloat(e.target.value) || 0})}
-                      placeholder="Площадь номера"
-                    />
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label>Описание</label>
-                  <textarea 
-                    value={newRoomData.description}
-                    onChange={(e) => setNewRoomData({...newRoomData, description: e.target.value})}
-                    placeholder="Введите краткое описание"
-                    rows={3}
-                  />
-                </div>
-
-                {/* Полного описания больше нет — используем единое `description` */}
-
-                <div className="form-group">
-                  <label>Удобства (добавьте список)</label>
-                  <div style={{display: 'flex', gap: '8px', marginBottom: '10px'}}>
-                    <input 
-                      type="text"
-                      value={newAmenity}
-                      onChange={(e) => setNewAmenity(e.target.value)}
-                      placeholder="Новое удобство"
-                      onKeyPress={(e) => e.key === 'Enter' && newAmenity.trim() && (
-                        setNewRoomData({
-                          ...newRoomData,
-                          amenities: [...newRoomData.amenities, newAmenity]
-                        }),
-                        setNewAmenity('')
-                      )}
-                    />
-                    <button 
-                      type="button"
-                      className="btn-primary"
-                      onClick={() => {
-                        if (newAmenity.trim()) {
-                          setNewRoomData({
-                            ...newRoomData,
-                            amenities: [...newRoomData.amenities, newAmenity]
-                          })
-                          setNewAmenity('')
-                        }
-                      }}
-                      title="Добавить удобство (или нажмите Enter)"
-                      style={{whiteSpace: 'nowrap'}}
-                    >
-                      + Добавить
-                    </button>
-                  </div>
-                  {newRoomData.amenities.length > 0 && (
-                    <div className="amenities-list">
-                      {newRoomData.amenities.map((amenity, idx) => (
-                        <div key={idx} className="amenity-item">
-                          <span>{amenity}</span>
-                          <button 
-                            type="button"
-                            className="btn-amenity-delete"
-                            onClick={() => setNewRoomData({
-                              ...newRoomData,
-                              amenities: newRoomData.amenities.filter((_, i) => i !== idx)
-                            })}
-                          >
-                            ✗
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div className="form-group">
-                  <label>Изображение (URL)</label>
-                  <input 
-                    type="text" 
-                    value={newRoomImageUrl}
-                    onChange={(e) => setNewRoomImageUrl(e.target.value)}
-                    placeholder="https://..."
-                  />
-                  <button 
-                    type="button"
-                    className="btn-primary"
-                    onClick={() => {
-                      if (newRoomImageUrl.trim() && !newRoomData.images.includes(newRoomImageUrl)) {
-                        const newImages = [...newRoomData.images, newRoomImageUrl]
-                        setNewRoomData({...newRoomData, images: newImages})
-                        setNewRoomImageIndex(newImages.length - 1)
-                        setNewRoomImageUrl('')
-                      }
-                    }}
-                  >
-                    + Добавить фото
-                  </button>
-                </div>
-
-                {newRoomData.images.length > 0 && (
-                  <div className="images-list">
-                    <h4>Добавленные фото:</h4>
-                    {newRoomData.images.map((img, idx) => (
-                      <div key={idx} className="image-item">
-                        <img src={img} alt={`Room ${idx}`} style={{maxHeight: '80px'}} />
-                        <button
-                          className="btn-image-delete"
-                          onClick={() => {
-                            const newImages = newRoomData.images.filter((_, i) => i !== idx)
-                            setNewRoomData({...newRoomData, images: newImages})
-                            if (newRoomImageIndex >= newImages.length && newImages.length > 0) {
-                              setNewRoomImageIndex(newImages.length - 1)
-                            }
-                          }}
-                          title="Удалить"
-                        >
-                          🗑️
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
+      {(adding && form) && (
+        <Modal title="➕ Добавление нового номера" onClose={() => { setAdding(false); setForm(null) }} big>
+          <div className="modal-body">
+            <div className="modal-body-form">
+              <div className="form-group"><label>Название номера</label><input type="text" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="Введите название" /></div>
+              <div className="form-group"><label>Цена за ночь (€)</label><input type="number" value={form.price} onChange={e => setForm({ ...form, price: +e.target.value || 0 })} placeholder="Введите цену" /></div>
+              <div className="form-group"><label>Описание</label><textarea value={form.desc} onChange={e => setForm({ ...form, desc: e.target.value })} rows={3} placeholder="Введите описание" /></div>
+              <div className="form-group">
+                <label>Удобства</label>
+                <div className="add-amenity-form"><input type="text" value={amenity} onChange={e => setAmenity(e.target.value)} placeholder="Новое удобство" /><button type="button" className="btn-primary" onClick={() => { if (amenity.trim()) { setForm({ ...form, amenities: [...form.amenities, amenity.trim()] }); setAmenity('') } }}>+ Добавить</button></div>
+                {form.amenities.length > 0 && <div className="amenities-list">{form.amenities.map((a, i) => <div key={i} className="amenity-item"><span>{a}</span><button type="button" className="btn-amenity-delete" onClick={() => setForm({ ...form, amenities: form.amenities.filter((_, j) => j !== i) })}>✗</button></div>)}</div>}
               </div>
-
-              <div className="modal-body-preview">
-                <div className="preview-card preview-card-room">
-                  <div className="preview-gallery">
-                    <img 
-                      src={newRoomData.images && newRoomData.images.length > 0 ? newRoomData.images[newRoomImageIndex] : '/placeholder.png'} 
-                      alt={newRoomData.title || 'номер'} 
-                      className="preview-image-large"
-                    />
-                    
-                    {newRoomData.images && newRoomData.images.length > 1 && (
-                      <>
-                        <button
-                          className="preview-nav-button preview-nav-prev"
-                          onClick={() => setNewRoomImageIndex((prev: number) => (prev > 0 ? prev - 1 : newRoomData.images!.length - 1))}
-                          aria-label="Предыдущее фото"
-                        >
-                          ‹
-                        </button>
-
-                        <button
-                          className="preview-nav-button preview-nav-next"
-                          onClick={() => setNewRoomImageIndex((prev: number) => (prev < newRoomData.images!.length - 1 ? prev + 1 : 0))}
-                          aria-label="Следующее фото"
-                        >
-                          ›
-                        </button>
-
-                        <div className="preview-indicators">
-                          {newRoomData.images.map((_, index) => (
-                            <button
-                              key={index}
-                              className={`preview-indicator ${index === newRoomImageIndex ? 'preview-indicator-active' : ''}`}
-                              onClick={() => setNewRoomImageIndex(index)}
-                              aria-label={`Фото ${index + 1}`}
-                            />
-                          ))}
-                        </div>
-                      </>
-                    )}
-                  </div>
-
-                  <div className="preview-details">
-                    <div className="room-preview-header">
-                      <div>
-                        <h2 className="preview-title">{newRoomData.title || '(название номера)'}</h2>
-                        <p className="room-preview-desc">{newRoomData.description}</p>
-                      </div>
-                      <div className="room-preview-price">
-                        <span className="room-preview-price-value">€{newRoomData.price}</span>
-                        <span className="room-preview-price-unit">/ ночь</span>
-                      </div>
-                    </div>
-
-                    {/* Поле `description` отображается выше в preview */}
-
-                    <div className="room-preview-specs">
-                      <div className="room-spec-item">
-                        <span className="room-spec-icon">👥</span>
-                        <div>
-                          <span className="room-spec-label">Гостей</span>
-                          <span className="room-spec-value">{newRoomData.capacity}</span>
-                        </div>
-                      </div>
-                      <div className="room-spec-item">
-                        <span className="room-spec-icon">📏</span>
-                        <div>
-                          <span className="room-spec-label">Площадь</span>
-                          <span className="room-spec-value">{newRoomData.size} м²</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {newRoomData.amenities && newRoomData.amenities.length > 0 && (
-                      <div className="room-preview-amenities">
-                        <h3>Удобства</h3>
-                        <div className="amenities-grid">
-                          {newRoomData.amenities.map((amenity, idx) => (
-                            <div key={idx} className="amenity-badge">
-                              <span className="amenity-check">✓</span>
-                              {amenity}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
+              <div className="form-group">
+                <label>Изображение (URL)</label>
+                <input type="text" value={url} onChange={e => setUrl(e.target.value)} placeholder="https://..." />
+                <button type="button" className="btn-primary" onClick={() => { if (url.trim()) { setForm({ ...form, imgs: [...form.imgs, url] }); setUrl('') } }}>+ Добавить фото</button>
+                {form.imgs.length > 0 && <div className="images-list">{form.imgs.map((img, i) => <div key={i} className="image-item"><img src={img} alt="" style={{ maxHeight: '80px' }} /><button className="btn-image-delete" onClick={() => setForm({ ...form, imgs: form.imgs.filter((_, j) => j !== i) })}>🗑️</button></div>)}</div>}
               </div>
             </div>
-
-            <div className="modal-footer">
-              <button className="btn-cancel" onClick={() => {
-                setIsAddingRoom(false)
-                setNewRoomData(null)
-                setNewRoomImageIndex(0)
-                setNewRoomImageUrl('')
-              }}>
-                Отменить
-              </button>
-              <button className="btn-primary" onClick={() => {
-                console.log('Новый номер добавлен:', newRoomData)
-                setIsAddingRoom(false)
-                setNewRoomData(null)
-                setNewRoomImageIndex(0)
-                setNewRoomImageUrl('')
-              }}>
-                ✅ Создать номер
-              </button>
+            <div className="modal-body-preview">
+              <div className="preview-card preview-card-room">
+                <div className="preview-gallery"><img src={form.imgs[imgIdx] || '/placeholder.png'} alt={form.title || 'номер'} className="preview-image-large" /></div>
+                <div className="preview-details">
+                  <div className="room-preview-header"><div><h2 className="preview-title">{form.title || '(название номера)'}</h2><p className="room-preview-desc">{form.desc}</p></div><div className="room-preview-price"><span className="room-preview-price-value">€{form.price}</span><span className="room-preview-price-unit">/ ночь</span></div></div>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+          <div className="modal-footer">
+            <button className="btn-cancel" onClick={() => { setAdding(false); setForm(null) }}>Отменить</button>
+            <button className="btn-primary" onClick={create} disabled={saving}>{saving ? '✅ Создание...' : '✅ Создать номер'}</button>
+          </div>
+        </Modal>
       )}
     </div>
   )
 }
 
-type MenusTabProps = {
-  editingMenu: (typeof DAYS)[0] | null
-  setEditingMenu: (menu: (typeof DAYS)[0] | null) => void
-  setConfirmDelete: (item: ConfirmDelete) => void
-}
+function MenusTab({ items, del, load }: { items: Dish[]; del: (c: ConfirmDelete) => void; load: () => Promise<void> }) {
+  const [edit, setEdit] = useState<Dish | null>(null)
+  const [adding, setAdding] = useState(false)
+  const [form, setForm] = useState<{ name: string; price: number; desc: string } | null>(null)
+  const [day, setDay] = useState<DayOfWeek>('Monday')
+  const [meal, setMeal] = useState<MealType>('Breakfast')
+  const [saving, setSaving] = useState(false)
+  const filtered = items.filter(d => d.dayOfWeek === day && d.meal === meal)
 
-function MenusTab({ editingMenu, setEditingMenu, setConfirmDelete }: MenusTabProps) {
-  const [formData, setFormData] = useState<(typeof DAYS)[0] | null>(null)
-  const [selectedSectionIndex, setSelectedSectionIndex] = useState(0)
-  const [newItemName, setNewItemName] = useState('')
-  const [newItemPrice, setNewItemPrice] = useState('')
-  const [newItemDescription, setNewItemDescription] = useState('')
-  const [showAddMenuDropdown, setShowAddMenuDropdown] = useState(false)
-  const [menuDays, setMenuDays] = useState(DAYS)
-  const [isAddingNewMenu, setIsAddingNewMenu] = useState(false)
-
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      const target = e.target as HTMLElement
-      if (!target.closest('[data-menu-dropdown]')) {
-        setShowAddMenuDropdown(false)
-      }
-    }
-
-    if (showAddMenuDropdown) {
-      document.addEventListener('click', handleClickOutside)
-      return () => document.removeEventListener('click', handleClickOutside)
-    }
-  }, [showAddMenuDropdown])
-
-  const openEditMenu = (day: (typeof DAYS)[0], isNew: boolean = false) => {
-    setIsAddingNewMenu(isNew)
-    setEditingMenu(day)
-    setFormData(JSON.parse(JSON.stringify(day)))
-    setSelectedSectionIndex(0)
+  const saveEdit = async () => {
+    if (!edit || !form) return; setSaving(true)
+    try { await dishApi.update({ id: edit.id, dayOfWeek: edit.dayOfWeek, meal: edit.meal, name: form.name, description: form.desc || undefined, price: form.price, isActive: true }); await load(); setEdit(null); setForm(null) }
+    catch (e: any) { alert('Ошибка: ' + (e?.response?.data?.message || e?.message)) } finally { setSaving(false) }
   }
-
-  const closeModal = () => {
-    setEditingMenu(null)
-    setFormData(null)
-    setIsAddingNewMenu(false)
-    setNewItemName('')
-    setNewItemPrice('')
-    setNewItemDescription('')
-  }
-
-  const addNewMenu = (dayLabel: string) => {
-    const days = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье']
-    const dayKeys = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
-    const dayIndex = days.indexOf(dayLabel)
-    
-    if (dayIndex !== -1) {
-      const newMenu: (typeof DAYS)[0] = {
-        day: dayKeys[dayIndex],
-        label: dayLabel,
-        sections: [
-          {
-            category: 'Завтрак',
-            items: [],
-          },
-          {
-            category: 'Обед',
-            items: [],
-          },
-          {
-            category: 'Ужин',
-            items: [],
-          },
-          {
-            category: 'Десерты',
-            items: [],
-          },
-        ],
-      }
-      
-      const existingMenu = menuDays.find(m => m.day === dayKeys[dayIndex])
-      if (!existingMenu) {
-        setMenuDays([...menuDays, newMenu])
-      }
-      
-      setShowAddMenuDropdown(false)
-      openEditMenu(newMenu, true)
-    }
-  }
-
-  const addMenuItem = () => {
-    if (!formData || !newItemName.trim() || !newItemPrice.trim()) return
-
-    const section = formData.sections[selectedSectionIndex]
-    const newId = Math.max(...section.items.map(i => i.id), 0) + 1
-
-    setFormData({
-      ...formData,
-      sections: formData.sections.map((sec, idx) =>
-        idx === selectedSectionIndex
-          ? {
-              ...sec,
-              items: [...sec.items, {
-                id: newId,
-                name: newItemName,
-                description: newItemDescription || undefined,
-                price: newItemPrice,
-              }],
-            }
-          : sec
-      ),
-    })
-
-    setNewItemName('')
-    setNewItemPrice('')
-    setNewItemDescription('')
-  }
-
-  const deleteMenuItem = (itemId: number) => {
-    if (!formData) return
-
-    setFormData({
-      ...formData,
-      sections: formData.sections.map((sec, idx) =>
-        idx === selectedSectionIndex
-          ? {
-              ...sec,
-              items: sec.items.filter(item => item.id !== itemId),
-            }
-          : sec
-      ),
-    })
-  }
-
-  const updateMenuItem = (itemId: number, updates: { name?: string; description?: string; price?: string }) => {
-    if (!formData) return
-
-    setFormData({
-      ...formData,
-      sections: formData.sections.map((sec, idx) =>
-        idx === selectedSectionIndex
-          ? {
-              ...sec,
-              items: sec.items.map(item =>
-                item.id === itemId ? { ...item, ...updates } : item
-              ),
-            }
-          : sec
-      ),
-    })
-  }
-
-  const currentSection = formData?.sections[selectedSectionIndex]
-
-  const handlePriceInput = (value: string): string => {
-    let filtered = value.replace(/[^\d.]/g, '')
-    const parts = filtered.split('.')
-    if (parts.length > 2) {
-      filtered = parts[0] + '.' + parts.slice(1).join('')
-    }
-    if (filtered.startsWith('.')) {
-      filtered = filtered.substring(1)
-    }
-    return filtered
+  const create = async () => {
+    if (!form) return; setSaving(true)
+    try { await dishApi.create({ id: 0, dayOfWeek: day, meal, name: form.name, description: form.desc || undefined, price: form.price, isActive: true }); await load(); setAdding(false); setForm(null) }
+    catch (e: any) { alert('Ошибка: ' + (e?.response?.data?.message || e?.message)) } finally { setSaving(false) }
   }
 
   return (
     <div className="admin-tab">
-      <div className="tab-header">
-        <h2>🍽️ Управление меню</h2>
-        <div style={{ position: 'relative', display: 'inline-block' }} data-menu-dropdown>
-          <button 
-            className="btn-primary"
-            onClick={() => setShowAddMenuDropdown(!showAddMenuDropdown)}
-          >
-            + Добавить дневное меню
-          </button>
-          {showAddMenuDropdown && (
-            <div style={{
-              position: 'absolute',
-              top: '100%',
-              right: 0,
-              backgroundColor: '#0B1220',
-              border: '1px solid rgba(102, 126, 234, 0.3)',
-              borderRadius: '8px',
-              boxShadow: '0 8px 24px rgba(102, 126, 234, 0.15)',
-              zIndex: 1000,
-              minWidth: '200px',
-              marginTop: '8px',
-            }}>
-              {['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'].map((day) => (
-                <button
-                  key={day}
-                  onClick={() => addNewMenu(day)}
-                  style={{
-                    display: 'block',
-                    width: '100%',
-                    padding: '12px 16px',
-                    textAlign: 'left',
-                    border: 'none',
-                    backgroundColor: '#0B1220',
-                    color: '#c8c8d8',
-                    cursor: 'pointer',
-                    borderBottom: '1px solid rgba(102, 126, 234, 0.1)',
-                    fontSize: '14px',
-                    transition: 'all 0.2s ease',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = 'rgba(102, 126, 234, 0.15)'
-                    e.currentTarget.style.color = '#667eea'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = '#0B1220'
-                    e.currentTarget.style.color = '#c8c8d8'
-                  }}
-                >
-                  {day}
-                </button>
-              ))}
-            </div>
-          )}
+      <div className="tab-header"><h2>🍽️ Управление меню</h2><button className="btn-primary" onClick={() => { setForm({ name: '', price: 0, desc: '' }); setAdding(true) }}>+ Добавить блюдо</button></div>
+      <div className="menu-filters" style={{ display: 'flex', gap: '16px', marginBottom: '20px' }}>
+        <div className="form-group" style={{ flex: 1 }}>
+          <label>День недели</label>
+          <select value={day} onChange={e => setDay(e.target.value as DayOfWeek)} style={{ width: '100%', padding: '10px', background: '#1a2332', color: '#c8c8d8', border: '1px solid rgba(102,126,234,0.3)', borderRadius: '8px' }}>
+            {Object.entries(DAY_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+          </select>
+        </div>
+        <div className="form-group" style={{ flex: 1 }}>
+          <label>Приём пищи</label>
+          <select value={meal} onChange={e => setMeal(e.target.value as MealType)} style={{ width: '100%', padding: '10px', background: '#1a2332', color: '#c8c8d8', border: '1px solid rgba(102,126,234,0.3)', borderRadius: '8px' }}>
+            {MEAL_ORDER.map(m => <option key={m} value={m}>{mealTypeLabels[m]}</option>)}
+          </select>
         </div>
       </div>
+      <div className="items-table"><table>
+        <thead><tr><th>ID</th><th>Название</th><th>Цена</th><th>Действия</th></tr></thead>
+        <tbody>{filtered.map(d => <tr key={d.id}><td>{d.id}</td><td>{d.name}</td><td>{d.price} €</td><td className="action-cell"><button className="btn-small btn-edit" onClick={() => { setEdit(d); setForm({ name: d.name, price: d.price, desc: d.description || '' }) }}>✏️ Редакт.</button><button className="btn-small btn-delete" onClick={() => del({ type: 'dish', id: d.id, name: d.name })}>🗑️ Удалить</button></td></tr>)}
+        {filtered.length === 0 && <tr><td colSpan={4} style={{ textAlign: 'center', padding: 20, color: '#888' }}>Нет блюд на {DAY_LABELS[day].toLowerCase()} ({mealTypeLabels[meal].toLowerCase()})</td></tr>}
+        </tbody>
+      </table></div>
 
-      <div className="menus-list">
-        {menuDays.map((day) => (
-          <div key={day.day} className="menu-day-card">
-            <div className="menu-day-header">
-              <h3>{day.label}</h3>
-              <div className="menu-actions">
-                <button
-                  className="btn-small btn-edit"
-                  onClick={() => openEditMenu(day)}
-                >
-                  ✏️ Редакт.
-                </button>
-                <button className="btn-small btn-delete" onClick={() => setConfirmDelete({
-                  type: 'menu',
-                  id: day.sections.length,
-                  name: day.label,
-                })}>🗑️ Удалить</button>
-              </div>
-            </div>
-            <div className="menu-sections">
-              {day.sections.map((section) => (
-                <div key={section.category} className="menu-section">
-                  <h4>{section.category}</h4>
-                  <ul>
-                    {section.items.map((item) => (
-                      <li key={item.id}>
-                        <span className="item-name">{item.name}</span>
-                        {item.description && <span className="item-desc">{item.description}</span>}
-                        <span className="item-price">{item.price}€</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
+      {(edit && form) && (
+        <Modal title="✏️ Редактирование блюда" onClose={() => { setEdit(null); setForm(null) }}>
+          <div className="modal-body">
+            <div className="modal-body-form">
+              <div className="form-group"><label>Название блюда</label><input type="text" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Введите название" /></div>
+              <div className="form-group"><label>Цена (€)</label><input type="number" step="0.01" value={form.price} onChange={e => setForm({ ...form, price: +e.target.value || 0 })} placeholder="Введите цену" /></div>
+              <div className="form-group"><label>Описание</label><textarea value={form.desc} onChange={e => setForm({ ...form, desc: e.target.value })} rows={3} placeholder="Введите описание" /></div>
             </div>
           </div>
-        ))}
-      </div>
+          <div className="modal-footer">
+            <button className="btn-cancel" onClick={() => { setEdit(null); setForm(null) }}>Отменить</button>
+            <button className="btn-primary" onClick={saveEdit} disabled={saving}>{saving ? '💾 Сохранение...' : '💾 Сохранить'}</button>
+          </div>
+        </Modal>
+      )}
 
-      {editingMenu && formData && (
-        <div className="modal-overlay" onClick={closeModal}>
-          <div className="modal-content menu-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>{isAddingNewMenu ? '➕ Добавление меню' : '✏️ Редактирование меню'} - {formData.label}</h2>
-              <button className="btn-close" onClick={closeModal}>✕</button>
-            </div>
-
-            <div className="modal-body">
-              <div className="modal-body-form">
-                <div className="menu-editor">
-                  <div className="sections-tabs">
-                    {formData.sections.map((section, idx) => (
-                      <button
-                        key={section.category}
-                        className={`section-tab ${selectedSectionIndex === idx ? 'active' : ''}`}
-                        onClick={() => setSelectedSectionIndex(idx)}
-                      >
-                        {section.category}
-                      </button>
-                    ))}
-                  </div>
-
-                  {currentSection && (
-                    <div className="menu-items-editor">
-                      <h3>{currentSection.category}</h3>
-                      <div className="items-editor-scroll">
-                        <div className="items-list">
-                          {currentSection.items.map((item) => (
-                          <div key={item.id} className="menu-item-edit">
-                            <div className="item-inputs">
-                              <input
-                                type="text"
-                                value={item.name}
-                                onChange={(e) => updateMenuItem(item.id, { name: e.target.value })}
-                                placeholder="Название блюда"
-                                className="input-item-name"
-                              />
-                              <textarea
-                                value={item.description || ''}
-                                onChange={(e) => updateMenuItem(item.id, { description: e.target.value })}
-                                placeholder="Описание (необязательно)"
-                                className="input-item-desc"
-                                rows={2}
-                              />
-                            </div>
-                            <div className="item-footer">
-                              <input
-                                type="text"
-                                value={item.price}
-                                onChange={(e) => updateMenuItem(item.id, { price: handlePriceInput(e.target.value) })}
-                                placeholder="Цена"
-                                className="input-item-price"
-                                inputMode="decimal"
-                              />
-                              <button
-                                className="btn-item-delete"
-                                onClick={() => deleteMenuItem(item.id)}
-                                title="Удалить блюдо"
-                              >
-                                🗑️
-                              </button>
-                            </div>
-                          </div>
-                          ))}
-                        </div>
-
-                        <div className="add-item-form">
-                        <h4>Добавить новое блюдо</h4>
-                        <input
-                          type="text"
-                          value={newItemName}
-                          onChange={(e) => setNewItemName(e.target.value)}
-                          placeholder="Название блюда"
-                          className="form-input"
-                        />
-                        <textarea
-                          value={newItemDescription}
-                          onChange={(e) => setNewItemDescription(e.target.value)}
-                          placeholder="Описание (необязательно)"
-                          rows={2}
-                          className="form-input"
-                        />
-                        <input
-                          type="text"
-                          value={newItemPrice}
-                          onChange={(e) => setNewItemPrice(handlePriceInput(e.target.value))}
-                          placeholder="Цена"
-                          className="form-input"
-                          inputMode="decimal"
-                        />
-                        <button
-                          className="btn-secondary"
-                          onClick={addMenuItem}
-                        >
-                          + Добавить блюдо
-                        </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="modal-body-preview">
-                <div className="preview-menu">
-                  <h3>{formData.label}</h3>
-                  {formData.sections.map((section) => (
-                    <div key={section.category} className="preview-menu-section">
-                      <h4>{section.category}</h4>
-                      <ul className="preview-items">
-                        {section.items.map((item) => (
-                          <li key={item.id} className="preview-menu-item">
-                            <div className="item-header">
-                              <span className="item-name">{item.name}</span>
-                              <span className="item-price">{isNaN(parseFloat(item.price)) ? '' : parseFloat(item.price).toFixed(2)}€</span>
-                            </div>
-                            {item.description && (
-                              <span className="item-desc">{item.description}</span>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="modal-footer">
-              <button className="btn-cancel" onClick={closeModal}>
-                Отмена
-              </button>
-              <button className="btn-primary" onClick={() => {
-                console.log('Меню сохранено:', formData)
-                closeModal()
-              }}>
-                💾 Сохранить
-              </button>
+      {(adding && form) && (
+        <Modal title="➕ Добавление нового блюда" onClose={() => { setAdding(false); setForm(null) }}>
+          <div className="modal-body">
+            <div className="modal-body-form">
+              <div className="form-group"><label>Название блюда</label><input type="text" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Введите название" /></div>
+              <div className="form-group"><label>Цена (€)</label><input type="number" step="0.01" value={form.price} onChange={e => setForm({ ...form, price: +e.target.value || 0 })} placeholder="Введите цену" /></div>
+              <div className="form-group"><label>Описание</label><textarea value={form.desc} onChange={e => setForm({ ...form, desc: e.target.value })} rows={3} placeholder="Введите описание" /></div>
             </div>
           </div>
-        </div>
+          <div className="modal-footer">
+            <button className="btn-cancel" onClick={() => { setAdding(false); setForm(null) }}>Отменить</button>
+            <button className="btn-primary" onClick={create} disabled={saving}>{saving ? '✅ Создание...' : '✅ Создать блюдо'}</button>
+          </div>
+        </Modal>
       )}
     </div>
   )
 }
 
-type AttractionsTabProps = {
-  editingAttraction: Attraction | null
-  setEditingAttraction: (attraction: Attraction | null) => void
-  setConfirmDelete: (item: ConfirmDelete) => void
-  isAddingAttraction: boolean
-  setIsAddingAttraction: (value: boolean) => void
-  newAttractionData: Attraction | null
-  setNewAttractionData: (data: Attraction | null) => void
-  newAttractionImageIndex: number
-  setNewAttractionImageIndex: React.Dispatch<React.SetStateAction<number>>
-}
+function AttractionsTab({ items, cats, del, load }: { items: AttractionBackendDto[]; cats: CategoryDto[]; del: (c: ConfirmDelete) => void; load: () => Promise<void> }) {
+  const [edit, setEdit] = useState<AttractionBackendDto | null>(null)
+  const [adding, setAdding] = useState(false)
+  const [form, setForm] = useState<{
+    name: string; shortDesc: string; desc: string; catId: number | null; address: string;
+    lat: number; lng: number; dist: number; price: number; imgs: string[];
+    phone: string; email: string; bookingUrl: string
+  } | null>(null)
+  const [url, setUrl] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [imgIdx, setImgIdx] = useState(0)
 
-function AttractionsTab({ editingAttraction, setEditingAttraction, setConfirmDelete, isAddingAttraction, setIsAddingAttraction, newAttractionData, setNewAttractionData, newAttractionImageIndex, setNewAttractionImageIndex }: AttractionsTabProps) {
-  const DEFAULT_ATTRACTION_CATEGORIES = ['culture', 'nature', 'food', 'shopping', 'family', 'nightlife']
-  const [formData, setFormData] = useState<Attraction | null>(null)
-  const [currentImageIndex, setCurrentImageIndex] = useState(0)
-  const [newImageUrl, setNewImageUrl] = useState('')
-  const [attractionCategories, setAttractionCategories] = useState(DEFAULT_ATTRACTION_CATEGORIES)
-  const [newAttractionCategory, setNewAttractionCategory] = useState('')
-  const [attractionCategoryDropdownOpen, setAttractionCategoryDropdownOpen] = useState(false)
-
-  const handleSave = () => {
-    console.log('Сохранено:', formData)
-    setEditingAttraction(null)
-    setFormData(null)
+  const openEdit = (a: AttractionBackendDto) => {
+    setEdit(a)
+    setForm({
+      name: a.name, shortDesc: a.shortDescription || '', desc: a.description || '',
+      catId: a.category ? (cats.find(c => c.name === a.category)?.id ?? null) : null,
+      address: a.address || '', lat: (a as any).location?.latitude || 0, lng: (a as any).location?.longitude || 0,
+      dist: a.distance, price: a.price, imgs: (a.images || []).map(i => i.url),
+      phone: a.contacts?.phone || '', email: a.contacts?.email || '', bookingUrl: a.contacts?.bookingUrl || '',
+    })
+    setUrl(''); setImgIdx(0)
   }
 
-  const addAttractionCategory = () => {
-    if (newAttractionCategory.trim() && !attractionCategories.includes(newAttractionCategory)) {
-      setAttractionCategories([...attractionCategories, newAttractionCategory])
-      if (formData) {
-        setFormData({...formData, category: newAttractionCategory as any})
-      }
-      setNewAttractionCategory('')
-    }
+  const saveEdit = async () => {
+    if (!edit || !form) return; setSaving(true)
+    try {
+      await attractionApi.update(edit.id, {
+        id: edit.id, name: form.name, shortDescription: form.shortDesc, description: form.desc,
+        categoryId: form.catId,
+        location: { address: form.address, latitude: form.lat, longitude: form.lng },
+        distance: form.dist, price: form.price, images: form.imgs.map(u => ({ url: u })),
+        openingHours: (edit.openingHours || []).length > 0 ? edit.openingHours : [{ dayOfWeek: 1, start: '09:00', end: '18:00' }] as OpeningHour[],
+        contacts: { phone: form.phone, email: form.email, bookingUrl: form.bookingUrl }, isActive: true,
+      } as any)
+      await load(); setEdit(null); setForm(null)
+    } catch (e: any) { alert('Ошибка: ' + (e?.response?.data?.message || e?.message)) } finally { setSaving(false) }
   }
 
-  const addImage = () => {
-    if (newImageUrl.trim() && formData) {
-      const newImages = [...(formData.images || []), newImageUrl]
-      setFormData({
-        ...formData,
-        images: newImages,
-      })
-      setNewImageUrl('')
-    }
-  }
-
-  const deleteImage = (index: number) => {
-    if (formData) {
-      const newImages = formData.images.filter((_, i) => i !== index)
-      setFormData({
-        ...formData,
-        images: newImages,
-      })
-    }
-  }
-
-  const moveImageUp = (index: number) => {
-    if (formData && index > 0) {
-      const newImages = [...formData.images]
-      ;[newImages[index - 1], newImages[index]] = [newImages[index], newImages[index - 1]]
-      setFormData({
-        ...formData,
-        images: newImages,
-      })
-    }
-  }
-
-  const moveImageDown = (index: number) => {
-    if (formData && index < formData.images.length - 1) {
-      const newImages = [...formData.images]
-      ;[newImages[index], newImages[index + 1]] = [newImages[index + 1], newImages[index]]
-      setFormData({
-        ...formData,
-        images: newImages,
-      })
-    }
-  }
-
-  const openEditAttraction = (attraction: Attraction) => {
-    setEditingAttraction(attraction)
-    setFormData(JSON.parse(JSON.stringify(attraction)))
-    setCurrentImageIndex(0)
-  }
-
-  const closeModal = () => {
-    setEditingAttraction(null)
-    setFormData(null)
-    setCurrentImageIndex(0)
-    setNewImageUrl('')
-    setAttractionCategoryDropdownOpen(false)
-    setNewAttractionCategory('')
-    setAttractionCategories(DEFAULT_ATTRACTION_CATEGORIES)
+  const create = async () => {
+    if (!form) return; setSaving(true)
+    try {
+      await attractionApi.create({
+        name: form.name, shortDescription: form.shortDesc, description: form.desc,
+        categoryId: form.catId,
+        location: { address: form.address, latitude: form.lat, longitude: form.lng },
+        distance: form.dist, price: form.price, images: form.imgs.map(u => ({ url: u })),
+        openingHours: [{ dayOfWeek: 1, start: '09:00', end: '18:00' }] as OpeningHour[],
+        contacts: { phone: form.phone, email: form.email, bookingUrl: form.bookingUrl },
+      } as any)
+      await load(); setAdding(false); setForm(null)
+    } catch (e: any) { alert('Ошибка: ' + (e?.response?.data?.message || e?.message)) } finally { setSaving(false) }
   }
 
   return (
     <div className="admin-tab">
-      <div className="tab-header">
-        <h2>🗺️ Управление достопримечательностями</h2>
-        <button 
-          className="btn-primary"
-          onClick={() => {
-            const newAttraction: Attraction = {
-              id: `attr-${Date.now()}`,
-              name: '',
-              shortDescription: '',
-              description: '',
-              category: 'culture',
-              address: '',
-              coords: { lat: 43.55, lng: 7.01 },
-              distanceKm: 0,
-              price: 0,
-              openingHours: {
-                monday: '09:00-18:00',
-                tuesday: '09:00-18:00',
-                wednesday: '09:00-18:00',
-                thursday: '09:00-18:00',
-                friday: '09:00-18:00',
-                saturday: '10:00-19:00',
-                sunday: '10:00-19:00',
-              },
-              rating: 5,
-              images: [],
-              partnerContact: {
-                phone: '',
-                email: '',
-                website: '',
-                bookingUrl: '',
-              },
-            }
-            setNewAttractionData(newAttraction)
-            setIsAddingAttraction(true)
-          }}
-        >
-          + Добавить достопримечательность
-        </button>
-      </div>
+      <div className="tab-header"><h2>🗺️ Управление достопримечательностями</h2><button className="btn-primary" onClick={() => { setForm({ name: '', shortDesc: '', desc: '', catId: null, address: '', lat: 43.55, lng: 7.01, dist: 0, price: 0, imgs: [], phone: '', email: '', bookingUrl: '' }); setAdding(true) }}>+ Добавить</button></div>
+      <div className="items-table"><table>
+        <thead><tr><th>ID</th><th>Название</th><th>Цена</th><th>Рейтинг</th><th>Действия</th></tr></thead>
+        <tbody>{items.map(a => <tr key={a.id}><td>{a.id}</td><td>{a.name}</td><td>{a.price} €</td><td>⭐ {a.rating}</td><td className="action-cell"><button className="btn-small btn-edit" onClick={() => openEdit(a)}>✏️ Редакт.</button><button className="btn-small btn-delete" onClick={() => del({ type: 'attraction', id: a.id, name: a.name })}>🗑️ Удалить</button></td></tr>)}</tbody>
+      </table></div>
 
-      <div className="items-table">
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Название</th>
-              <th>Категория</th>
-              <th>Цена</th>
-              <th>Описание</th>
-              <th>Рейтинг</th>
-              <th>Действия</th>
-            </tr>
-          </thead>
-          <tbody>
-            {attractions.map((attraction: Attraction) => (
-              <tr key={attraction.id}>
-                <td>{attraction.id}</td>
-                <td>{attraction.name}</td>
-                <td>{attraction.category}</td>
-                <td>{attraction.price} € </td>
-                <td className="description-cell">{attraction.shortDescription.substring(0, 50)}...</td>
-                <td>⭐ {attraction.rating}</td>
-                <td className="action-cell">
-                  <button className="btn-small btn-edit" onClick={() => openEditAttraction(attraction)}>
-                    ✏️ Редакт.
-                  </button>
-                  <button className="btn-small btn-delete" onClick={() => setConfirmDelete({
-                    type: 'attraction',
-                    id: attraction.id,
-                    name: attraction.name,
-                  })}>🗑️ Удалить</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {editingAttraction && formData && (
-        <div className="modal-overlay" onClick={closeModal}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>✏️ Редактирование достопримечательности</h3>
-              <button className="modal-close" onClick={closeModal}>✕</button>
-            </div>
-
-            <div className="modal-body">
-              <div className="modal-body-form">
-                <div className="form-group">
-                  <label>Название</label>
-                  <input 
-                    type="text" 
-                    value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
-                    placeholder="Введите название"
-                  />
-                </div>
-
-                <div className="form-row">
-                  <div className="form-group" style={{flex: 1}}>
-                    <label>Категория</label>
-                    <div className="custom-dropdown">
-                      <button 
-                        type="button"
-                        className="custom-dropdown-btn"
-                        onClick={() => setAttractionCategoryDropdownOpen(!attractionCategoryDropdownOpen)}
-                      >
-                        {formData.category}
-                        <span className="dropdown-arrow">▼</span>
-                      </button>
-                      {attractionCategoryDropdownOpen && (
-                        <div className="custom-dropdown-menu">
-                          {attractionCategories.map((cat) => (
-                            <button 
-                              key={cat}
-                              type="button"
-                              className={`dropdown-item ${formData.category === cat ? 'active' : ''}`}
-                              onClick={() => {
-                                setFormData({...formData, category: cat as any})
-                                setAttractionCategoryDropdownOpen(false)
-                              }}
-                            >
-                              {cat}
-                            </button>
-                          ))}
-                          <div className="dropdown-divider"></div>
-                          <div className="dropdown-add-category">
-                            <input 
-                              type="text"
-                              value={newAttractionCategory}
-                              onChange={(e) => setNewAttractionCategory(e.target.value)}
-                              placeholder="Новая категория"
-                              onClick={(e) => e.stopPropagation()}
-                              onKeyPress={(e) => {
-                                if (e.key === 'Enter') {
-                                  addAttractionCategory()
-                                  setAttractionCategoryDropdownOpen(false)
-                                }
-                              }}
-                            />
-                            <button 
-                              type="button"
-                              className="dropdown-add-btn"
-                              onClick={() => {
-                                addAttractionCategory()
-                                setAttractionCategoryDropdownOpen(false)
-                              }}
-                            >
-                              + Добавить
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="form-group" style={{flex: 1}}>
-                    <label>Цена (€)</label>
-                    <input 
-                      type="number" 
-                      value={formData.price}
-                      onChange={(e) => setFormData({...formData, price: parseFloat(e.target.value)})}
-                      placeholder="Введите цену"
-                    />
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label>Краткое описание</label>
-                  <textarea 
-                    value={formData.shortDescription}
-                    onChange={(e) => setFormData({...formData, shortDescription: e.target.value})}
-                    placeholder="Введите краткое описание"
-                    rows={2}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Полное описание</label>
-                  <textarea 
-                    value={formData.description}
-                    onChange={(e) => setFormData({...formData, description: e.target.value})}
-                    placeholder="Введите полное описание"
-                    rows={4}
-                  />
-                </div>
-
-                <div className="form-row">
-                  <div className="form-group" style={{flex: 1}}>
-                    <label>Расстояние (км)</label>
-                    <input 
-                      type="number" 
-                      value={formData.distanceKm}
-                      onChange={(e) => setFormData({...formData, distanceKm: parseFloat(e.target.value)})}
-                    />
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label>Контактный телефон</label>
-                  <input 
-                    type="text" 
-                    value={formData.partnerContact.phone}
-                    onChange={(e) => {
-                      let value = e.target.value
-                      const hasPlus = value.startsWith('+')
-                      let cleaned = value.replace(/[^\d+]/g, '').replace(/\+/g, '')
-                      if (cleaned.length > 15) {
-                        cleaned = cleaned.slice(0, 15)
-                      }
-                      const formatted = hasPlus ? '+' + cleaned : cleaned
-                      
-                      setFormData({
-                        ...formData,
-                        partnerContact: {...formData.partnerContact, phone: formatted}
-                      })
-                    }}
-                    placeholder="+33 4 93 00 00 01"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Email</label>
-                  <input 
-                    type="text" 
-                    value={formData.partnerContact.email}
-                    onChange={(e) => {
-                      let value = e.target.value
-                      value = value.replace(/[^a-zA-Z0-9@.\-_+]/g, '')
-                      
-                      setFormData({
-                        ...formData,
-                        partnerContact: {...formData.partnerContact, email: value}
-                      })
-                    }}
-                    placeholder="example@domain.com"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Веб-сайт</label>
-                  <input 
-                    type="text" 
-                    value={formData.partnerContact.website || ''}
-                    onChange={(e) => {
-                      let value = e.target.value
-                      
-                      // Проверяем что вводят только валидные URL символы
-                      // Разрешаем: энгл буквы, цифры, .-_~/:?#[]@!$&'()*+,;=%
-                      // Отклоняем: кириллицу, спецсимволы и спацес
-                      const validUrlRegex = /^[a-zA-Z0-9.\-_~:/?#\[\]@!$&'()*+,;=%]*$/
-                      if (!validUrlRegex.test(value)) {
-                        return
-                      }
-                      
-                      setFormData({
-                        ...formData,
-                        partnerContact: {...formData.partnerContact, website: value}
-                      })
-                    }}
-                    placeholder="https://example.com"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Фотографии</label>
-                  <div className="images-manager">
-                    {formData.images && formData.images.length > 0 && (
-                      <div className="images-list">
-                        {formData.images.map((img, index) => (
-                          <div key={index} className="image-item">
-                            <img src={img} alt={`Attraction ${index + 1}`} />
-                            <div className="image-controls">
-                              {index > 0 && (
-                                <button 
-                                  type="button"
-                                  className="btn-image-control"
-                                  onClick={() => moveImageUp(index)}
-                                  title="Переместить вверх"
-                                >
-                                  ⬆️
-                                </button>
-                              )}
-                              {index < formData.images.length - 1 && (
-                                <button 
-                                  type="button"
-                                  className="btn-image-control"
-                                  onClick={() => moveImageDown(index)}
-                                  title="Переместить вниз"
-                                >
-                                  ⬇️
-                                </button>
-                              )}
-                              <button 
-                                type="button"
-                                className="btn-image-delete"
-                                onClick={() => deleteImage(index)}
-                                title="Удалить фото"
-                              >
-                                🗑️
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    <div className="add-image-form">
-                      <input 
-                        type="text"
-                        value={newImageUrl}
-                        onChange={(e) => setNewImageUrl(e.target.value)}
-                        placeholder="Вставьте URL фотографии"
-                        onKeyPress={(e) => e.key === 'Enter' && addImage()}
-                      />
-                      <button 
-                        type="button"
-                        className="btn-primary"
-                        onClick={addImage}
-                      >
-                        + Добавить фото
-                      </button>
-                    </div>
-                  </div>
-                </div>
+      {(edit && form) && (
+        <Modal title="✏️ Редактирование достопримечательности" onClose={() => { setEdit(null); setForm(null) }} big>
+          <div className="modal-body">
+            <div className="modal-body-form">
+              <div className="form-group"><label>Название</label><input type="text" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Введите название" /></div>
+              <div className="form-row">
+                <div className="form-group" style={{ flex: 1 }}><label>Цена (€)</label><input type="number" value={form.price} onChange={e => setForm({ ...form, price: +e.target.value || 0 })} placeholder="Введите цену" /></div>
+                <div className="form-group" style={{ flex: 1 }}><label>Расстояние (км)</label><input type="number" value={form.dist} onChange={e => setForm({ ...form, dist: +e.target.value || 0 })} /></div>
               </div>
-
-              <div className="modal-body-preview">
-                <div className="preview-card">
-                  <div className="preview-gallery">
-                    <img 
-                      src={formData.images && formData.images.length > 0 ? formData.images[currentImageIndex] : '/placeholder.png'} 
-                      alt={formData.name} 
-                      className="preview-image-large"
-                    />
-                    
-                    {formData.images && formData.images.length > 1 && (
-                      <>
-                        <button
-                          className="preview-nav-button preview-nav-prev"
-                          onClick={() => setCurrentImageIndex((prev) => (prev > 0 ? prev - 1 : formData.images!.length - 1))}
-                          aria-label="Предыдущее фото"
-                        >
-                          ‹
-                        </button>
-
-                        <button
-                          className="preview-nav-button preview-nav-next"
-                          onClick={() => setCurrentImageIndex((prev) => (prev < formData.images!.length - 1 ? prev + 1 : 0))}
-                          aria-label="Следующее фото"
-                        >
-                          ›
-                        </button>
-
-                        <div className="preview-indicators">
-                          {formData.images.map((_, index) => (
-                            <button
-                              key={index}
-                              className={`preview-indicator ${index === currentImageIndex ? 'preview-indicator-active' : ''}`}
-                              onClick={() => setCurrentImageIndex(index)}
-                              aria-label={`Фото ${index + 1}`}
-                            />
-                          ))}
-                        </div>
-                      </>
-                    )}
-                  </div>
-
-                  <div className="preview-details">
-                    <h2 className="preview-title">{formData.name || '(название)'}</h2>
-                    
-                    <div className="preview-info">
-                      <p className="preview-category">Категория: {formData.category}</p>
-                      <p className="preview-price">Цена: {formData.price} €</p>
-                    </div>
-
-                    {formData.shortDescription && (
-                      <div className="preview-description-section">
-                        <h3 className="preview-description-title">Описание</h3>
-                        <p className="preview-description">{formData.shortDescription}</p>
-                      </div>
-                    )}
-
-                    {(formData.partnerContact.phone || formData.partnerContact.email || formData.partnerContact.website) && (
-                      <div className="preview-description-section">
-                        <h3 className="preview-description-title">Контакты партнера</h3>
-                        <div style={{display: 'flex', flexDirection: 'row', columnGap: '1rem', rowGap: '0.25rem', flexWrap: 'wrap', alignItems: 'center', color: '#c8c8d8', fontSize: '14px'}}>
-                          {formData.partnerContact.phone && (
-                            <p style={{margin: 0, display: 'flex', alignItems: 'center', gap: '0.7rem'}}>
-                              <span style={{fontSize: '1.1rem', width: '1.2rem'}}>📱</span>
-                              {formData.partnerContact.phone}
-                            </p>
-                          )}
-                          {formData.partnerContact.email && (
-                            <p style={{margin: 0, display: 'flex', alignItems: 'center', gap: '0.7rem'}}>
-                              <span style={{fontSize: '1.1rem', width: '1.2rem'}}>📧</span>
-                              {formData.partnerContact.email}
-                            </p>
-                          )}
-                          {formData.partnerContact.website && (
-                            <p style={{margin: 0, display: 'flex', alignItems: 'center', gap: '0.7rem'}}>
-                              <span style={{fontSize: '1.1rem', width: '1.2rem'}}>🌐</span>
-                              <a
-                                href={`https://${formData.partnerContact.website.replace(/^https?:\/\//, '')}`}
-                                target="_blank"
-                                rel="noreferrer"
-                                style={{color: '#667eea', textDecoration: 'none'}}
-                              >
-                                {formData.partnerContact.website}
-                              </a>
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
+              <div className="form-group"><label>Адрес</label><input type="text" value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} placeholder="Введите адрес" /></div>
+              <div className="form-group"><label>Категория</label>
+                <select value={form.catId ?? ''} onChange={e => setForm({ ...form, catId: e.target.value ? +e.target.value : null })} style={{ width: '100%', padding: '10px', background: '#1a2332', color: '#c8c8d8', border: '1px solid rgba(102,126,234,0.3)', borderRadius: '8px' }}>
+                  <option value="">Без категории</option>
+                  {cats.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </div>
+              <div className="form-group"><label>Краткое описание</label><textarea value={form.shortDesc} onChange={e => setForm({ ...form, shortDesc: e.target.value })} rows={2} placeholder="Введите краткое описание" /></div>
+              <div className="form-group"><label>Полное описание</label><textarea value={form.desc} onChange={e => setForm({ ...form, desc: e.target.value })} rows={4} placeholder="Введите полное описание" /></div>
+              <div className="form-group"><label>Контактный телефон</label><input type="text" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="+33 4 93 00 00 01" /></div>
+              <div className="form-group"><label>Email</label><input type="text" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="example@domain.com" /></div>
+              <div className="form-group"><label>URL бронирования</label><input type="text" value={form.bookingUrl} onChange={e => setForm({ ...form, bookingUrl: e.target.value })} placeholder="https://..." /></div>
+              <div className="form-group">
+                <label>Фотографии</label>
+                <div className="images-manager">
+                  {form.imgs.length > 0 && <div className="images-list">{form.imgs.map((img, i) => <div key={i} className="image-item"><img src={img} alt="" /><div className="image-controls"><button type="button" className="btn-image-delete" onClick={() => setForm({ ...form, imgs: form.imgs.filter((_, j) => j !== i) })}>🗑️</button></div></div>)}</div>}
+                  <div className="add-image-form"><input type="text" value={url} onChange={e => setUrl(e.target.value)} placeholder="URL фотографии" onKeyPress={e => e.key === 'Enter' && url.trim() && (setForm({ ...form, imgs: [...form.imgs, url] }), setUrl(''))} /><button type="button" className="btn-primary" onClick={() => { if (url.trim()) { setForm({ ...form, imgs: [...form.imgs, url] }); setUrl('') } }}>+ Добавить фото</button></div>
                 </div>
               </div>
             </div>
-
-            <div className="modal-footer">
-              <button className="btn-cancel" onClick={closeModal}>
-                Отменить
-              </button>
-              <button className="btn-primary" onClick={handleSave}>
-                💾 Сохранить
-              </button>
+            <div className="modal-body-preview">
+              <div className="preview-card">
+                <div className="preview-gallery">
+                  <img src={form.imgs[imgIdx] || '/placeholder.png'} alt={form.name} className="preview-image-large" />
+                  {form.imgs.length > 1 && (<>
+                    <button className="preview-nav-button preview-nav-prev" onClick={() => setImgIdx(i => (i > 0 ? i - 1 : form.imgs.length - 1))}>‹</button>
+                    <button className="preview-nav-button preview-nav-next" onClick={() => setImgIdx(i => (i < form.imgs.length - 1 ? i + 1 : 0))}>›</button>
+                    <div className="preview-indicators">{form.imgs.map((_, idx) => <button key={idx} className={`preview-indicator ${idx === imgIdx ? 'preview-indicator-active' : ''}`} onClick={() => setImgIdx(idx)} />)}</div>
+                  </>)}
+                </div>
+                <div className="preview-details">
+                  <h2 className="preview-title">{form.name || '(название)'}</h2>
+                  <div className="preview-info"><p className="preview-category">{form.address}</p><p className="preview-price">{form.price} €</p></div>
+                  {form.shortDesc && <div className="preview-description-section"><h3 className="preview-description-title">Описание</h3><p className="preview-description">{form.shortDesc}</p></div>}
+                  {(form.phone || form.email) && <div className="preview-description-section"><h3 className="preview-description-title">Контакты</h3><div style={{ display: 'flex', flexDirection: 'column', gap: '4px', color: '#c8c8d8', fontSize: '14px' }}>{form.phone && <p style={{ margin: 0 }}>📱 {form.phone}</p>}{form.email && <p style={{ margin: 0 }}>📧 {form.email}</p>}</div></div>}
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+          <div className="modal-footer">
+            <button className="btn-cancel" onClick={() => { setEdit(null); setForm(null) }}>Отменить</button>
+            <button className="btn-primary" onClick={saveEdit} disabled={saving}>{saving ? '💾 Сохранение...' : '💾 Сохранить'}</button>
+          </div>
+        </Modal>
       )}
 
-      {isAddingAttraction && newAttractionData && (
-        <div className="modal-overlay" onClick={() => {
-          setIsAddingAttraction(false)
-          setNewAttractionData(null)
-          setNewAttractionImageIndex(0)
-          setAttractionCategoryDropdownOpen(false)
-          setNewAttractionCategory('')
-          setAttractionCategories(DEFAULT_ATTRACTION_CATEGORIES)
-        }}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>➕ Добавление новой достопримечательности</h3>
-              <button className="modal-close" onClick={() => {
-                setIsAddingAttraction(false)
-                setNewAttractionData(null)
-                setNewAttractionImageIndex(0)
-                setAttractionCategoryDropdownOpen(false)
-                setNewAttractionCategory('')
-                setAttractionCategories(DEFAULT_ATTRACTION_CATEGORIES)
-              }}>✕</button>
-            </div>
-
-            <div className="modal-body">
-              <div className="modal-body-form">
-                <div className="form-group">
-                  <label>Название</label>
-                  <input 
-                    type="text" 
-                    value={newAttractionData.name}
-                    onChange={(e) => setNewAttractionData({...newAttractionData, name: e.target.value})}
-                    placeholder="Введите название"
-                  />
-                </div>
-
-                <div className="form-row">
-                  <div className="form-group" style={{flex: 1}}>
-                    <label>Категория</label>
-                    <div className="custom-dropdown">
-                      <button 
-                        type="button"
-                        className="custom-dropdown-btn"
-                        onClick={() => setAttractionCategoryDropdownOpen(!attractionCategoryDropdownOpen)}
-                      >
-                        {newAttractionData.category}
-                        <span className="dropdown-arrow">▼</span>
-                      </button>
-                      {attractionCategoryDropdownOpen && (
-                        <div className="custom-dropdown-menu">
-                          {attractionCategories.map((cat) => (
-                            <button 
-                              key={cat}
-                              type="button"
-                              className={`dropdown-item ${newAttractionData.category === cat ? 'active' : ''}`}
-                              onClick={() => {
-                                setNewAttractionData({...newAttractionData, category: cat as any})
-                                setAttractionCategoryDropdownOpen(false)
-                              }}
-                            >
-                              {cat}
-                            </button>
-                          ))}
-                          <div className="dropdown-divider"></div>
-                          <div className="dropdown-add-category">
-                            <input 
-                              type="text"
-                              value={newAttractionCategory}
-                              onChange={(e) => setNewAttractionCategory(e.target.value)}
-                              placeholder="Новая категория"
-                              onClick={(e) => e.stopPropagation()}
-                              onKeyPress={(e) => {
-                                if (e.key === 'Enter') {
-                                  if (newAttractionCategory.trim() && !attractionCategories.includes(newAttractionCategory)) {
-                                    setAttractionCategories([...attractionCategories, newAttractionCategory])
-                                    setNewAttractionData({...newAttractionData, category: newAttractionCategory as any})
-                                    setNewAttractionCategory('')
-                                  }
-                                  setAttractionCategoryDropdownOpen(false)
-                                }
-                              }}
-                            />
-                            <button 
-                              type="button"
-                              className="dropdown-add-btn"
-                              onClick={() => {
-                                if (newAttractionCategory.trim() && !attractionCategories.includes(newAttractionCategory)) {
-                                  setAttractionCategories([...attractionCategories, newAttractionCategory])
-                                  setNewAttractionData({...newAttractionData, category: newAttractionCategory as any})
-                                  setNewAttractionCategory('')
-                                }
-                                setAttractionCategoryDropdownOpen(false)
-                              }}
-                            >
-                              + Добавить
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="form-group" style={{flex: 1}}>
-                    <label>Цена (€)</label>
-                    <input 
-                      type="number" 
-                      value={newAttractionData.price}
-                      onChange={(e) => setNewAttractionData({...newAttractionData, price: parseFloat(e.target.value)})}
-                      placeholder="Введите цену"
-                    />
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label>Краткое описание</label>
-                  <textarea 
-                    value={newAttractionData.shortDescription}
-                    onChange={(e) => setNewAttractionData({...newAttractionData, shortDescription: e.target.value})}
-                    placeholder="Введите краткое описание"
-                    rows={2}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Полное описание</label>
-                  <textarea 
-                    value={newAttractionData.description}
-                    onChange={(e) => setNewAttractionData({...newAttractionData, description: e.target.value})}
-                    placeholder="Введите полное описание"
-                    rows={4}
-                  />
-                </div>
-
-                <div className="form-row">
-                  <div className="form-group" style={{flex: 1}}>
-                    <label>Расстояние (км)</label>
-                    <input 
-                      type="number" 
-                      value={newAttractionData.distanceKm}
-                      onChange={(e) => setNewAttractionData({...newAttractionData, distanceKm: parseFloat(e.target.value)})}
-                    />
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label>Контактный телефон</label>
-                  <input 
-                    type="text" 
-                    value={newAttractionData.partnerContact.phone}
-                    onChange={(e) => {
-                      let value = e.target.value
-                      const hasPlus = value.startsWith('+')
-                      let cleaned = value.replace(/[^\d+]/g, '').replace(/\+/g, '')
-                      
-                      if (cleaned.length > 15) {
-                        cleaned = cleaned.slice(0, 15)
-                      }
-                      
-                      const formatted = hasPlus ? '+' + cleaned : cleaned
-                      
-                      setNewAttractionData({
-                        ...newAttractionData,
-                        partnerContact: {...newAttractionData.partnerContact, phone: formatted}
-                      })
-                    }}
-                    placeholder="+33 4 93 00 00 01"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Email</label>
-                  <input 
-                    type="text" 
-                    value={newAttractionData.partnerContact.email}
-                    onChange={(e) => {
-                      let value = e.target.value
-                      // Проверяем и очищаем невалидные символы в режиме реального времени
-                      // Однако разрешаем всё что может включать email
-                      // Очищаем кто любые спецсимволы кроме @.-_+
-                      value = value.replace(/[^a-zA-Z0-9@.\-_+]/g, '')
-                      
-                      setNewAttractionData({
-                        ...newAttractionData,
-                        partnerContact: {...newAttractionData.partnerContact, email: value}
-                      })
-                    }}
-                    placeholder="example@domain.com"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Веб-сайт</label>
-                  <input 
-                    type="text" 
-                    value={newAttractionData.partnerContact.website || ''}
-                    onChange={(e) => {
-                      let value = e.target.value
-                      
-                      // Проверяем что вводят только валидные URL символы
-                      // Разрешаем: энгл буквы, цифры, .-_~/:?#[]@!$&'()*+,;=%
-                      // Отклоняем: кириллицу, спецсимволы и спацес
-                      const validUrlRegex = /^[a-zA-Z0-9.\-_~:/?#\[\]@!$&'()*+,;=%]*$/
-                      if (!validUrlRegex.test(value)) {
-                        return
-                      }
-                      
-                      setNewAttractionData({
-                        ...newAttractionData,
-                        partnerContact: {...newAttractionData.partnerContact, website: value}
-                      })
-                    }}
-                    placeholder="https://example.com"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Фотографии</label>
-                  <div className="images-manager">
-                    {newAttractionData.images && newAttractionData.images.length > 0 && (
-                      <div className="images-list">
-                        {newAttractionData.images.map((img, index) => (
-                          <div key={index} className="image-item">
-                            <img src={img} alt={`Attraction ${index + 1}`} />
-                            <div className="image-controls">
-                              {index > 0 && (
-                                <button 
-                                  type="button"
-                                  className="btn-image-control"
-                                  onClick={() => {
-                                    const newImages = [...newAttractionData.images]
-                                    ;[newImages[index - 1], newImages[index]] = [newImages[index], newImages[index - 1]]
-                                    setNewAttractionData({
-                                      ...newAttractionData,
-                                      images: newImages,
-                                    })
-                                  }}
-                                  title="Переместить вверх"
-                                >
-                                  ⬆️
-                                </button>
-                              )}
-                              {index < newAttractionData.images.length - 1 && (
-                                <button 
-                                  type="button"
-                                  className="btn-image-control"
-                                  onClick={() => {
-                                    const newImages = [...newAttractionData.images]
-                                    ;[newImages[index], newImages[index + 1]] = [newImages[index + 1], newImages[index]]
-                                    setNewAttractionData({
-                                      ...newAttractionData,
-                                      images: newImages,
-                                    })
-                                  }}
-                                  title="Переместить вниз"
-                                >
-                                  ⬇️
-                                </button>
-                              )}
-                              <button 
-                                type="button"
-                                className="btn-image-delete"
-                                onClick={() => {
-                                  const newImages = newAttractionData.images.filter((_, i) => i !== index)
-                                  setNewAttractionData({
-                                    ...newAttractionData,
-                                    images: newImages,
-                                  })
-                                }}
-                                title="Удалить фото"
-                              >
-                                🗑️
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    <div className="add-image-form">
-                      <input 
-                        type="text"
-                        value={newImageUrl}
-                        onChange={(e) => setNewImageUrl(e.target.value)}
-                        placeholder="Вставьте URL фотографии"
-                        onKeyPress={(e) => {
-                          if (e.key === 'Enter' && newImageUrl.trim() && newAttractionData) {
-                            const newImages = [...(newAttractionData.images || []), newImageUrl]
-                            setNewAttractionData({
-                              ...newAttractionData,
-                              images: newImages,
-                            })
-                            setNewImageUrl('')
-                          }
-                        }}
-                      />
-                      <button 
-                        type="button"
-                        className="btn-primary"
-                        onClick={() => {
-                          if (newImageUrl.trim() && newAttractionData) {
-                            const newImages = [...(newAttractionData.images || []), newImageUrl]
-                            setNewAttractionData({
-                              ...newAttractionData,
-                              images: newImages,
-                            })
-                            setNewImageUrl('')
-                          }
-                        }}
-                      >
-                        + Добавить фото
-                      </button>
-                    </div>
-                  </div>
-                </div>
+      {(adding && form) && (
+        <Modal title="➕ Добавление новой достопримечательности" onClose={() => { setAdding(false); setForm(null) }} big>
+          <div className="modal-body">
+            <div className="modal-body-form">
+              <div className="form-group"><label>Название</label><input type="text" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Введите название" /></div>
+              <div className="form-row">
+                <div className="form-group" style={{ flex: 1 }}><label>Цена (€)</label><input type="number" value={form.price} onChange={e => setForm({ ...form, price: +e.target.value || 0 })} placeholder="Введите цену" /></div>
+                <div className="form-group" style={{ flex: 1 }}><label>Расстояние (км)</label><input type="number" value={form.dist} onChange={e => setForm({ ...form, dist: +e.target.value || 0 })} /></div>
               </div>
-
-              <div className="modal-body-preview">
-                <div className="preview-card">
-                  <div className="preview-gallery">
-                    <img 
-                      src={newAttractionData.images && newAttractionData.images.length > 0 ? newAttractionData.images[newAttractionImageIndex] : '/placeholder.png'} 
-                      alt={newAttractionData.name} 
-                      className="preview-image-large"
-                    />
-                    
-                    {newAttractionData.images && newAttractionData.images.length > 1 && (
-                      <>
-                        <button
-                          className="preview-nav-button preview-nav-prev"
-                          onClick={() => setNewAttractionImageIndex((prev) => (prev > 0 ? prev - 1 : newAttractionData.images!.length - 1))}
-                          aria-label="Предыдущее фото"
-                        >
-                          ‹
-                        </button>
-
-                        <button
-                          className="preview-nav-button preview-nav-next"
-                          onClick={() => setNewAttractionImageIndex((prev) => (prev < newAttractionData.images!.length - 1 ? prev + 1 : 0))}
-                          aria-label="Следующее фото"
-                        >
-                          ›
-                        </button>
-
-                        <div className="preview-indicators">
-                          {newAttractionData.images.map((_, index) => (
-                            <button
-                              key={index}
-                              className={`preview-indicator ${index === newAttractionImageIndex ? 'preview-indicator-active' : ''}`}
-                              onClick={() => setNewAttractionImageIndex(index)}
-                              aria-label={`Фото ${index + 1}`}
-                            />
-                          ))}
-                        </div>
-                      </>
-                    )}
-                  </div>
-
-                  <div className="preview-details">
-                    <h2 className="preview-title">{newAttractionData.name || '(название)'}</h2>
-                    
-                    <div className="preview-info">
-                      <p className="preview-category">Категория: {newAttractionData.category}</p>
-                      <p className="preview-price">Цена: {newAttractionData.price} €</p>
-                    </div>
-
-                    {newAttractionData.shortDescription && (
-                      <div className="preview-description-section">
-                        <h3 className="preview-description-title">Описание</h3>
-                        <p className="preview-description">{newAttractionData.shortDescription}</p>
-                      </div>
-                    )}
-
-                    {(newAttractionData.partnerContact.phone || newAttractionData.partnerContact.email || newAttractionData.partnerContact.website) && (
-                      <div className="preview-description-section">
-                        <h3 className="preview-description-title">Контакты партнера</h3>
-                        <div style={{display: 'flex', flexDirection: 'row', columnGap: '1rem', rowGap: '0.25rem', flexWrap: 'wrap', alignItems: 'center', color: '#c8c8d8', fontSize: '14px'}}>
-                          {newAttractionData.partnerContact.phone && (
-                            <p style={{margin: 0, display: 'flex', alignItems: 'center', gap: '0.7rem'}}>
-                              <span style={{fontSize: '1.1rem', width: '1.2rem'}}>📱</span>
-                              {newAttractionData.partnerContact.phone}
-                            </p>
-                          )}
-                          {newAttractionData.partnerContact.email && (
-                            <p style={{margin: 0, display: 'flex', alignItems: 'center', gap: '0.7rem'}}>
-                              <span style={{fontSize: '1.1rem', width: '1.2rem'}}>📧</span>
-                              {newAttractionData.partnerContact.email}
-                            </p>
-                          )}
-                          {newAttractionData.partnerContact.website && (
-                            <p style={{margin: 0, display: 'flex', alignItems: 'center', gap: '0.7rem'}}>
-                              <span style={{fontSize: '1.1rem', width: '1.2rem'}}>🌐</span>
-                              <a
-                                href={`https://${newAttractionData.partnerContact.website.replace(/^https?:\/\//, '')}`}
-                                target="_blank"
-                                rel="noreferrer"
-                                style={{color: '#667eea', textDecoration: 'none'}}
-                              >
-                                {newAttractionData.partnerContact.website}
-                              </a>
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
+              <div className="form-group"><label>Адрес</label><input type="text" value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} placeholder="Введите адрес" /></div>
+              <div className="form-group"><label>Категория</label>
+                <select value={form.catId ?? ''} onChange={e => setForm({ ...form, catId: e.target.value ? +e.target.value : null })} style={{ width: '100%', padding: '10px', background: '#1a2332', color: '#c8c8d8', border: '1px solid rgba(102,126,234,0.3)', borderRadius: '8px' }}>
+                  <option value="">Без категории</option>
+                  {cats.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </div>
+              <div className="form-group"><label>Краткое описание</label><textarea value={form.shortDesc} onChange={e => setForm({ ...form, shortDesc: e.target.value })} rows={2} placeholder="Введите краткое описание" /></div>
+              <div className="form-group"><label>Полное описание</label><textarea value={form.desc} onChange={e => setForm({ ...form, desc: e.target.value })} rows={4} placeholder="Введите полное описание" /></div>
+              <div className="form-group"><label>Телефон</label><input type="text" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="+33 4 93 00 00 01" /></div>
+              <div className="form-group"><label>Email</label><input type="text" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="example@domain.com" /></div>
+              <div className="form-group"><label>URL бронирования</label><input type="text" value={form.bookingUrl} onChange={e => setForm({ ...form, bookingUrl: e.target.value })} placeholder="https://..." /></div>
+              <div className="form-group">
+                <label>Фотографии</label>
+                <input type="text" value={url} onChange={e => setUrl(e.target.value)} placeholder="https://..." />
+                <button type="button" className="btn-primary" onClick={() => { if (url.trim()) { setForm({ ...form, imgs: [...form.imgs, url] }); setUrl('') } }}>+ Добавить фото</button>
+                {form.imgs.length > 0 && <div className="images-list">{form.imgs.map((img, i) => <div key={i} className="image-item"><img src={img} alt="" style={{ maxHeight: '80px' }} /><button className="btn-image-delete" onClick={() => setForm({ ...form, imgs: form.imgs.filter((_, j) => j !== i) })}>🗑️</button></div>)}</div>}
               </div>
             </div>
-
-            <div className="modal-footer">
-              <button className="btn-cancel" onClick={() => {
-                setIsAddingAttraction(false)
-                setNewAttractionData(null)
-                setNewAttractionImageIndex(0)
-                setNewImageUrl('')
-              }}>
-                Отменить
-              </button>
-              <button className="btn-primary" onClick={() => {
-                console.log('Новая достопримечательность добавлена:', newAttractionData)
-                setIsAddingAttraction(false)
-                setNewAttractionData(null)
-                setNewAttractionImageIndex(0)
-                setNewImageUrl('')
-              }}>
-                ✅ Создать достопримечательность
-              </button>
+            <div className="modal-body-preview">
+              <div className="preview-card">
+                <div className="preview-gallery"><img src={form.imgs[imgIdx] || '/placeholder.png'} alt={form.name || 'достопримечательность'} className="preview-image-large" /></div>
+                <div className="preview-details">
+                  <h2 className="preview-title">{form.name || '(название)'}</h2>
+                  <div className="preview-info"><p className="preview-category">{form.address}</p><p className="preview-price">{form.price} €</p></div>
+                  {form.shortDesc && <div className="preview-description-section"><h3 className="preview-description-title">Описание</h3><p className="preview-description">{form.shortDesc}</p></div>}
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+          <div className="modal-footer">
+            <button className="btn-cancel" onClick={() => { setAdding(false); setForm(null) }}>Отменить</button>
+            <button className="btn-primary" onClick={create} disabled={saving}>{saving ? '✅ Создание...' : '✅ Создать'}</button>
+          </div>
+        </Modal>
       )}
     </div>
   )

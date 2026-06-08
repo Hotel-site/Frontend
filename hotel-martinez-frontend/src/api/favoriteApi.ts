@@ -24,7 +24,6 @@ export const favoriteApi = {
 
       const userIdNum = r.userId != null ? Number(r.userId) : NaN
 
-      // 1 -> Product, 2 -> Attraction
       let entityTypeNum: number
       if (typeof r.entityType === 'number') {
         entityTypeNum = r.entityType
