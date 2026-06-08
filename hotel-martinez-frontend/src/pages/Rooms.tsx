@@ -1,7 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { roomApi } from '../api'
 import RoomDetailModal from '../components/RoomDetailModal/RoomDetailModal'
+import LoadingState from '../components/LoadingState/LoadingState'
+import ErrorState from '../components/ErrorState/ErrorState'
+import EmptyState from '../components/EmptyState/EmptyState'
 import { useAuth } from '../context/AuthContext'
 import type { Product } from '../types/product'
 import type { BookingData } from '../types/cart'
@@ -9,33 +12,40 @@ import type { Room } from '../types/room'
 import '../styles/rooms.css'
 import '../styles/catalog.css'
 
+const CART_ITEM_TYPE_ROOM = 1
+
 type Props = {
-  onAddBookingToCart?: (product: Product, bookingData: BookingData) => void
+  onAddBookingToCart?: (product: Product, bookingData: BookingData, itemType?: number) => void
 }
 
 export default function Rooms({ onAddBookingToCart }: Props) {
   const { user } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const [rooms, setRooms] = useState<Room[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [selectedRoom, setSelectedRoom] = useState<number | null>(null)
   const [selectedRoomDetails, setSelectedRoomDetails] = useState<Room | null>(null)
   const [currentImageIndex, setCurrentImageIndex] = useState<Record<number, number>>({})
   const [bookingRoom, setBookingRoom] = useState<any>(null)
 
-  // Load rooms from API
-  useEffect(() => {
-    const loadRooms = async () => {
-      try {
-        const data = await roomApi.getAll()
-        setRooms(data)
-      } catch (err) {
-        console.error('Failed to load rooms:', err)
-        setRooms([])
-      }
+  const loadRooms = useCallback(async () => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      const data = await roomApi.getAll()
+      setRooms(data)
+    } catch (err) {
+      console.error('Failed to load rooms:', err)
+      setError('Не удалось загрузить список номеров. Пожалуйста, попробуйте позже.')
+    } finally {
+      setIsLoading(false)
     }
-
-    loadRooms()
   }, [])
+
+  useEffect(() => {
+    loadRooms()
+  }, [loadRooms])
 
   useEffect(() => {
     if (!selectedRoom) {
@@ -102,77 +112,99 @@ export default function Rooms({ onAddBookingToCart }: Props) {
           Выберите идеальное жилье для вашего отпуска в Канне
         </p>
 
-        <div className="rooms__grid">
-          {rooms.map((room) => (
-            <div key={room.id} className="room-card" onClick={() => setSelectedRoom(room.id)}>
-              <div className="room-card__gallery">
-                <div className="gallery-container">
-                  <img
-                    src={room.images[currentImageIndex[room.id] || 0]}
-                    alt={room.title}
-                    className="gallery-image"
-                  />
-                  {room.images.length > 1 && (
-                    <>
-                      <button
-                        className="gallery-btn gallery-btn--prev"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handlePrevImage(room.id, room.images.length)
-                        }}
-                      >
-                        ‹
-                      </button>
-                      <button
-                        className="gallery-btn gallery-btn--next"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleNextImage(room.id, room.images.length)
-                        }}
-                      >
-                        ›
-                      </button>
-                      <div className="gallery-dots">
-                        {room.images.map((_, idx) => (
-                          <span
-                            key={idx}
-                            className={`dot ${(currentImageIndex[room.id] || 0) === idx ? 'active' : ''}`}
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              setCurrentImageIndex((prev) => ({ ...prev, [room.id]: idx }))
-                            }}
-                          />
-                        ))}
-                      </div>
-                    </>
-                  )}
+        {isLoading && <LoadingState title="Загружаем номера" message="Ищем лучшие варианты размещения для вас..." />}
+
+        {!isLoading && error && (
+          <ErrorState 
+            emoji="(>_<)"
+            imageUrl="/cry.gif"
+            title="Ошибка загрузки номеров" 
+            message={error} 
+            onRetry={loadRooms} 
+          />
+        )}
+
+        {!isLoading && !error && rooms.length === 0 ? (
+          <EmptyState
+            emoji="🏨"
+            title="Номера временно недоступны"
+            hint="В данный момент нет свободных номеров для отображения. Пожалуйста, попробуйте позже."
+            actionText="Обновить"
+            onAction={loadRooms}
+          />
+        ) : !isLoading && !error ? (
+          <div className="rooms__grid">
+            {rooms.map((room) => (
+              <div key={room.id} className="room-card" onClick={() => setSelectedRoom(room.id)}>
+                <div className="room-card__gallery">
+                  <div className="gallery-container">
+                    <img
+                      src={room.images[currentImageIndex[room.id] || 0]}
+                      alt={room.title}
+                      className="gallery-image"
+                    />
+                    {room.images.length > 1 && (
+                      <>
+                        <button
+                          className="gallery-btn gallery-btn--prev"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handlePrevImage(room.id, room.images.length)
+                          }}
+                        >
+                          ‹
+                        </button>
+                        <button
+                          className="gallery-btn gallery-btn--next"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleNextImage(room.id, room.images.length)
+                          }}
+                        >
+                          ›
+                        </button>
+                        <div className="gallery-dots">
+                          {room.images.map((_, idx) => (
+                            <span
+                              key={idx}
+                              className={`dot ${(currentImageIndex[room.id] || 0) === idx ? 'active' : ''}`}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setCurrentImageIndex((prev) => ({ ...prev, [room.id]: idx }))
+                              }}
+                            />
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                <div className="room-card__content">
+                  <div className="room-header">
+                    <div>
+                      <h2 className="room-title">{room.title}</h2>
+                    </div>
+                    <div className="room-price">
+                      <span className="price-value">{room.price}€</span>
+                      <span className="price-unit">/ ночь</span>
+                    </div>
+                  </div>
+
+                  <button 
+                    className="room-booking-btn"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      setBookingRoom(room)
+                    }}>
+                    📞 Забронировать номер
+                  </button>
                 </div>
               </div>
-
-              <div className="room-card__content">
-                <div className="room-header">
-                  <div>
-                    <h2 className="room-title">{room.title}</h2>
-                  </div>
-                  <div className="room-price">
-                    <span className="price-value">{room.price}€</span>
-                    <span className="price-unit">/ ночь</span>
-                  </div>
-                </div>
-
-                <button 
-                  className="room-booking-btn"
-                  onClick={(e) => {
-                    e.preventDefault()
-                    e.stopPropagation()
-                    setBookingRoom(room)
-                  }}>
-                  📞 Забронировать номер
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : null}
 
         <div className="booking-section">
           <h2>Готовы к бронированию?</h2>
@@ -213,7 +245,7 @@ export default function Rooms({ onAddBookingToCart }: Props) {
             </div>
 
             <form
-              onSubmit={(e) => {
+              onSubmit={async (e) => {
                 e.preventDefault()
                 const formData = new FormData(e.currentTarget as HTMLFormElement)
                 const dateTime = formData.get('dateTime') as string
@@ -229,13 +261,18 @@ export default function Rooms({ onAddBookingToCart }: Props) {
                   requiresBooking: true,
                 }
 
-                onAddBookingToCart?.(roomAsProduct, {
-                  dateTime,
-                  notes,
-                })
+                try {
+                  await onAddBookingToCart?.(roomAsProduct, {
+                    dateTime,
+                    notes,
+                  }, CART_ITEM_TYPE_ROOM)
 
-                alert(`Спасибо за бронирование ${bookingRoom.title}!\nВаша бронь добавлена в корзину.`)
-                setBookingRoom(null)
+                  alert(`Спасибо за бронирование ${bookingRoom.title}!\nВаша бронь добавлена в корзину.`)
+                  setBookingRoom(null)
+                } catch (error) {
+                  console.error('Failed to add room booking to cart:', error)
+                  alert('Не удалось добавить бронирование в корзину')
+                }
               }}
               className="booking-form"
             >

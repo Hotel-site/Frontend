@@ -7,6 +7,7 @@ import Pagination from '../components/Pagination/Pagination'
 import SearchBar from '../components/SearchBar/SearchBar'
 import ErrorState from '../components/ErrorState/ErrorState'
 import LoadingState from '../components/LoadingState/LoadingState'
+import EmptyState from '../components/EmptyState/EmptyState'
 import { useAttractions } from '../hooks/useAttractions'
 import { fetchAttractionById, MAX_PRICE } from '../data/attractions'
 import { categoryApi, type CategoryDto } from '../api'
@@ -124,38 +125,38 @@ export default function LocalPage() {
         />
 
         <div>
-          <p className={styles.resultsInfo}>Найдено: {total}</p>
+          {loading && <LoadingState title="Загружаем развлечения" message="Формируем подборку активностей рядом с отелем." />}
+          
+          {!loading && error && (
+            <ErrorState
+              emoji="(>_<)"
+              imageUrl="/cry.gif"
+              title="Ошибка загрузки развлечений"
+              message={error}
+              onRetry={() => void reload()}
+            />
+          )}
 
-          {viewMode === 'map' ? (
-            <section ref={mapSectionRef} className={styles.mapInline} aria-label="Карта развлечений">
-              <Suspense fallback={<div className={styles.mapFallback}>{translate('loadingMap')}</div>}>
-                <MapView attractions={items} selectedId={selectedAttractionId} onMarkerSelect={onMarkerSelect} />
-              </Suspense>
-            </section>
-          ) : (
+          {!loading && !error && (
             <>
-              {loading && <LoadingState title="Загружаем развлечения" message="Формируем подборку активностей рядом с отелем." />}
-              {error && (
-                <ErrorState
-                  emoji="(>_<)"
-                  title="Ошибка загрузки развлечений"
-                  message={error}
-                  onRetry={() => void reload()}
+              {renderedItems.length === 0 ? (
+                <EmptyState
+                  emoji="(o_o)"
+                  title={translate('noResults')}
+                  hint="Попробуйте изменить дистанцию, категорию или убрать фильтр «Открыто сейчас»."
+                  actionText="Обновить"
+                  onAction={() => void reload()}
                 />
-              )}
-
-              {!loading && !error && renderedItems.length === 0 && (
-                <div className={styles.emptyState} role="status" aria-live="polite">
-                  <p className={styles.emptyEmoji} aria-hidden="true">
-                    (o_o)
-                  </p>
-                  <p className={styles.emptyTitle}>{translate('noResults')}</p>
-                  <p className={styles.emptyHint}>Попробуйте изменить дистанцию, категорию или убрать фильтр «Открыто сейчас».</p>
-                </div>
-              )}
-
-              {!loading && !error && (
+              ) : viewMode === 'map' ? (
+                <section ref={mapSectionRef} className={styles.mapInline} aria-label="Карта развлечений">
+                  <p className={styles.resultsInfo}>Найдено: {total}</p>
+                  <Suspense fallback={<div className={styles.mapFallback}>{translate('loadingMap')}</div>}>
+                    <MapView attractions={items} selectedId={selectedAttractionId} onMarkerSelect={onMarkerSelect} />
+                  </Suspense>
+                </section>
+              ) : (
                 <>
+                  <p className={styles.resultsInfo}>Найдено: {total}</p>
                   <ul className={clsx(styles.list, styles.grid)}>
                     {renderedItems.map((attraction) => (
                       <AttractionCard

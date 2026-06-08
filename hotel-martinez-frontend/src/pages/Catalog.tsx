@@ -1,4 +1,4 @@
-﻿import { useMemo, useState, useEffect, useRef, useCallback } from 'react'
+﻿﻿import { useMemo, useState, useEffect, useRef, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import ProductCard from '../components/Cards/ProductCard'
 import ProductDetailModal from '../components/DetailModal/ProductDetailModal'
@@ -7,6 +7,7 @@ import Pagination from '../components/Pagination/Pagination'
 import CatalogFiltersPanel, { BUDGET_RANGES, type BudgetType } from '../components/CatalogFiltersPanel/CatalogFiltersPanel'
 import LoadingState from '../components/LoadingState/LoadingState'
 import ErrorState from '../components/ErrorState/ErrorState'
+import EmptyState from '../components/EmptyState/EmptyState'
 import { useAuth } from '../context/AuthContext'
 import { categoryApi, productApi } from '../api'
 import type { Product } from '../types/product'
@@ -240,18 +241,23 @@ export default function Catalog({ favorites, onToggleFavorite, onAddToCart, onAd
           {isLoading && <LoadingState title="Загружаем каталог" message="Получаем товары из базы данных..." />}
 
           {!isLoading && error && (
-            <ErrorState title="Не удалось загрузить каталог" message={error} onRetry={loadProducts} />
+            <ErrorState 
+              emoji="(>_<)"
+              imageUrl="/cry.gif"
+              title="Не удалось загрузить каталог" 
+              message={error} 
+              onRetry={loadProducts} 
+            />
           )}
 
           {!isLoading && !error && filtered.length === 0 ? (
-            <div className="catalog-empty-state">
-              <p className="empty-emoji">😢</p>
-              <p className="empty-title">Ничего не найдено</p>
-              <p className="empty-hint">Попробуйте изменить фильтры или поисковый запрос</p>
-              <button className="empty-reset-btn" onClick={handleResetFilters}>
-                Очистить все фильтры
-              </button>
-            </div>
+            <EmptyState 
+              emoji="(o_o)"
+              title="Ничего не найдено" 
+              hint="Попробуйте изменить фильтры или поисковый запрос" 
+              actionText="Сбросить фильтры"
+              onAction={handleResetFilters}
+            />
           ) : !isLoading && !error ? (
             <div className="catalog-grid">
               {paginatedItems.map((p) => (
