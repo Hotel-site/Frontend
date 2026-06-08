@@ -35,6 +35,48 @@ const toUiRoom = (room: RoomDto): UiRoom => {
   }
 }
 
+type CreateRoomPayload = {
+  name: string
+  description?: string | null
+  amenities: string[]
+  images: { url: string }[]
+  price: number
+  status?: number
+}
+
+type UpdateRoomPayload = {
+  id: number
+  name: string
+  description?: string | null
+  amenities: string[]
+  images: { url: string }[]
+  price: number
+  status?: number
+}
+
+const toCreatePayload = (ui: UiRoom): CreateRoomPayload => {
+  return {
+    name: ui.title,
+    description: ui.description ?? null,
+    amenities: ui.amenities ?? [],
+    images: (ui.images ?? []).map((url) => ({ url })),
+    price: ui.price,
+    status: 0,
+  }
+}
+
+const toUpdatePayload = (ui: UiRoom): UpdateRoomPayload => {
+  return {
+    id: ui.id,
+    name: ui.title,
+    description: ui.description ?? null,
+    amenities: ui.amenities ?? [],
+    images: (ui.images ?? []).map((url) => ({ url })),
+    price: ui.price,
+    status: ui.status ?? 0,
+  }
+}
+
 export const roomApi = {
   getAll: async (): Promise<UiRoom[]> => {
     const response = await apiClient.get<RoomDto[]>('/room/all')
@@ -44,5 +86,17 @@ export const roomApi = {
   getById: async (id: number): Promise<UiRoom> => {
     const response = await apiClient.get<RoomDto>(`/room/${id}`)
     return toUiRoom(response.data)
+  },
+
+  create: async (payload: UiRoom): Promise<void> => {
+    await apiClient.post('/room', toCreatePayload(payload))
+  },
+
+  update: async (id: number, payload: UiRoom): Promise<void> => {
+    await apiClient.put(`/room/${id}`, toUpdatePayload({ ...payload, id }))
+  },
+
+  remove: async (id: number): Promise<void> => {
+    await apiClient.delete(`/room/${id}`)
   },
 }
