@@ -151,21 +151,17 @@ function applySort(items: Attraction[], sortBy: AttractionQueryParams['sortBy'])
 
 // Get attractions from API
 async function loadAttractions(): Promise<Attraction[]> {
-  try {
-    console.log('[Attractions] Loading from API...')
-    const backendData = await attractionApi.getAll()
-    console.log('[Attractions] Loaded from API:', backendData)
-    
-    if (backendData && backendData.length > 0) {
-      const converted = backendData.map(convertBackendToFrontend)
-      console.log('[Attractions] Converted:', converted)
-      return converted
-    } else {
-      console.warn('[Attractions] No data returned from API')
-    }
-  } catch (error) {
-    console.error('[Attractions] Error loading from API:', error)
+  console.log('[Attractions] Loading from API...')
+  const backendData = await attractionApi.getAll()
+  console.log('[Attractions] Loaded from API:', backendData)
+  
+  if (backendData && backendData.length > 0) {
+    const converted = backendData.map(convertBackendToFrontend)
+    console.log('[Attractions] Converted:', converted)
+    return converted
   }
+  
+  console.warn('[Attractions] No data returned from API')
   return []
 }
 

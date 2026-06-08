@@ -143,7 +143,15 @@ export default function Favorites({ favorites, onToggleFavorite }: Props) {
           />
         )}
 
-        {!isLoadingLocal && loadError && <ErrorState emoji="(T_T)" title="Ошибка загрузки избранного" message={loadError} />}
+        {!isLoadingLocal && loadError && (
+          <ErrorState
+            emoji="(>_<)"
+            imageUrl="/cry.gif"
+            title="Ошибка загрузки избранного"
+            message={loadError}
+            onRetry={() => window.location.reload()}
+          />
+        )}
 
         {!isLoadingLocal && totalCount === 0 ? (
           <div className="empty-state">

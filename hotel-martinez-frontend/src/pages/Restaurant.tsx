@@ -3,6 +3,7 @@ import '../styles/restaurant.css'
 import { dishApi } from '../api'
 import LoadingState from '../components/LoadingState/LoadingState'
 import ErrorState from '../components/ErrorState/ErrorState'
+import EmptyState from '../components/EmptyState/EmptyState'
 import type { Dish, DayOfWeek, MealType } from '../types/dish'
 import { dayOfWeekLabels, dayOfWeekKeys, mealTypeLabels } from '../types/dish'
 
@@ -79,9 +80,27 @@ export default function Restaurant() {
 
 
       {isLoading && <LoadingState />}
-      {error && <ErrorState title="Ошибка загрузки меню" message={error} />}
+      {error && (
+        <ErrorState
+          emoji="(>_<)"
+          imageUrl="/cry.gif"
+          title="Ошибка загрузки меню"
+          message={error}
+          onRetry={loadDishes}
+        />
+      )}
 
-      {!isLoading && !error && (
+      {!isLoading && !error && dishes.length === 0 && (
+        <EmptyState
+          emoji="🍽️"
+          title="Меню временно недоступно"
+          hint="В данный момент нет блюд для отображения. Пожалуйста, попробуйте позже."
+          actionText="Обновить"
+          onAction={loadDishes}
+        />
+      )}
+
+      {!isLoading && !error && dishes.length > 0 && (
         <section className="menu">
           {MEAL_ORDER.map((meal) => {
             const mealDishes = groupedByMeal.get(meal) || []

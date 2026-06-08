@@ -166,7 +166,7 @@ export const attractionApi = {
       return response.data || []
     } catch (error) {
       console.error('[attractionApi.getAll] Error:', error)
-      return []
+      throw error
     }
   },
 
