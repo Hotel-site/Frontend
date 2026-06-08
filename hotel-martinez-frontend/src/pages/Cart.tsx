@@ -28,6 +28,15 @@ export default function Cart({ onCheckout }: Props) {
     cvv: '',
   })
 
+  // Tab switching state
+  const [activeTab, setActiveTab] = useState<'cart' | 'history'>('cart')
+
+  // Order History State
+  const [orderHistory, setOrderHistory] = useState<any[]>([])
+  const [orderHistoryLoading, setOrderHistoryLoading] = useState(false)
+  const [orderHistoryError, setOrderHistoryError] = useState<string | null>(null)
+  const [orderHistoryProductCache, setOrderHistoryProductCache] = useState<Record<string, any>>({})
+
   const userId = user?.id ? Number(user.id) : NaN
 
   const loadCart = useCallback(async () => {
@@ -48,10 +57,82 @@ export default function Cart({ onCheckout }: Props) {
     }
   }, [userId])
 
+  const loadOrderHistory = useCallback(async () => {
+    if (!Number.isFinite(userId)) return
+    setOrderHistoryLoading(true)
+    setOrderHistoryError(null)
+    try {
+      const history = await orderApi.getOrderHistory(userId)
+      setOrderHistory(history)
+    } catch (err) {
+      console.error('Failed to load order history:', err)
+      setOrderHistoryError('Не удалось загрузить историю заказов')
+    } finally {
+      setOrderHistoryLoading(false)
+    }
+  }, [userId])
+
   // Load cart from API
   useEffect(() => {
     loadCart()
   }, [userId, loadCart])
+
+  // Load order history from API
+  useEffect(() => {
+    loadOrderHistory()
+  }, [userId, loadOrderHistory])
+
+  // Load product details for order history items
+  useEffect(() => {
+    let cancelled = false
+
+    const loadHistoryProducts = async () => {
+      if (!orderHistory?.length) {
+        setOrderHistoryProductCache({})
+        return
+      }
+
+      const cacheKey = (type: number, itemId: number) => `${type}-${itemId}`
+
+      try {
+        const cache: Record<string, any> = {}
+
+        await Promise.all(
+          orderHistory.flatMap((order: any) =>
+            (order.orderItems || []).map(async (item: any) => {
+              const key = cacheKey(item.type, item.itemId)
+              if (cache[key]) return
+              try {
+                const isRoom = item.type === CART_ITEM_TYPE_ROOM
+                const data = isRoom
+                  ? await roomApi.getById(item.itemId)
+                  : await productApi.getById(item.itemId)
+                cache[key] = data
+              } catch (err) {
+                console.error(`Failed to load history item ${item.itemId}:`, err)
+                cache[key] = null
+              }
+            })
+          )
+        )
+
+        if (!cancelled) {
+          setOrderHistoryProductCache(cache)
+        }
+      } catch (err) {
+        console.error('Failed to load history products:', err)
+        if (!cancelled) {
+          setOrderHistoryProductCache({})
+        }
+      }
+    }
+
+    void loadHistoryProducts()
+
+    return () => {
+      cancelled = true
+    }
+  }, [orderHistory])
 
   // Load products for server cart items
   useEffect(() => {
@@ -176,6 +257,8 @@ export default function Cart({ onCheckout }: Props) {
           // Re-fetch from server in background
           void loadCart()
           setShowSuccessModal(true)
+          // Refresh order history after successful checkout
+          void loadOrderHistory()
         } else {
           setError(result.message || 'Не удалось обработать платёж. Попробуйте ещё раз.')
         }
@@ -186,7 +269,7 @@ export default function Cart({ onCheckout }: Props) {
         setIsCheckingOut(false)
       }
     },
-    [userId, loadCart, onCheckout, validateCardData]
+    [userId, loadCart, onCheckout, validateCardData, loadOrderHistory]
   )
 
   const handleCardDataChange = useCallback(
@@ -218,108 +301,244 @@ export default function Cart({ onCheckout }: Props) {
     }, 0)
   }, [cartItems_display])
 
+
+  const getOrderItemName = useCallback(
+    (type: number, itemId: number): string => {
+      const key = `${type}-${itemId}`
+      const product = orderHistoryProductCache[key]
+      if (!product) {
+        if (type === CART_ITEM_TYPE_ROOM) return 'Номер'
+        return 'Товар'
+      }
+      return (product.title as string) || (product.name as string) || (type === CART_ITEM_TYPE_ROOM ? 'Номер' : 'Товар')
+    },
+    [orderHistoryProductCache]
+  )
+
+  const getOrderItemImage = useCallback(
+    (type: number, itemId: number): string => {
+      const key = `${type}-${itemId}`
+      const product = orderHistoryProductCache[key]
+      if (!product) return 'https://via.placeholder.com/60'
+      return (product.image as string) || (product.images?.[0] as string) || 'https://via.placeholder.com/60'
+    },
+    [orderHistoryProductCache]
+  )
+
+  const formatDate = (dateStr: string): string => {
+    const d = new Date(dateStr)
+    return d.toLocaleDateString('ru-RU', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  }
+
+  const getStatusLabel = (status: number): string => {
+    switch (status) {
+      case 0: return '🕐 В обработке'
+      case 1: return '✅ Завершён'
+      case 2: return '❌ Отменён'
+      default: return `Статус: ${status}`
+    }
+  }
+
+  const getItemTypeLabel = (type: number): string => {
+    return type === CART_ITEM_TYPE_ROOM ? '🏨 Номер' : '🛍️ Товар'
+  }
+
+  const cartItemCount = serverCart?.orderItems?.length || 0
+
   return (
     <section className="cart">
       <div className="container">
-        <h1>🛒 Корзина</h1>
-        
-        {error && <div style={{ color: '#ff5b5b', marginBottom: '1rem' }}>{error}</div>}
+        <div className="cart-tabs">
+          <button
+            className={`cart-tab ${activeTab === 'cart' ? 'active' : ''}`}
+            onClick={() => setActiveTab('cart')}
+          >
+            🛒 Корзина {cartItemCount > 0 && <span className="cart-tab-badge">{cartItemCount}</span>}
+          </button>
+          <button
+            className={`cart-tab ${activeTab === 'history' ? 'active' : ''}`}
+            onClick={() => setActiveTab('history')}
+          >
+            📋 История заказов {orderHistory.length > 0 && <span className="cart-tab-badge">{orderHistory.length}</span>}
+          </button>
+        </div>
 
-        {isLoading ? (
-          <div className="empty-cart">
-            <p className="empty-emoji">⏳</p>
-            <p className="empty-title">Загружаем корзину</p>
-            <p className="empty-hint">Получаем состояние корзины с сервера</p>
-          </div>
-        ) : !serverCart?.orderItems?.length ? (
-          <div className="empty-cart">
-            <p className="empty-emoji">🛍️</p>
-            <p className="empty-title">Корзина пуста</p>
-            <p className="empty-hint">Добавьте товары из каталога или гид по городу</p>
-            <Link to="/catalog" className="btn-back">
-              Перейти в каталог
-            </Link>
-          </div>
-        ) : (
-          <div className="cart-container">
-            <div className="cart-items">
-              <div className="items-header">
-                <span>Товар</span>
-                <span>Кол-во</span>
-                <span>Цена</span>
-                <span>Итого</span>
-                <span></span>
+        {activeTab === 'cart' && (
+          <>
+            {error && <div style={{ color: '#ff5b5b', marginBottom: '1rem' }}>{error}</div>}
+
+            {isLoading ? (
+              <div className="empty-cart">
+                <p className="empty-emoji">⏳</p>
+                <p className="empty-title">Загружаем корзину</p>
+                <p className="empty-hint">Получаем состояние корзины с сервера</p>
               </div>
-              {cartItems_display.map(({ orderItemId, quantity, price, product }: any) => {
-                if (!product) return null
-                
-                const image = (product.image as string) || (product.images?.[0] as string) || 'https://via.placeholder.com/150'
-                const title = (product.title as string) || (product.name as string) || 'Неизвестный товар'
-                const category = (product.category as string) || 'Услуга'
-
-                return (
-                  <div key={orderItemId} className="cart-item">
-                    <div className="item-info">
-                      <img src={image} alt={title} className="item-img" />
-                      <div className="item-details">
-                        <h3>{title}</h3>
-                      </div>
-                    </div>
-                    <div className="item-count">
-                      <button
-                        className="btn-qty-decrease"
-                        onClick={() => handleUpdateQuantity(orderItemId, quantity - 1)}
-                        title="Уменьшить количество"
-                      >
-                        −
-                      </button>
-                      <span className="qty-value">{quantity}</span>
-                      <button
-                        className="btn-qty-increase"
-                        onClick={() => handleUpdateQuantity(orderItemId, quantity + 1)}
-                        title="Увеличить количество"
-                      >
-                        +
-                      </button>
-                    </div>
-                    <div className="item-price">{price.toLocaleString('de-DE')} €</div>
-                    <div className="item-total">{(price * quantity).toLocaleString('de-DE')} €</div>
-                    <div className="item-actions">
-                      <button
-                        className="btn-remove-one"
-                        onClick={() => handleRemoveItem(orderItemId)}
-                        title="Удалить товар"
-                      >
-                        −
-                      </button>
-                    </div>
+            ) : !serverCart?.orderItems?.length ? (
+              <div className="empty-cart">
+                <p className="empty-emoji">🛍️</p>
+                <p className="empty-title">Корзина пуста</p>
+                <p className="empty-hint">Добавьте товары из каталога или гид по городу</p>
+                <Link to="/catalog" className="btn-back">
+                  Перейти в каталог
+                </Link>
+              </div>
+            ) : (
+              <div className="cart-container">
+                <div className="cart-items">
+                  <div className="items-header">
+                    <span>Товар</span>
+                    <span>Кол-во</span>
+                    <span>Цена</span>
+                    <span>Итого</span>
+                    <span></span>
                   </div>
-                )
-              })}
-            </div>
+                  {cartItems_display.map(({ orderItemId, quantity, price, product }: any) => {
+                    if (!product) return null
+                    
+                    const image = (product.image as string) || (product.images?.[0] as string) || 'https://via.placeholder.com/150'
+                    const title = (product.title as string) || (product.name as string) || 'Неизвестный товар'
+                    const category = (product.category as string) || 'Услуга'
 
-            <div className="cart-summary">
-              <h2>Итог</h2>
-              <div className="summary-row">
-                <span>Товаров:</span>
-                <span>{cartItems_display.reduce((sum: number, item: any) => sum + item.quantity, 0)}</span>
+                    return (
+                      <div key={orderItemId} className="cart-item">
+                        <div className="item-info">
+                          <img src={image} alt={title} className="item-img" />
+                          <div className="item-details">
+                            <h3>{title}</h3>
+                          </div>
+                        </div>
+                        <div className="item-count">
+                          <button
+                            className="btn-qty-decrease"
+                            onClick={() => handleUpdateQuantity(orderItemId, quantity - 1)}
+                            title="Уменьшить количество"
+                          >
+                            −
+                          </button>
+                          <span className="qty-value">{quantity}</span>
+                          <button
+                            className="btn-qty-increase"
+                            onClick={() => handleUpdateQuantity(orderItemId, quantity + 1)}
+                            title="Увеличить количество"
+                          >
+                            +
+                          </button>
+                        </div>
+                        <div className="item-price">{price.toLocaleString('de-DE')} €</div>
+                        <div className="item-total">{(price * quantity).toLocaleString('de-DE')} €</div>
+                        <div className="item-actions">
+                          <button
+                            className="btn-remove-one"
+                            onClick={() => handleRemoveItem(orderItemId)}
+                            title="Удалить товар"
+                          >
+                            −
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+
+                <div className="cart-summary">
+                  <h2>Итог</h2>
+                  <div className="summary-row">
+                    <span>Товаров:</span>
+                    <span>{cartItems_display.reduce((sum: number, item: any) => sum + item.quantity, 0)}</span>
+                  </div>
+                  <div className="summary-row">
+                    <span>Уникальных:</span>
+                    <span>{cartItems_display.length}</span>
+                  </div>
+                  <div className="summary-total">
+                    <span>Сумма:</span>
+                    <span className="total-amount">{total.toLocaleString('de-DE')} €</span>
+                  </div>
+                  <button className="btn-checkout" onClick={handleCheckoutClick}>Оплатить</button>
+                  <Link to="/catalog" className="btn-continue">
+                    Продолжить покупки
+                  </Link>
+                </div>
               </div>
-              <div className="summary-row">
-                <span>Уникальных:</span>
-                <span>{cartItems_display.length}</span>
-              </div>
-              <div className="summary-total">
-                <span>Сумма:</span>
-                <span className="total-amount">{total.toLocaleString('de-DE')} €</span>
-              </div>
-              <button className="btn-checkout" onClick={handleCheckoutClick}>Оплатить</button>
-              <Link to="/catalog" className="btn-continue">
-                Продолжить покупки
-              </Link>
-            </div>
-          </div>
+            )}
+          </>
         )}
 
+        {activeTab === 'history' && (
+          <>
+            {orderHistoryLoading ? (
+              <div className="empty-cart" style={{ minHeight: '300px' }}>
+                <p className="empty-emoji">⏳</p>
+                <p className="empty-title">Загружаем историю</p>
+                <p className="empty-hint">Получаем список ваших заказов с сервера</p>
+              </div>
+            ) : orderHistoryError ? (
+              <div className="empty-cart" style={{ minHeight: '300px' }}>
+                <p className="empty-emoji">⚠️</p>
+                <p className="empty-title">Ошибка загрузки</p>
+                <p className="empty-hint">{orderHistoryError}</p>
+              </div>
+            ) : !orderHistory?.length ? (
+              <div className="empty-cart" style={{ minHeight: '300px' }}>
+                <p className="empty-emoji">📭</p>
+                <p className="empty-title">История заказов пуста</p>
+                <p className="empty-hint">Совершите первую покупку, и она появится здесь</p>
+              </div>
+            ) : (
+              <div className="order-history-list">
+                {orderHistory.map((order: any) => (
+                  <div key={order.id} className="order-card">
+                    <div className="order-card-header">
+                      <div className="order-card-header-left">
+                        <span className="order-id">Заказ #{order.id}</span>
+                        <span className="order-date">{formatDate(order.createdAt)}</span>
+                      </div>
+                      <div className="order-card-header-right">
+                        <span className="order-status">{getStatusLabel(order.status)}</span>
+                        <span className="order-total">{order.totalSum.toLocaleString('de-DE')} €</span>
+                      </div>
+                    </div>
+
+                    {order.orderItems?.length > 0 ? (
+                      <div className="order-items">
+                        {order.orderItems.map((item: any) => (
+                          <div key={item.id} className="order-item">
+                            <img
+                              src={getOrderItemImage(item.type, item.itemId)}
+                              alt={getOrderItemName(item.type, item.itemId)}
+                              className="order-item-img"
+                            />
+                            <div className="order-item-info">
+                              <span className="order-item-name">
+                                {getOrderItemName(item.type, item.itemId)}
+                              </span>
+                              <span className="order-item-type">{getItemTypeLabel(item.type)}</span>
+                            </div>
+                            <div className="order-item-qty">×{item.quantity}</div>
+                            <div className="order-item-price">{item.priceAtPurchase.toLocaleString('de-DE')} €</div>
+                            <div className="order-item-total">
+                              {(item.priceAtPurchase * item.quantity).toLocaleString('de-DE')} €
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="order-items-empty">
+                        <span>Состав заказа не указан</span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
         {/* Payment Modal */}
         {showPaymentModal && (
           <div className="modal-overlay" onClick={() => { if (!isCheckingOut) setShowPaymentModal(false) }}>
