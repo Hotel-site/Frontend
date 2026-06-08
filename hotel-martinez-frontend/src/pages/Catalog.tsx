@@ -7,6 +7,7 @@ import Pagination from '../components/Pagination/Pagination'
 import CatalogFiltersPanel, { BUDGET_RANGES, type BudgetType } from '../components/CatalogFiltersPanel/CatalogFiltersPanel'
 import LoadingState from '../components/LoadingState/LoadingState'
 import ErrorState from '../components/ErrorState/ErrorState'
+import EmptyState from '../components/EmptyState/EmptyState'
 import { useAuth } from '../context/AuthContext'
 import { categoryApi, productApi } from '../api'
 import type { Product } from '../types/product'
@@ -250,12 +251,12 @@ export default function Catalog({ favorites, onToggleFavorite, onAddToCart, onAd
           )}
 
           {!isLoading && !error && filtered.length === 0 ? (
-            <ErrorState 
+            <EmptyState 
               emoji="(o_o)"
-              imageUrl="/cry.gif"
               title="Ничего не найдено" 
-              message="Попробуйте изменить фильтры или поисковый запрос" 
-              onRetry={handleResetFilters} 
+              hint="Попробуйте изменить фильтры или поисковый запрос" 
+              actionText="Сбросить фильтры"
+              onAction={handleResetFilters}
             />
           ) : !isLoading && !error ? (
             <div className="catalog-grid">

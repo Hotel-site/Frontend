@@ -152,10 +152,10 @@ export default function Favorites({ favorites, onToggleFavorite }: Props) {
             <p className="empty-hint">Добавьте понравившиеся товары и развлечения из гида</p>
             <div className="empty-actions">
               <Link to="/catalog" className="empty-action-btn">
-                Перейти в каталог
+                Перейти в Каталог
               </Link>
               <Link to="/attractions" className="empty-action-btn">
-                Перейти в гид
+                Перейти в Туризм
               </Link>
             </div>
           </div>

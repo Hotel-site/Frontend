@@ -4,6 +4,7 @@ import { DAYS } from '../data/menus'
 import { DRINKS } from '../data/drinks'
 import LoadingState from '../components/LoadingState/LoadingState'
 import ErrorState from '../components/ErrorState/ErrorState'
+import EmptyState from '../components/EmptyState/EmptyState'
 
 export default function Restaurant() {
   const [activeDay, setActiveDay] = useState<string>('mon')
@@ -61,7 +62,15 @@ export default function Restaurant() {
         />
       )}
 
-      {!isLoading && !error && (
+      {!isLoading && !error && dayMenu.sections.every(s => s.items.length === 0) && dayDrinks.length === 0 ? (
+        <EmptyState
+          emoji="🍽️"
+          title="Меню пока не загружено"
+          hint="В данный момент меню для этого дня недоступно. Попробуйте выбрать другой день или зайдите позже."
+          actionText="Обновить"
+          onAction={loadMenu}
+        />
+      ) : !isLoading && !error && (
       <section className="menu">
         {dayMenu.sections.map((section) => (
           <div className="menu-section" key={section.category}>

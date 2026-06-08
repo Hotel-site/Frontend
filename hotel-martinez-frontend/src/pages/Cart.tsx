@@ -250,14 +250,11 @@ export default function Cart({ onCheckout }: Props) {
         if (result.isSuccess) {
           setShowPaymentModal(false)
           setCardData({ cardNumber: '', cardHolder: '', expiryMonth: '', expiryYear: '', cvv: '' })
-          // Immediately clear cart UI, then re-fetch from server
           setServerCart({ orderItems: [] })
           setProductCache({})
           onCheckout()
-          // Re-fetch from server in background
           void loadCart()
           setShowSuccessModal(true)
-          // Refresh order history after successful checkout
           void loadOrderHistory()
         } else {
           setError(result.message || 'Не удалось обработать платёж. Попробуйте ещё раз.')
@@ -385,7 +382,7 @@ export default function Cart({ onCheckout }: Props) {
                 <p className="empty-title">Корзина пуста</p>
                 <p className="empty-hint">Добавьте товары из каталога или гид по городу</p>
                 <Link to="/catalog" className="btn-back">
-                  Перейти в каталог
+                  Перейти в Каталог
                 </Link>
               </div>
             ) : (

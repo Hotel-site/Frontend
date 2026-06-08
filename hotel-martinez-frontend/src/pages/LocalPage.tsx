@@ -7,6 +7,7 @@ import Pagination from '../components/Pagination/Pagination'
 import SearchBar from '../components/SearchBar/SearchBar'
 import ErrorState from '../components/ErrorState/ErrorState'
 import LoadingState from '../components/LoadingState/LoadingState'
+import EmptyState from '../components/EmptyState/EmptyState'
 import { useAttractions } from '../hooks/useAttractions'
 import { fetchAttractionById, MAX_PRICE } from '../data/attractions'
 import { categoryApi, type CategoryDto } from '../api'
@@ -139,12 +140,12 @@ export default function LocalPage() {
           {!loading && !error && (
             <>
               {renderedItems.length === 0 ? (
-                <ErrorState
+                <EmptyState
                   emoji="(o_o)"
-                  imageUrl="/cry.gif"
                   title={translate('noResults')}
-                  message="Попробуйте изменить дистанцию, категорию или убрать фильтр «Открыто сейчас»."
-                  onRetry={() => void reload()}
+                  hint="Попробуйте изменить дистанцию, категорию или убрать фильтр «Открыто сейчас»."
+                  actionText="Обновить"
+                  onAction={() => void reload()}
                 />
               ) : viewMode === 'map' ? (
                 <section ref={mapSectionRef} className={styles.mapInline} aria-label="Карта развлечений">

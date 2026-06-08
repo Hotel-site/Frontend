@@ -4,6 +4,7 @@ import { roomApi } from '../api'
 import RoomDetailModal from '../components/RoomDetailModal/RoomDetailModal'
 import LoadingState from '../components/LoadingState/LoadingState'
 import ErrorState from '../components/ErrorState/ErrorState'
+import EmptyState from '../components/EmptyState/EmptyState'
 import { useAuth } from '../context/AuthContext'
 import type { Product } from '../types/product'
 import type { BookingData } from '../types/cart'
@@ -123,79 +124,87 @@ export default function Rooms({ onAddBookingToCart }: Props) {
           />
         )}
 
-        {!isLoading && !error && (
-        <div className="rooms__grid">
-          {rooms.map((room) => (
-            <div key={room.id} className="room-card" onClick={() => setSelectedRoom(room.id)}>
-              <div className="room-card__gallery">
-                <div className="gallery-container">
-                  <img
-                    src={room.images[currentImageIndex[room.id] || 0]}
-                    alt={room.title}
-                    className="gallery-image"
-                  />
-                  {room.images.length > 1 && (
-                    <>
-                      <button
-                        className="gallery-btn gallery-btn--prev"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handlePrevImage(room.id, room.images.length)
-                        }}
-                      >
-                        ‹
-                      </button>
-                      <button
-                        className="gallery-btn gallery-btn--next"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleNextImage(room.id, room.images.length)
-                        }}
-                      >
-                        ›
-                      </button>
-                      <div className="gallery-dots">
-                        {room.images.map((_, idx) => (
-                          <span
-                            key={idx}
-                            className={`dot ${(currentImageIndex[room.id] || 0) === idx ? 'active' : ''}`}
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              setCurrentImageIndex((prev) => ({ ...prev, [room.id]: idx }))
-                            }}
-                          />
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              <div className="room-card__content">
-                <div className="room-header">
-                  <div>
-                    <h2 className="room-title">{room.title}</h2>
-                  </div>
-                  <div className="room-price">
-                    <span className="price-value">{room.price}€</span>
-                    <span className="price-unit">/ ночь</span>
+        {!isLoading && !error && rooms.length === 0 ? (
+          <EmptyState
+            emoji="🏨"
+            title="Номера временно недоступны"
+            hint="В данный момент нет свободных номеров для отображения. Пожалуйста, попробуйте позже."
+            actionText="Обновить"
+            onAction={loadRooms}
+          />
+        ) : !isLoading && !error ? (
+          <div className="rooms__grid">
+            {rooms.map((room) => (
+              <div key={room.id} className="room-card" onClick={() => setSelectedRoom(room.id)}>
+                <div className="room-card__gallery">
+                  <div className="gallery-container">
+                    <img
+                      src={room.images[currentImageIndex[room.id] || 0]}
+                      alt={room.title}
+                      className="gallery-image"
+                    />
+                    {room.images.length > 1 && (
+                      <>
+                        <button
+                          className="gallery-btn gallery-btn--prev"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handlePrevImage(room.id, room.images.length)
+                          }}
+                        >
+                          ‹
+                        </button>
+                        <button
+                          className="gallery-btn gallery-btn--next"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleNextImage(room.id, room.images.length)
+                          }}
+                        >
+                          ›
+                        </button>
+                        <div className="gallery-dots">
+                          {room.images.map((_, idx) => (
+                            <span
+                              key={idx}
+                              className={`dot ${(currentImageIndex[room.id] || 0) === idx ? 'active' : ''}`}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setCurrentImageIndex((prev) => ({ ...prev, [room.id]: idx }))
+                              }}
+                            />
+                          ))}
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
 
-                <button 
-                  className="room-booking-btn"
-                  onClick={(e) => {
-                    e.preventDefault()
-                    e.stopPropagation()
-                    setBookingRoom(room)
-                  }}>
-                  📞 Забронировать номер
-                </button>
+                <div className="room-card__content">
+                  <div className="room-header">
+                    <div>
+                      <h2 className="room-title">{room.title}</h2>
+                    </div>
+                    <div className="room-price">
+                      <span className="price-value">{room.price}€</span>
+                      <span className="price-unit">/ ночь</span>
+                    </div>
+                  </div>
+
+                  <button 
+                    className="room-booking-btn"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      setBookingRoom(room)
+                    }}>
+                    📞 Забронировать номер
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-        )}
+            ))}
+          </div>
+        ) : null}
 
         <div className="booking-section">
           <h2>Готовы к бронированию?</h2>
