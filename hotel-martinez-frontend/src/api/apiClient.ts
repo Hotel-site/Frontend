@@ -1,6 +1,5 @@
 import axios from 'axios'
 
-// Use Vite proxy in dev (baseURL: '/api')
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? '/api'
 
 const apiClient = axios.create({
@@ -10,7 +9,6 @@ const apiClient = axios.create({
   },
 })
 
-// Add token to requests if available
 apiClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('authToken')
@@ -24,7 +22,6 @@ apiClient.interceptors.request.use(
   }
 )
 
-// Handle response errors
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {

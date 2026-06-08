@@ -2,7 +2,6 @@ import apiClient from './apiClient'
 import type { Dish, DayOfWeek, MealType } from '../types/dish'
 import { convertDayOfWeek, convertMealType } from '../types/dish'
 
-// DTO coming from backend
 export type DishDto = {
   id: number
   dayOfWeek: DayOfWeek | number

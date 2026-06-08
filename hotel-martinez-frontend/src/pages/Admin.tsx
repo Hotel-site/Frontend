@@ -121,7 +121,6 @@ function Dashboard({ products, rooms, dishes, attractions }: { products: number;
   )
 }
 
-// ─── MODAL WRAPPER ───
 function Modal({ title, onClose, children, big = false }: { title: string; onClose: () => void; children: React.ReactNode; big?: boolean }) {
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -136,7 +135,6 @@ function Modal({ title, onClose, children, big = false }: { title: string; onClo
   )
 }
 
-// ─── PRODUCTS ───
 function ProductsTab({ items, cats, del, load }: { items: UiProduct[]; cats: CategoryDto[]; del: (c: ConfirmDelete) => void; load: () => Promise<void> }) {
   const [edit, setEdit] = useState<UiProduct | null>(null)
   const [adding, setAdding] = useState(false)
@@ -268,7 +266,6 @@ function ProductsTab({ items, cats, del, load }: { items: UiProduct[]; cats: Cat
   )
 }
 
-// ─── ROOMS ───
 function RoomsTab({ items, del, load }: { items: Room[]; del: (c: ConfirmDelete) => void; load: () => Promise<void> }) {
   const [edit, setEdit] = useState<Room | null>(null)
   const [adding, setAdding] = useState(false)
@@ -396,7 +393,6 @@ function RoomsTab({ items, del, load }: { items: Room[]; del: (c: ConfirmDelete)
   )
 }
 
-// ─── MENUS ───
 function MenusTab({ items, del, load }: { items: Dish[]; del: (c: ConfirmDelete) => void; load: () => Promise<void> }) {
   const [edit, setEdit] = useState<Dish | null>(null)
   const [adding, setAdding] = useState(false)
@@ -476,7 +472,6 @@ function MenusTab({ items, del, load }: { items: Dish[]; del: (c: ConfirmDelete)
   )
 }
 
-// ─── ATTRACTIONS ───
 function AttractionsTab({ items, cats, del, load }: { items: AttractionBackendDto[]; cats: CategoryDto[]; del: (c: ConfirmDelete) => void; load: () => Promise<void> }) {
   const [edit, setEdit] = useState<AttractionBackendDto | null>(null)
   const [adding, setAdding] = useState(false)

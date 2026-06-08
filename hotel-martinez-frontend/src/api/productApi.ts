@@ -66,7 +66,6 @@ type UpdateProductPayload = {
 }
 
 const toCreatePayload = (ui: UiProduct): CreateProductPayload => {
-  // Check if we have a categoryId stored on the UI object (admin panel use case)
   const categoryId = (ui as any).categoryId ?? null
   
   return {

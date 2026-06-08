@@ -18,7 +18,6 @@ export interface PartnerContacts {
   bookingUrl: string
 }
 
-// DTO from backend
 export interface AttractionImageDTO {
   url: string
 }
@@ -39,7 +38,6 @@ export interface AttractionBackendDto {
   contacts: PartnerContacts
 }
 
-// Frontend model
 export interface Attraction {
   id: number
   name: string
@@ -103,7 +101,6 @@ type UpdateAttractionPayload = {
 const mapWeekdayToNumber = (key: number): number => key
 
 const toOpeningHours = (ohs: OpeningHour[]): { dayOfWeek: number; start: string; end: string }[] => {
-  // Backend expects DayOfWeek enum (number). In your UI type, dayOfWeek is already number.
   return (ohs ?? []).map((oh) => ({ dayOfWeek: mapWeekdayToNumber(oh.dayOfWeek), start: oh.start, end: oh.end }))
 }
 
