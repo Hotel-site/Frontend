@@ -30,6 +30,7 @@ export default function Restaurant() {
   }, [])
 
   useEffect(() => {
+
     loadDishes()
   }, [loadDishes])
 
@@ -75,6 +76,7 @@ export default function Restaurant() {
           </button>
         ))}
       </div>
+
 
       {isLoading && <LoadingState />}
       {error && <ErrorState title="Ошибка загрузки меню" message={error} />}
