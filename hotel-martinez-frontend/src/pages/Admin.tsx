@@ -12,7 +12,7 @@ import type { AttractionBackendDto, OpeningHour } from '../api/attractionApi'
 import ErrorState from '../components/ErrorState/ErrorState'
 import '../styles/admin.css'
 
-type Tab = 'products' | 'rooms' | 'menus' | 'attractions' | 'dashboard'
+type Tab = 'products' | 'rooms' | 'menus' | 'attractions' | 'categories' | 'dashboard'
 type ConfirmDelete = { type: string; id: number | string; name: string } | null
 
 const DAY_LABELS: Record<string, string> = { Monday: 'Понедельник', Tuesday: 'Вторник', Wednesday: 'Среда', Thursday: 'Четверг', Friday: 'Пятница', Saturday: 'Суббота', Sunday: 'Воскресенье' }
@@ -46,6 +46,7 @@ export default function Admin() {
       else if (item.type === 'room') await roomApi.remove(item.id as number)
       else if (item.type === 'dish') await dishApi.remove(item.id as number)
       else if (item.type === 'attraction') await attractionApi.remove(item.id as number)
+      else if (item.type === 'category') await categoryApi.remove(item.id as number)
       await load()
     } catch (err: any) { alert('Ошибка: ' + (err?.response?.data?.message || err?.message)) }
     setConfirm(null)
@@ -55,8 +56,8 @@ export default function Admin() {
     return <ErrorState title="Страница не найдена" message="Путь указан неверно." emoji="(x_x)" imageUrl="/cry.gif" />
   }
 
-  const nav = (['dashboard', 'products', 'rooms', 'menus', 'attractions'] as Tab[]).map(t => ({
-    t, label: t === 'dashboard' ? '📊 Статистика' : t === 'products' ? '🛍️ Продукты' : t === 'rooms' ? '🏨 Номера' : t === 'menus' ? '🍽️ Меню' : '🗺️ Гид по городу'
+  const nav = (['dashboard', 'products', 'rooms', 'menus', 'attractions', 'categories'] as Tab[]).map(t => ({
+    t, label: t === 'dashboard' ? '📊 Статистика' : t === 'products' ? '🛍️ Продукты' : t === 'rooms' ? '🏨 Номера' : t === 'menus' ? '🍽️ Меню' : t === 'attractions' ? '🗺️ Туризм' : '🏷️ Категории'
   }))
 
   return (
@@ -84,6 +85,7 @@ export default function Admin() {
               {tab === 'rooms' && <RoomsTab items={rooms} del={del} load={load} />}
               {tab === 'menus' && <MenusTab items={dishes} del={del} load={load} />}
               {tab === 'attractions' && <AttractionsTab items={attractions} cats={cats} del={del} load={load} />}
+              {tab === 'categories' && <CategoriesTab cats={cats} del={del} load={load} />}
             </>
           )}
         </main>
@@ -91,7 +93,7 @@ export default function Admin() {
       {confirm && (
         <div className="modal-overlay" onClick={() => setConfirm(null)}>
           <div className="confirm-dialog" onClick={e => e.stopPropagation()}>
-            <div className="confirm-icon">{confirm.type === 'product' ? '🛍️' : confirm.type === 'room' ? '🏨' : confirm.type === 'dish' ? '🍽️' : '🗺️'}</div>
+            <div className="confirm-icon">{confirm.type === 'product' ? '🛍️' : confirm.type === 'room' ? '🏨' : confirm.type === 'dish' ? '🍽️' : confirm.type === 'attraction' ? '🗺️' : '🏷️'}</div>
             <h3>Подтверждение удаления</h3>
             <p>Удалить <strong>"{confirm.name}"</strong>?</p>
             <p className="confirm-warning">⚠️ Это действие невозможно отменить</p>
@@ -101,6 +103,63 @@ export default function Admin() {
             </div>
           </div>
         </div>
+      )}
+    </div>
+  )
+}
+
+function CategoriesTab({ cats, del, load }: { cats: CategoryDto[]; del: (c: ConfirmDelete) => void; load: () => Promise<void> }) {
+  const [edit, setEdit] = useState<CategoryDto | null>(null)
+  const [adding, setAdding] = useState(false)
+  const [name, setName] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  const saveEdit = async () => {
+    if (!edit || !name.trim()) return; setSaving(true)
+    try { await categoryApi.update(edit.id, name.trim()); await load(); setEdit(null); setName('') }
+    catch (e: any) { alert('Ошибка: ' + (e?.response?.data?.message || e?.message)) } finally { setSaving(false) }
+  }
+
+  const create = async () => {
+    if (!name.trim()) return; setSaving(true)
+    try { await categoryApi.create(name.trim()); await load(); setAdding(false); setName('') }
+    catch (e: any) { alert('Ошибка: ' + (e?.response?.data?.message || e?.message)) } finally { setSaving(false) }
+  }
+
+  return (
+    <div className="admin-tab">
+      <div className="tab-header"><h2>🏷️ Управление категориями</h2><button className="btn-primary" onClick={() => { setName(''); setAdding(true) }}>+ Добавить категорию</button></div>
+      <div className="items-table"><table>
+        <thead><tr><th>ID</th><th>Название</th><th>Действия</th></tr></thead>
+        <tbody>{cats.map(c => <tr key={c.id}><td>{c.id}</td><td>{c.name}</td><td className="action-cell"><button className="btn-small btn-edit" onClick={() => { setEdit(c); setName(c.name) }}>✏️ Редакт.</button><button className="btn-small btn-delete" onClick={() => del({ type: 'category', id: c.id, name: c.name })}>🗑️ Удалить</button></td></tr>)}</tbody>
+      </table></div>
+
+      {(edit) && (
+        <Modal title="✏️ Редактирование категории" onClose={() => { setEdit(null); setName('') }}>
+          <div className="modal-body">
+            <div className="modal-body-form">
+              <div className="form-group"><label>Название категории</label><input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Введите название" /></div>
+            </div>
+          </div>
+          <div className="modal-footer">
+            <button className="btn-cancel" onClick={() => { setEdit(null); setName('') }}>Отменить</button>
+            <button className="btn-primary" onClick={saveEdit} disabled={saving}>{saving ? '💾 Сохранение...' : '💾 Сохранить'}</button>
+          </div>
+        </Modal>
+      )}
+
+      {(adding) && (
+        <Modal title="➕ Добавление категории" onClose={() => { setAdding(false); setName('') }}>
+          <div className="modal-body">
+            <div className="modal-body-form">
+              <div className="form-group"><label>Название категории</label><input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Введите название" /></div>
+            </div>
+          </div>
+          <div className="modal-footer">
+            <button className="btn-cancel" onClick={() => { setAdding(false); setName('') }}>Отменить</button>
+            <button className="btn-primary" onClick={create} disabled={saving}>{saving ? '✅ Создание...' : '✅ Создать'}</button>
+          </div>
+        </Modal>
       )}
     </div>
   )
