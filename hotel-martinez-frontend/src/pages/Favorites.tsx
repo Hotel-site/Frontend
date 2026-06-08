@@ -6,6 +6,7 @@ import LoadingState from '../components/LoadingState/LoadingState'
 import { useAuth } from '../context/AuthContext'
 import { attractionApi, favoriteApi, productApi } from '../api'
 import type { Favorite } from '../api'
+import type { AttractionBackendDto } from '../api/attractionApi'
 import type { Attraction } from '../types/local'
 import type { Product } from '../types/product'
 import '../styles/catalog.css'
@@ -26,16 +27,16 @@ export default function Favorites({ favorites, onToggleFavorite }: Props) {
   const localCount = localItems.length
   const totalCount = favoriteProducts.length + localCount
 
-  const mapApiAttractionToUi = (item: Awaited<ReturnType<typeof attractionApi.getById>>): Attraction => ({
+  const mapApiAttractionToUi = (item: AttractionBackendDto): Attraction => ({
     id: item.id.toString(),
     name: item.name,
-    shortDescription: item.shortDescription,
-    description: item.description,
+    shortDescription: item.shortDescription ?? '',
+    description: item.description ?? '',
     category: 'culture',
-    address: item.location.address,
+    address: item.address,
     coords: {
-      lat: item.location.latitude,
-      lng: item.location.longitude,
+      lat: 0,
+      lng: 0,
     },
     distanceKm: item.distance,
     price: item.price,
@@ -84,6 +85,7 @@ export default function Favorites({ favorites, onToggleFavorite }: Props) {
                 attractionFavs.map(async (fav) => {
                   try {
                     const item = await attractionApi.getById(fav.entityId)
+                    if (!item) return null
                     return { favorite: fav, item: mapApiAttractionToUi(item) }
                   } catch (error) {
                     console.warn(`Failed to load favorite attraction ${fav.entityId}:`, error)

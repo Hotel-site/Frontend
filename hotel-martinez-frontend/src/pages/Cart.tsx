@@ -135,20 +135,50 @@ export default function Cart({ onCheckout }: Props) {
     setShowPaymentModal(true)
   }, [])
 
+  const [validationError, setValidationError] = useState<string | null>(null)
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+
+  const validateCardData = useCallback((): string | null => {
+    const rawNumber = cardData.cardNumber.replace(/\s/g, '')
+    if (rawNumber.length !== 16) return 'Номер карты должен содержать 16 цифр'
+    if (!cardData.cardHolder.trim()) return 'Укажите держателя карты'
+    const month = parseInt(cardData.expiryMonth, 10)
+    if (!month || month < 1 || month > 12) return 'Укажите корректный месяц (01-12)'
+    const year = parseInt(cardData.expiryYear, 10)
+    if (!year || year < 25 || year > 35) return 'Укажите корректный год (YY)'
+    if (cardData.cvv.length !== 3) return 'CVV должен содержать 3 цифры'
+    return null
+  }, [cardData])
+
   const handlePaymentSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault()
       if (!Number.isFinite(userId)) return
 
+      const validationErr = validateCardData()
+      if (validationErr) {
+        setValidationError(validationErr)
+        return
+      }
+
       setIsCheckingOut(true)
       setError(null)
+      setValidationError(null)
       try {
-        await orderApi.checkout(userId)
-        setShowPaymentModal(false)
-        setCardData({ cardNumber: '', cardHolder: '', expiryMonth: '', expiryYear: '', cvv: '' })
-        await loadCart()
-        onCheckout()
-        alert('Заказ успешно оформлен!')
+        const result = await orderApi.checkout(userId)
+        if (result.isSuccess) {
+          setShowPaymentModal(false)
+          setCardData({ cardNumber: '', cardHolder: '', expiryMonth: '', expiryYear: '', cvv: '' })
+          // Immediately clear cart UI, then re-fetch from server
+          setServerCart({ orderItems: [] })
+          setProductCache({})
+          onCheckout()
+          // Re-fetch from server in background
+          void loadCart()
+          setShowSuccessModal(true)
+        } else {
+          setError(result.message || 'Не удалось обработать платёж. Попробуйте ещё раз.')
+        }
       } catch (err) {
         console.error('Failed to checkout:', err)
         setError('Не удалось обработать платёж. Попробуйте ещё раз.')
@@ -156,11 +186,16 @@ export default function Cart({ onCheckout }: Props) {
         setIsCheckingOut(false)
       }
     },
-    [userId, loadCart, onCheckout]
+    [userId, loadCart, onCheckout, validateCardData]
   )
 
-
-
+  const handleCardDataChange = useCallback(
+    (field: string, value: string) => {
+      setCardData(prev => ({ ...prev, [field]: value }))
+      setValidationError(null)
+    },
+    []
+  )
   const cartItems_display = useMemo(() => {
     if (!serverCart?.orderItems?.length) {
       return []
@@ -228,7 +263,6 @@ export default function Cart({ onCheckout }: Props) {
                       <img src={image} alt={title} className="item-img" />
                       <div className="item-details">
                         <h3>{title}</h3>
-                        <p className="item-category">{category}</p>
                       </div>
                     </div>
                     <div className="item-count">
@@ -282,6 +316,140 @@ export default function Cart({ onCheckout }: Props) {
               <Link to="/catalog" className="btn-continue">
                 Продолжить покупки
               </Link>
+            </div>
+          </div>
+        )}
+
+        {/* Payment Modal */}
+        {showPaymentModal && (
+          <div className="modal-overlay" onClick={() => { if (!isCheckingOut) setShowPaymentModal(false) }}>
+            <div className="payment-modal" onClick={e => e.stopPropagation()}>
+              <button
+                className="modal-close"
+                onClick={() => setShowPaymentModal(false)}
+                disabled={isCheckingOut}
+              >
+                ✕
+              </button>
+              <h2>💳 Оплата заказа</h2>
+              <p className="payment-summary">Сумма к оплате: <strong>{total.toLocaleString('de-DE')} €</strong></p>
+              
+              {validationError && <div className="payment-error">{validationError}</div>}
+              {error && <div className="payment-error">{error}</div>}
+
+              <form onSubmit={handlePaymentSubmit} className="payment-form">
+                <div className="form-group">
+                  <label htmlFor="cardNumber">Номер карты</label>
+                  <input
+                    id="cardNumber"
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="0000 0000 0000 0000"
+                    maxLength={19}
+                    value={cardData.cardNumber}
+                    onChange={e => {
+                      const raw = e.target.value.replace(/\D/g, '')
+                      const formatted = raw.replace(/(.{4})/g, '$1 ').trim()
+                      handleCardDataChange('cardNumber', formatted)
+                    }}
+                    required
+                    disabled={isCheckingOut}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="cardHolder">Держатель карты</label>
+                  <input
+                    id="cardHolder"
+                    type="text"
+                    placeholder="IVAN IVANOV"
+                    value={cardData.cardHolder}
+                    onChange={e => handleCardDataChange('cardHolder', e.target.value.toUpperCase())}
+                    required
+                    disabled={isCheckingOut}
+                  />
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="expiryMonth">Месяц</label>
+                    <input
+                      id="expiryMonth"
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="MM"
+                      maxLength={2}
+                      value={cardData.expiryMonth}
+                      onChange={e => {
+                        const val = e.target.value.replace(/\D/g, '').slice(0, 2)
+                        handleCardDataChange('expiryMonth', val)
+                      }}
+                      required
+                      disabled={isCheckingOut}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="expiryYear">Год</label>
+                    <input
+                      id="expiryYear"
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="YY"
+                      maxLength={2}
+                      value={cardData.expiryYear}
+                      onChange={e => {
+                        const val = e.target.value.replace(/\D/g, '').slice(0, 2)
+                        handleCardDataChange('expiryYear', val)
+                      }}
+                      required
+                      disabled={isCheckingOut}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="cvv">CVV</label>
+                    <input
+                      id="cvv"
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="123"
+                      maxLength={3}
+                      value={cardData.cvv}
+                      onChange={e => {
+                        const val = e.target.value.replace(/\D/g, '').slice(0, 3)
+                        handleCardDataChange('cvv', val)
+                      }}
+                      required
+                      disabled={isCheckingOut}
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  className="btn-pay"
+                  disabled={isCheckingOut}
+                >
+                  {isCheckingOut ? '⏳ Обработка...' : `Оплатить ${total.toLocaleString('de-DE')} €`}
+                </button>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Success Modal */}
+        {showSuccessModal && (
+          <div className="modal-overlay">
+            <div className="success-modal">
+              <div className="success-icon">✅</div>
+              <h2>Оплата успешно произведена!</h2>
+              <p>Ваш заказ оформлен. Корзина очищена.</p>
+              <button
+                className="btn-pay"
+                onClick={() => setShowSuccessModal(false)}
+                style={{ marginTop: 0 }}
+              >
+                Хорошо
+              </button>
             </div>
           </div>
         )}

@@ -16,7 +16,7 @@ import Admin from './pages/Admin'
 import PageErrorBoundary from './components/PageErrorBoundary'
 import { AuthProvider } from './context/AuthContext'
 import { useAuth } from './context/AuthContext'
-import { favoriteApi } from './api'
+import { favoriteApi, orderApi } from './api'
 import type { CartItem, BookingData } from './types/cart'
 import type { Product } from './types/product'
 import './styles/app.css'
@@ -35,6 +35,10 @@ type FavoriteProductRecord = {
 }
 
 const PRODUCT_ENTITY_TYPE = 1
+
+// Backend enum: OrderItemType { Product = 0, Room = 1 }
+const CART_ITEM_TYPE_PRODUCT = 0
+const CART_ITEM_TYPE_ROOM = 1
 
 function AppShell() {
   const { user } = useAuth()
@@ -120,12 +124,44 @@ function AppShell() {
     [favoriteProducts, user?.id]
   )
 
-  const onAddToCart = (product: Product) => {
+  // Product without booking → immediately POST with type=0
+  const onAddToCart = async (product: Product) => {
+    const userId = user?.id ? Number(user.id) : NaN
+    if (!Number.isFinite(userId)) {
+      alert('Необходимо авторизоваться, чтобы добавить товар в корзину')
+      return
+    }
+
     const item: CartItem = { type: 'product', id: product.id, item: product }
     setCart((prev) => [...prev, item])
+
+    try {
+      await orderApi.addToCart(
+        userId,
+        {
+          id: 0,
+          orderId: 0,
+          type: CART_ITEM_TYPE_PRODUCT,
+          itemId: product.id,
+          quantity: 1,
+          priceAtPurchase: product.price,
+          createdAt: new Date().toISOString(),
+        },
+        product.price
+      )
+    } catch (err) {
+      console.error('Failed to add item to cart on server:', err)
+    }
   }
 
-  const onAddBookingToCart = (product: Product, bookingData: BookingData) => {
+  // Service/Room with booking → fill form → submit → POST with type + bookingData
+  const onAddBookingToCart = async (product: Product, bookingData: BookingData, itemType: number = CART_ITEM_TYPE_PRODUCT) => {
+    const userId = user?.id ? Number(user.id) : NaN
+    if (!Number.isFinite(userId)) {
+      alert('Необходимо авторизоваться, чтобы забронировать')
+      return
+    }
+
     const item: CartItem = { 
       type: 'booking', 
       id: `booking-${product.id}-${Date.now()}`, 
@@ -133,6 +169,25 @@ function AppShell() {
       bookingData
     }
     setCart((prev) => [...prev, item])
+
+    try {
+      await orderApi.addToCart(
+        userId,
+        {
+          id: 0,
+          orderId: 0,
+          type: itemType,
+          itemId: product.id,
+          quantity: 1,
+          priceAtPurchase: product.price,
+          createdAt: new Date().toISOString(),
+        },
+        product.price,
+        bookingData
+      )
+    } catch (err) {
+      console.error('Failed to add booking to cart on server:', err)
+    }
   }
 
   const onRemoveFromCart = (itemToRemove: CartItem) => {
@@ -146,7 +201,6 @@ function AppShell() {
   }
 
   const onCheckout = () => {
-    alert('Спасибо за ваш заказ! Оплата успешно произведена.')
     setCart([])
   }
 

@@ -153,8 +153,46 @@
 .item-count {
   background: var(--bg);
   border-radius: 6px;
-  padding: 4px 8px;
+  padding: 2px;
   font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.btn-qty-decrease,
+.btn-qty-increase {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--text);
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  font-weight: bold;
+  font-size: 16px;
+  padding: 0;
+  line-height: 1;
+}
+
+.btn-qty-decrease:hover,
+.btn-qty-increase:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #001022;
+  transform: scale(1.08);
+}
+
+.qty-value {
+  min-width: 24px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 14px;
+  user-select: none;
 }
 
 .item-price {
@@ -314,6 +352,196 @@
   }
 }
 
+/* Payment Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+.payment-modal {
+  background: var(--panel, #1a1d23);
+  border: 1px solid var(--line, #2a2d35);
+  border-radius: 16px;
+  padding: 32px;
+  width: 100%;
+  max-width: 440px;
+  position: relative;
+  animation: slideUp 0.3s ease-in-out;
+}
+
+.modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: transparent;
+  border: 1px solid var(--line, #2a2d35);
+  color: var(--muted, #888);
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.modal-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text, #fff);
+}
+
+.payment-modal h2 {
+  margin: 0 0 8px 0;
+  font-size: 20px;
+}
+
+.payment-summary {
+  margin: 0 0 20px 0;
+  font-size: 14px;
+  color: var(--muted, #888);
+}
+
+.payment-summary strong {
+  color: var(--accent, #f7d27a);
+  font-size: 18px;
+}
+
+.payment-error {
+  background: rgba(239, 71, 111, 0.1);
+  border: 1px solid #ef476f;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  color: #ef476f;
+  font-size: 13px;
+}
+
+.payment-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted, #888);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.form-group input {
+  background: var(--bg, #0d0f14);
+  border: 1px solid var(--line, #2a2d35);
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: var(--text, #fff);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.form-group input:focus {
+  border-color: var(--accent, #f7d27a);
+}
+
+.form-group input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+}
+
+.btn-pay {
+  width: 100%;
+  padding: 14px;
+  background: var(--accent, #f7d27a);
+  color: #001022;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 8px;
+}
+
+.btn-pay:hover {
+  background: #f5d85f;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(247, 210, 122, 0.3);
+}
+
+.btn-pay:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Success Modal */
+.success-modal {
+  background: var(--panel, #1a1d23);
+  border: 1px solid var(--line, #2a2d35);
+  border-radius: 16px;
+  padding: 40px 32px;
+  width: 100%;
+  max-width: 380px;
+  text-align: center;
+  animation: slideUp 0.3s ease-in-out;
+}
+
+.success-icon {
+  font-size: 56px;
+  margin-bottom: 16px;
+  animation: bounce 1.5s infinite;
+}
+
+.success-modal h2 {
+  margin: 0 0 12px 0;
+  font-size: 20px;
+  color: #2ecc71;
+}
+
+.success-modal p {
+  margin: 0 0 24px 0;
+  font-size: 14px;
+  color: var(--muted, #888);
+  line-height: 1.6;
+}
+
 /* Mobile */
 @media (max-width: 768px) {
   .cart-container {
@@ -344,7 +572,7 @@
 
   .item-count,
   .item-price,
-  .item-actions {
+  .item-total {
     display: none;
   }
 

@@ -42,11 +42,12 @@ export const orderApi = {
     return response.data
   },
 
-  addToCart: async (userId: number, item: OrderItemDTO, price: number): Promise<void> => {
+  addToCart: async (userId: number, item: OrderItemDTO, price: number, bookingData?: BookingData): Promise<void> => {
     await apiClient.post('/order/cart/add', {
       userId,
       item,
       price,
+      ...(bookingData ? { bookingData } : {}),
     })
   },
 
@@ -60,8 +61,8 @@ export const orderApi = {
     await apiClient.delete(`/order/cart/item/${itemId}`)
   },
 
-  checkout: async (userId: number): Promise<Order> => {
-    const response = await apiClient.post<Order>(`/order/checkout/${userId}`)
+  checkout: async (userId: number): Promise<{ isSuccess: boolean; message: string }> => {
+    const response = await apiClient.post<{ isSuccess: boolean; message: string }>(`/order/checkout/${userId}`)
     return response.data
   },
 }

@@ -11,8 +11,10 @@ import type { Room } from '../types/room'
 import '../styles/rooms.css'
 import '../styles/catalog.css'
 
+const CART_ITEM_TYPE_ROOM = 1
+
 type Props = {
-  onAddBookingToCart?: (product: Product, bookingData: BookingData) => void
+  onAddBookingToCart?: (product: Product, bookingData: BookingData, itemType?: number) => void
 }
 
 export default function Rooms({ onAddBookingToCart }: Props) {
@@ -254,7 +256,7 @@ export default function Rooms({ onAddBookingToCart }: Props) {
                   await onAddBookingToCart?.(roomAsProduct, {
                     dateTime,
                     notes,
-                  })
+                  }, CART_ITEM_TYPE_ROOM)
 
                   alert(`Спасибо за бронирование ${bookingRoom.title}!\nВаша бронь добавлена в корзину.`)
                   setBookingRoom(null)
