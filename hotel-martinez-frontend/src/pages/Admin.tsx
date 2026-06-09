@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { productApi } from '../api/productApi'
+import { userApi, type UserProfile } from '../api/userApi'
 import { roomApi } from '../api/roomApi'
 import { dishApi } from '../api/dishApi'
 import { attractionApi } from '../api/attractionApi'
@@ -12,12 +13,22 @@ import type { AttractionBackendDto, OpeningHour } from '../api/attractionApi'
 import ErrorState from '../components/ErrorState/ErrorState'
 import '../styles/admin.css'
 
-type Tab = 'products' | 'rooms' | 'menus' | 'attractions' | 'categories' | 'dashboard'
+type Tab = 'products' | 'rooms' | 'menus' | 'attractions' | 'categories' | 'users' | 'dashboard'
 type ConfirmDelete = { type: string; id: number | string; name: string } | null
 
 const DAY_LABELS: Record<string, string> = { Monday: 'Понедельник', Tuesday: 'Вторник', Wednesday: 'Среда', Thursday: 'Четверг', Friday: 'Пятница', Saturday: 'Суббота', Sunday: 'Воскресенье' }
 const MEAL_ORDER: MealType[] = ['Breakfast', 'Lunch', 'Dinner', 'Drinks', 'Dessert']
 const mealTypeLabels: Record<MealType, string> = { Breakfast: 'Завтрак', Lunch: 'Обед', Dinner: 'Ужин', Drinks: 'Напитки', Dessert: 'Десерты' }
+
+function toNum(s: string) { const n = parseFloat(s); return isNaN(n) ? 0 : n }
+function coordFilter(v: string, min: number, max: number, prev: number) {
+  const filtered = v.replace(/[^0-9.-]/g, '');
+  if (filtered === '' || filtered === '-') return 0;
+  const n = parseFloat(filtered);
+  if (isNaN(n)) return prev;
+  if (n < min || n > max) return prev;
+  return n;
+}
 
 export default function Admin() {
   const { user, logout } = useAuth()
@@ -28,13 +39,14 @@ export default function Admin() {
   const [rooms, setRooms] = useState<Room[]>([])
   const [dishes, setDishes] = useState<Dish[]>([])
   const [attractions, setAttractions] = useState<AttractionBackendDto[]>([])
+  const [users, setUsers] = useState<UserProfile[]>([])
   const [loading, setLoading] = useState(true)
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const [cat, p, r, d, a] = await Promise.all([categoryApi.getAll(), productApi.getAll(), roomApi.getAll(), dishApi.getAll(), attractionApi.getAll()])
-      setCats(cat ?? []); setProducts(p ?? []); setRooms(r ?? []); setDishes(d ?? []); setAttractions(a ?? [])
+      const [cat, p, r, d, a, u] = await Promise.all([categoryApi.getAll(), productApi.getAll(), roomApi.getAll(), dishApi.getAll(), attractionApi.getAll(), userApi.getAll()])
+      setCats(cat ?? []); setProducts(p ?? []); setRooms(r ?? []); setDishes(d ?? []); setAttractions(a ?? []); setUsers(u ?? [])
     } catch (e) { console.error(e) } finally { setLoading(false) }
   }, [])
   useEffect(() => { load() }, [load])
@@ -56,8 +68,8 @@ export default function Admin() {
     return <ErrorState title="Страница не найдена" message="Путь указан неверно." emoji="(x_x)" imageUrl="/cry.gif" />
   }
 
-  const nav = (['dashboard', 'products', 'rooms', 'menus', 'attractions', 'categories'] as Tab[]).map(t => ({
-    t, label: t === 'dashboard' ? '📊 Статистика' : t === 'products' ? '🛍️ Продукты' : t === 'rooms' ? '🏨 Номера' : t === 'menus' ? '🍽️ Меню' : t === 'attractions' ? '🗺️ Туризм' : '🏷️ Категории'
+  const nav = (['dashboard', 'products', 'rooms', 'menus', 'attractions', 'categories', 'users'] as Tab[]).map(t => ({
+    t, label: t === 'dashboard' ? '📊 Статистика' : t === 'products' ? '🛍️ Продукты' : t === 'rooms' ? '🏨 Номера' : t === 'menus' ? '🍽️ Меню' : t === 'attractions' ? '🗺️ Туризм' : t === 'categories' ? '🏷️ Категории' : '👥 Пользователи'
   }))
 
   return (
@@ -86,6 +98,7 @@ export default function Admin() {
               {tab === 'menus' && <MenusTab items={dishes} del={del} load={load} />}
               {tab === 'attractions' && <AttractionsTab items={attractions} cats={cats} del={del} load={load} />}
               {tab === 'categories' && <CategoriesTab cats={cats} del={del} load={load} />}
+              {tab === 'users' && <UsersTab items={users} load={load} />}
             </>
           )}
         </main>
@@ -166,6 +179,12 @@ function CategoriesTab({ cats, del, load }: { cats: CategoryDto[]; del: (c: Conf
 }
 
 function Dashboard({ products, rooms, dishes, attractions }: { products: number; rooms: number; dishes: number; attractions: number }) {
+  const [users, setUsers] = useState<UserProfile[]>([])
+  useEffect(() => { userApi.getAll().then(setUsers).catch(() => {}) }, [])
+
+  const totalUsers = users.length
+  const activeUsers = users.filter(u => u.isActive).length
+
   return (
     <div className="admin-tab">
       <h2>📊 Статистика</h2>
@@ -174,6 +193,7 @@ function Dashboard({ products, rooms, dishes, attractions }: { products: number;
         <div className="stat-card"><h3>Всего номеров</h3><p className="stat-number">{rooms}</p></div>
         <div className="stat-card"><h3>Блюд в меню</h3><p className="stat-number">{dishes}</p></div>
         <div className="stat-card"><h3>Достопримечательности</h3><p className="stat-number">{attractions}</p></div>
+        <div className="stat-card"><h3>Пользователей</h3><p className="stat-number">{totalUsers}</p><p style={{ fontSize: '12px', opacity: 0.8 }}>Активных: {activeUsers}</p></div>
         <div className="stat-card"><h3>Статус системы</h3><p className="stat-status">🟢 Активна</p></div>
       </div>
     </div>
@@ -238,7 +258,7 @@ function ProductsTab({ items, cats, del, load }: { items: UiProduct[]; cats: Cat
           <div className="modal-body">
             <div className="modal-body-form">
               <div className="form-group"><label>Название товара</label><input type="text" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="Введите название" /></div>
-              <div className="form-group"><label>Цена (€)</label><input type="number" value={form.price} onChange={e => setForm({ ...form, price: +e.target.value || 0 })} placeholder="Введите цену" /></div>
+              <div className="form-group"><label>Цена (€)</label><input type="text" inputMode="decimal" value={form.price === 0 ? '' : String(form.price)} onChange={e => setForm({ ...form, price: toNum(e.target.value.replace(/[^0-9.]/g, '')) })} onBlur={e => { if (!e.target.value) setForm({ ...form, price: 0 }) }} placeholder="Введите цену" /></div>
               <div className="form-group">
                 <label>Категория</label>
                 <div className="custom-dropdown">
@@ -288,7 +308,7 @@ function ProductsTab({ items, cats, del, load }: { items: UiProduct[]; cats: Cat
           <div className="modal-body">
             <div className="modal-body-form">
               <div className="form-group"><label>Название товара</label><input type="text" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="Введите название" /></div>
-              <div className="form-group"><label>Цена (€)</label><input type="number" value={form.price} onChange={e => setForm({ ...form, price: +e.target.value || 0 })} placeholder="Введите цену" /></div>
+              <div className="form-group"><label>Цена (€)</label><input type="text" inputMode="decimal" value={form.price === 0 ? '' : String(form.price)} onChange={e => setForm({ ...form, price: toNum(e.target.value.replace(/[^0-9.]/g, '')) })} onBlur={e => { if (!e.target.value) setForm({ ...form, price: 0 }) }} placeholder="Введите цену" /></div>
               <div className="form-group">
                 <label>Категория</label>
                 <select value={form.catId ?? ''} onChange={e => { const c = cats.find(x => x.id === +e.target.value); if (c) setForm({ ...form, catName: c.name, catId: c.id }) }} style={{ width: '100%', padding: '10px', background: '#1a2332', color: '#c8c8d8', border: '1px solid rgba(102,126,234,0.3)', borderRadius: '8px' }}>
@@ -373,7 +393,7 @@ function RoomsTab({ items, del, load }: { items: Room[]; del: (c: ConfirmDelete)
           <div className="modal-body">
             <div className="modal-body-form">
               <div className="form-group"><label>Название номера</label><input type="text" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="Введите название" /></div>
-              <div className="form-group"><label>Цена за ночь (€)</label><input type="number" value={form.price} onChange={e => setForm({ ...form, price: +e.target.value || 0 })} placeholder="Введите цену" /></div>
+              <div className="form-group"><label>Цена за ночь (€)</label><input type="text" inputMode="decimal" value={form.price === 0 ? '' : String(form.price)} onChange={e => setForm({ ...form, price: toNum(e.target.value.replace(/[^0-9.]/g, '')) })} onBlur={e => { if (!e.target.value) setForm({ ...form, price: 0 }) }} placeholder="Введите цену" /></div>
               <div className="form-group"><label>Описание номера</label><textarea value={form.desc} onChange={e => setForm({ ...form, desc: e.target.value })} rows={3} placeholder="Введите описание" /></div>
               <div className="form-group">
                 <label>Удобства номера</label>
@@ -419,11 +439,11 @@ function RoomsTab({ items, del, load }: { items: Room[]; del: (c: ConfirmDelete)
           <div className="modal-body">
             <div className="modal-body-form">
               <div className="form-group"><label>Название номера</label><input type="text" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="Введите название" /></div>
-              <div className="form-group"><label>Цена за ночь (€)</label><input type="number" value={form.price} onChange={e => setForm({ ...form, price: +e.target.value || 0 })} placeholder="Введите цену" /></div>
+              <div className="form-group"><label>Цена за ночь (€)</label><input type="text" inputMode="decimal" value={form.price === 0 ? '' : String(form.price)} onChange={e => setForm({ ...form, price: toNum(e.target.value.replace(/[^0-9.]/g, '')) })} onBlur={e => { if (!e.target.value) setForm({ ...form, price: 0 }) }} placeholder="Введите цену" /></div>
               <div className="form-group"><label>Описание</label><textarea value={form.desc} onChange={e => setForm({ ...form, desc: e.target.value })} rows={3} placeholder="Введите описание" /></div>
               <div className="form-group">
                 <label>Удобства</label>
-                <div className="add-amenity-form"><input type="text" value={amenity} onChange={e => setAmenity(e.target.value)} placeholder="Новое удобство" /><button type="button" className="btn-primary" onClick={() => { if (amenity.trim()) { setForm({ ...form, amenities: [...form.amenities, amenity.trim()] }); setAmenity('') } }}>+ Добавить</button></div>
+                <div className="add-amenity-form"><input type="text" value={amenity} onChange={e => setAmenity(e.target.value)} placeholder="Новое удобство" /><button type="button" className="btn-primary" onClick={() => { if (amenity.trim()) { setForm({ ...form, amenities: [...form.amenities, amenity.trim()] }); setAmenity('') } }}>+ Добавить удобство</button></div>
                 {form.amenities.length > 0 && <div className="amenities-list">{form.amenities.map((a, i) => <div key={i} className="amenity-item"><span>{a}</span><button type="button" className="btn-amenity-delete" onClick={() => setForm({ ...form, amenities: form.amenities.filter((_, j) => j !== i) })}>✗</button></div>)}</div>}
               </div>
               <div className="form-group">
@@ -501,7 +521,7 @@ function MenusTab({ items, del, load }: { items: Dish[]; del: (c: ConfirmDelete)
           <div className="modal-body">
             <div className="modal-body-form">
               <div className="form-group"><label>Название блюда</label><input type="text" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Введите название" /></div>
-              <div className="form-group"><label>Цена (€)</label><input type="number" step="0.01" value={form.price} onChange={e => setForm({ ...form, price: +e.target.value || 0 })} placeholder="Введите цену" /></div>
+              <div className="form-group"><label>Цена (€)</label><input type="text" inputMode="decimal" value={form.price === 0 ? '' : String(form.price)} onChange={e => setForm({ ...form, price: toNum(e.target.value.replace(/[^0-9.]/g, '')) })} onBlur={e => { if (!e.target.value) setForm({ ...form, price: 0 }) }} placeholder="Введите цену" /></div>
               <div className="form-group"><label>Описание</label><textarea value={form.desc} onChange={e => setForm({ ...form, desc: e.target.value })} rows={3} placeholder="Введите описание" /></div>
             </div>
           </div>
@@ -517,13 +537,117 @@ function MenusTab({ items, del, load }: { items: Dish[]; del: (c: ConfirmDelete)
           <div className="modal-body">
             <div className="modal-body-form">
               <div className="form-group"><label>Название блюда</label><input type="text" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Введите название" /></div>
-              <div className="form-group"><label>Цена (€)</label><input type="number" step="0.01" value={form.price} onChange={e => setForm({ ...form, price: +e.target.value || 0 })} placeholder="Введите цену" /></div>
+              <div className="form-group"><label>Цена (€)</label><input type="text" inputMode="decimal" value={form.price === 0 ? '' : String(form.price)} onChange={e => setForm({ ...form, price: toNum(e.target.value.replace(/[^0-9.]/g, '')) })} onBlur={e => { if (!e.target.value) setForm({ ...form, price: 0 }) }} placeholder="Введите цену" /></div>
               <div className="form-group"><label>Описание</label><textarea value={form.desc} onChange={e => setForm({ ...form, desc: e.target.value })} rows={3} placeholder="Введите описание" /></div>
             </div>
           </div>
           <div className="modal-footer">
             <button className="btn-cancel" onClick={() => { setAdding(false); setForm(null) }}>Отменить</button>
             <button className="btn-primary" onClick={create} disabled={saving}>{saving ? '✅ Создание...' : '✅ Создать блюдо'}</button>
+          </div>
+        </Modal>
+      )}
+    </div>
+  )
+}
+
+function UsersTab({ items, load }: { items: UserProfile[]; load: () => Promise<void> }) {
+  const [edit, setEdit] = useState<UserProfile | null>(null)
+  const [adding, setAdding] = useState(false)
+  const [form, setForm] = useState<{ username: string; email: string; password: string } | null>(null)
+  const [saving, setSaving] = useState(false)
+
+  const saveEdit = async () => {
+    if (!edit || !form) return; setSaving(true)
+    try {
+      await userApi.update(edit.id, { username: form.username, email: form.email, isActive: edit.isActive })
+      await load(); setEdit(null); setForm(null)
+    } catch (e: any) { alert('Ошибка: ' + (e?.response?.data?.message || e?.message)) } finally { setSaving(false) }
+  }
+
+  const create = async () => {
+    if (!form) return; setSaving(true)
+    try {
+      await userApi.create({ username: form.username, email: form.email, password: form.password })
+      await load(); setAdding(false); setForm(null)
+    } catch (e: any) { alert('Ошибка: ' + (e?.response?.data?.message || e?.message)) } finally { setSaving(false) }
+  }
+
+  const toggleActive = async (u: UserProfile) => {
+    try {
+      await userApi.activate(u.id, !u.isActive)
+      await load()
+    } catch (e: any) { alert('Ошибка: ' + (e?.response?.data?.message || e?.message)) }
+  }
+
+  const deleteUser = async (u: UserProfile) => {
+    if (!confirm(`Вы уверены, что хотите деактивировать пользователя "${u.username}"?`)) return
+    try {
+      await userApi.remove(u.id)
+      await load()
+    } catch (e: any) { alert('Ошибка: ' + (e?.response?.data?.message || e?.message)) }
+  }
+
+  const activeUsers = items.filter(u => u.isActive).length
+  const inactiveUsers = items.length - activeUsers
+
+  return (
+    <div className="admin-tab">
+      <div className="tab-header">
+        <h2>👥 Управление пользователями</h2>
+        <button className="btn-primary" onClick={() => { setForm({ username: '', email: '', password: '' }); setAdding(true) }}>+ Добавить пользователя</button>
+      </div>
+
+      <div className="stats-grid" style={{ marginBottom: '25px' }}>
+        <div className="stat-card"><h3>Всего пользователей</h3><p className="stat-number">{items.length}</p></div>
+        <div className="stat-card"><h3>Активных</h3><p className="stat-number">{activeUsers}</p></div>
+        <div className="stat-card"><h3>Неактивных</h3><p className="stat-number">{inactiveUsers}</p></div>
+      </div>
+
+      <div className="items-table"><table>
+        <thead><tr><th>ID</th><th>Имя пользователя</th><th>Email</th><th>Статус</th><th>Действия</th></tr></thead>
+        <tbody>{items.map(u => <tr key={u.id}>
+          <td>{u.id}</td>
+          <td>{u.username}</td>
+          <td>{u.email}</td>
+          <td><span className={`user-status ${u.isActive ? 'user-status-active' : 'user-status-inactive'}`}>{u.isActive ? '🟢 Активен' : '🔴 Неактивен'}</span></td>
+          <td className="action-cell">
+            <button className="btn-small btn-edit" onClick={() => { setEdit(u); setForm({ username: u.username, email: u.email, password: '' }) }}>✏️ Редакт.</button>
+            <button className={`btn-small ${u.isActive ? 'btn-warning' : 'btn-primary'}`} onClick={() => toggleActive(u)}>{u.isActive ? '🚫 Деактивировать' : '✅ Активировать'}</button>
+            <button className="btn-small btn-delete" onClick={() => deleteUser(u)}>🗑️ Деактивировать</button>
+          </td>
+        </tr>)}
+        {items.length === 0 && <tr><td colSpan={5} style={{ textAlign: 'center', padding: 20, color: '#888' }}>Пользователей нет</td></tr>}
+        </tbody>
+      </table></div>
+
+      {(edit && form) && (
+        <Modal title="✏️ Редактирование пользователя" onClose={() => { setEdit(null); setForm(null) }}>
+          <div className="modal-body">
+            <div className="modal-body-form">
+              <div className="form-group"><label>Имя пользователя</label><input type="text" value={form.username} onChange={e => setForm({ ...form, username: e.target.value })} placeholder="Введите имя" /></div>
+              <div className="form-group"><label>Email</label><input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="Введите email" /></div>
+            </div>
+          </div>
+          <div className="modal-footer">
+            <button className="btn-cancel" onClick={() => { setEdit(null); setForm(null) }}>Отменить</button>
+            <button className="btn-primary" onClick={saveEdit} disabled={saving}>{saving ? '💾 Сохранение...' : '💾 Сохранить'}</button>
+          </div>
+        </Modal>
+      )}
+
+      {(adding && form) && (
+        <Modal title="➕ Добавление нового пользователя" onClose={() => { setAdding(false); setForm(null) }}>
+          <div className="modal-body">
+            <div className="modal-body-form">
+              <div className="form-group"><label>Имя пользователя</label><input type="text" value={form.username} onChange={e => setForm({ ...form, username: e.target.value })} placeholder="Введите имя" /></div>
+              <div className="form-group"><label>Email</label><input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="Введите email" /></div>
+              <div className="form-group"><label>Пароль</label><input type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} placeholder="Минимум 8 символов" /></div>
+            </div>
+          </div>
+          <div className="modal-footer">
+            <button className="btn-cancel" onClick={() => { setAdding(false); setForm(null) }}>Отменить</button>
+            <button className="btn-primary" onClick={create} disabled={saving}>{saving ? '✅ Создание...' : '✅ Создать пользователя'}</button>
           </div>
         </Modal>
       )}
@@ -542,16 +666,22 @@ function AttractionsTab({ items, cats, del, load }: { items: AttractionBackendDt
   const [url, setUrl] = useState('')
   const [saving, setSaving] = useState(false)
   const [imgIdx, setImgIdx] = useState(0)
+  const [latStr, setLatStr] = useState('')
+  const [lngStr, setLngStr] = useState('')
 
   const openEdit = (a: AttractionBackendDto) => {
     setEdit(a)
+    const latVal = (a as any).location?.latitude || 0;
+    const lngVal = (a as any).location?.longitude || 0;
     setForm({
       name: a.name, shortDesc: a.shortDescription || '', desc: a.description || '',
       catId: a.category ? (cats.find(c => c.name === a.category)?.id ?? null) : null,
-      address: a.address || '', lat: (a as any).location?.latitude || 0, lng: (a as any).location?.longitude || 0,
+      address: a.address || '', lat: latVal, lng: lngVal,
       dist: a.distance, price: a.price, imgs: (a.images || []).map(i => i.url),
       phone: a.contacts?.phone || '', email: a.contacts?.email || '', bookingUrl: a.contacts?.bookingUrl || '',
     })
+    setLatStr(latVal === 0 ? '' : String(latVal));
+    setLngStr(lngVal === 0 ? '' : String(lngVal));
     setUrl(''); setImgIdx(0)
   }
 
@@ -587,22 +717,26 @@ function AttractionsTab({ items, cats, del, load }: { items: AttractionBackendDt
 
   return (
     <div className="admin-tab">
-      <div className="tab-header"><h2>🗺️ Управление достопримечательностями</h2><button className="btn-primary" onClick={() => { setForm({ name: '', shortDesc: '', desc: '', catId: null, address: '', lat: 43.55, lng: 7.01, dist: 0, price: 0, imgs: [], phone: '', email: '', bookingUrl: '' }); setAdding(true) }}>+ Добавить</button></div>
+      <div className="tab-header"><h2>🗺️ Управление достопримечательностями</h2><button className="btn-primary" onClick={() => { setForm({ name: '', shortDesc: '', desc: '', catId: null, address: '', lat: 43.55, lng: 7.01, dist: 0, price: 0, imgs: [], phone: '', email: '', bookingUrl: '' }); setLatStr(''); setLngStr(''); setAdding(true) }}>+ Добавить достопримечательность</button></div>
       <div className="items-table"><table>
         <thead><tr><th>ID</th><th>Название</th><th>Цена</th><th>Рейтинг</th><th>Действия</th></tr></thead>
         <tbody>{items.map(a => <tr key={a.id}><td>{a.id}</td><td>{a.name}</td><td>{a.price} €</td><td>⭐ {a.rating}</td><td className="action-cell"><button className="btn-small btn-edit" onClick={() => openEdit(a)}>✏️ Редакт.</button><button className="btn-small btn-delete" onClick={() => del({ type: 'attraction', id: a.id, name: a.name })}>🗑️ Удалить</button></td></tr>)}</tbody>
       </table></div>
 
       {(edit && form) && (
-        <Modal title="✏️ Редактирование достопримечательности" onClose={() => { setEdit(null); setForm(null) }} big>
+        <Modal title="✏️ Редактирование достопримечательности" onClose={() => { setEdit(null); setForm(null); setLatStr(''); setLngStr('') }} big>
           <div className="modal-body">
             <div className="modal-body-form">
               <div className="form-group"><label>Название</label><input type="text" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Введите название" /></div>
               <div className="form-row">
-                <div className="form-group" style={{ flex: 1 }}><label>Цена (€)</label><input type="number" value={form.price} onChange={e => setForm({ ...form, price: +e.target.value || 0 })} placeholder="Введите цену" /></div>
-                <div className="form-group" style={{ flex: 1 }}><label>Расстояние (км)</label><input type="number" value={form.dist} onChange={e => setForm({ ...form, dist: +e.target.value || 0 })} /></div>
+                <div className="form-group" style={{ flex: 1 }}><label>Цена (€)</label><input type="text" inputMode="decimal" value={form.price === 0 ? '' : String(form.price)} onChange={e => setForm({ ...form, price: toNum(e.target.value.replace(/[^0-9.]/g, '')) })} onBlur={e => { if (!e.target.value) setForm({ ...form, price: 0 }) }} placeholder="Введите цену" /></div>
+                <div className="form-group" style={{ flex: 1 }}><label>Расстояние (км)</label><input type="text" inputMode="decimal" value={form.dist === 0 ? '' : String(form.dist)} onChange={e => setForm({ ...form, dist: toNum(e.target.value.replace(/[^0-9.]/g, '')) })} onBlur={e => { if (!e.target.value) setForm({ ...form, dist: 0 }) }} placeholder="0" /></div>
               </div>
               <div className="form-group"><label>Адрес</label><input type="text" value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} placeholder="Введите адрес" /></div>
+              <div className="form-row">
+                <div className="form-group" style={{ flex: 1 }}><label>Широта (Latitude)</label><input type="text" inputMode="decimal" value={latStr} onChange={e => { const filtered = e.target.value.replace(/[^0-9.-]/g, ''); setLatStr(filtered); const n = parseFloat(filtered); if (!isNaN(n) && n >= -90 && n <= 90) setForm({ ...form, lat: n }); }} onBlur={e => { if (!e.target.value) { setLatStr(''); setForm({ ...form, lat: 0 }) } }} placeholder="43.55" /></div>
+                <div className="form-group" style={{ flex: 1 }}><label>Долгота (Longitude)</label><input type="text" inputMode="decimal" value={lngStr} onChange={e => { const filtered = e.target.value.replace(/[^0-9.-]/g, ''); setLngStr(filtered); const n = parseFloat(filtered); if (!isNaN(n) && n >= -180 && n <= 180) setForm({ ...form, lng: n }); }} onBlur={e => { if (!e.target.value) { setLngStr(''); setForm({ ...form, lng: 0 }) } }} placeholder="7.01" /></div>
+              </div>
               <div className="form-group"><label>Категория</label>
                 <select value={form.catId ?? ''} onChange={e => setForm({ ...form, catId: e.target.value ? +e.target.value : null })} style={{ width: '100%', padding: '10px', background: '#1a2332', color: '#c8c8d8', border: '1px solid rgba(102,126,234,0.3)', borderRadius: '8px' }}>
                   <option value="">Без категории</option>
@@ -649,15 +783,19 @@ function AttractionsTab({ items, cats, del, load }: { items: AttractionBackendDt
       )}
 
       {(adding && form) && (
-        <Modal title="➕ Добавление новой достопримечательности" onClose={() => { setAdding(false); setForm(null) }} big>
+        <Modal title="➕ Добавление новой достопримечательности" onClose={() => { setAdding(false); setForm(null); setLatStr(''); setLngStr('') }} big>
           <div className="modal-body">
             <div className="modal-body-form">
               <div className="form-group"><label>Название</label><input type="text" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Введите название" /></div>
               <div className="form-row">
-                <div className="form-group" style={{ flex: 1 }}><label>Цена (€)</label><input type="number" value={form.price} onChange={e => setForm({ ...form, price: +e.target.value || 0 })} placeholder="Введите цену" /></div>
-                <div className="form-group" style={{ flex: 1 }}><label>Расстояние (км)</label><input type="number" value={form.dist} onChange={e => setForm({ ...form, dist: +e.target.value || 0 })} /></div>
+                <div className="form-group" style={{ flex: 1 }}><label>Цена (€)</label><input type="text" inputMode="decimal" value={form.price === 0 ? '' : String(form.price)} onChange={e => setForm({ ...form, price: toNum(e.target.value.replace(/[^0-9.]/g, '')) })} onBlur={e => { if (!e.target.value) setForm({ ...form, price: 0 }) }} placeholder="Введите цену" /></div>
+                <div className="form-group" style={{ flex: 1 }}><label>Расстояние (км)</label><input type="text" inputMode="decimal" value={form.dist === 0 ? '' : String(form.dist)} onChange={e => setForm({ ...form, dist: toNum(e.target.value.replace(/[^0-9.]/g, '')) })} onBlur={e => { if (!e.target.value) setForm({ ...form, dist: 0 }) }} placeholder="0" /></div>
               </div>
               <div className="form-group"><label>Адрес</label><input type="text" value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} placeholder="Введите адрес" /></div>
+              <div className="form-row">
+                <div className="form-group" style={{ flex: 1 }}><label>Широта (Latitude)</label><input type="text" inputMode="decimal" value={latStr} onChange={e => { const filtered = e.target.value.replace(/[^0-9.-]/g, ''); setLatStr(filtered); const n = parseFloat(filtered); if (!isNaN(n) && n >= -90 && n <= 90) setForm({ ...form, lat: n }); }} onBlur={e => { if (!e.target.value) { setLatStr(''); setForm({ ...form, lat: 0 }) } }} placeholder="43.55" /></div>
+                <div className="form-group" style={{ flex: 1 }}><label>Долгота (Longitude)</label><input type="text" inputMode="decimal" value={lngStr} onChange={e => { const filtered = e.target.value.replace(/[^0-9.-]/g, ''); setLngStr(filtered); const n = parseFloat(filtered); if (!isNaN(n) && n >= -180 && n <= 180) setForm({ ...form, lng: n }); }} onBlur={e => { if (!e.target.value) { setLngStr(''); setForm({ ...form, lng: 0 }) } }} placeholder="7.01" /></div>
+              </div>
               <div className="form-group"><label>Категория</label>
                 <select value={form.catId ?? ''} onChange={e => setForm({ ...form, catId: e.target.value ? +e.target.value : null })} style={{ width: '100%', padding: '10px', background: '#1a2332', color: '#c8c8d8', border: '1px solid rgba(102,126,234,0.3)', borderRadius: '8px' }}>
                   <option value="">Без категории</option>
