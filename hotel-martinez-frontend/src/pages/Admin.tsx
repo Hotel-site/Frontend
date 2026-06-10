@@ -34,6 +34,7 @@ export default function Admin() {
   const { user, logout } = useAuth()
   const [tab, setTab] = useState<Tab>('dashboard')
   const [confirm, setConfirm] = useState<ConfirmDelete>(null)
+  const confirmAndDelete = (item: ConfirmDelete) => setConfirm(item)
   const [cats, setCats] = useState<CategoryDto[]>([])
   const [products, setProducts] = useState<UiProduct[]>([])
   const [rooms, setRooms] = useState<Room[]>([])
@@ -59,6 +60,7 @@ export default function Admin() {
       else if (item.type === 'dish') await dishApi.remove(item.id as number)
       else if (item.type === 'attraction') await attractionApi.remove(item.id as number)
       else if (item.type === 'category') await categoryApi.remove(item.id as number)
+      else if (item.type === 'user') await userApi.remove(item.id as number)
       await load()
     } catch (err: any) { alert('Ошибка: ' + (err?.response?.data?.message || err?.message)) }
     setConfirm(null)
@@ -93,12 +95,12 @@ export default function Admin() {
           ) : (
             <>
               {tab === 'dashboard' && <Dashboard products={products.length} rooms={rooms.length} dishes={dishes.length} attractions={attractions.length} />}
-              {tab === 'products' && <ProductsTab items={products} cats={cats} del={del} load={load} />}
-              {tab === 'rooms' && <RoomsTab items={rooms} del={del} load={load} />}
-              {tab === 'menus' && <MenusTab items={dishes} del={del} load={load} />}
-              {tab === 'attractions' && <AttractionsTab items={attractions} cats={cats} del={del} load={load} />}
-              {tab === 'categories' && <CategoriesTab cats={cats} del={del} load={load} />}
-              {tab === 'users' && <UsersTab items={users} load={load} />}
+              {tab === 'products' && <ProductsTab items={products} cats={cats} del={confirmAndDelete} load={load} />}
+              {tab === 'rooms' && <RoomsTab items={rooms} del={confirmAndDelete} load={load} />}
+              {tab === 'menus' && <MenusTab items={dishes} del={confirmAndDelete} load={load} />}
+              {tab === 'attractions' && <AttractionsTab items={attractions} cats={cats} del={confirmAndDelete} load={load} />}
+              {tab === 'categories' && <CategoriesTab cats={cats} del={confirmAndDelete} load={load} />}
+              {tab === 'users' && <UsersTab items={users} del={confirmAndDelete} load={load} />}
             </>
           )}
         </main>
@@ -106,7 +108,7 @@ export default function Admin() {
       {confirm && (
         <div className="modal-overlay" onClick={() => setConfirm(null)}>
           <div className="confirm-dialog" onClick={e => e.stopPropagation()}>
-            <div className="confirm-icon">{confirm.type === 'product' ? '🛍️' : confirm.type === 'room' ? '🏨' : confirm.type === 'dish' ? '🍽️' : confirm.type === 'attraction' ? '🗺️' : '🏷️'}</div>
+            <div className="confirm-icon">{confirm.type === 'product' ? '🛍️' : confirm.type === 'room' ? '🏨' : confirm.type === 'dish' ? '🍽️' : confirm.type === 'attraction' ? '🗺️' : confirm.type === 'user' ? '👥' : '🏷️'}</div>
             <h3>Подтверждение удаления</h3>
             <p>Удалить <strong>"{confirm.name}"</strong>?</p>
             <p className="confirm-warning">⚠️ Это действие невозможно отменить</p>
@@ -551,11 +553,23 @@ function MenusTab({ items, del, load }: { items: Dish[]; del: (c: ConfirmDelete)
   )
 }
 
-function UsersTab({ items, load }: { items: UserProfile[]; load: () => Promise<void> }) {
+function UsersTab({ items, del, load }: { items: UserProfile[]; del: (c: ConfirmDelete) => void; load: () => Promise<void> }) {
   const [edit, setEdit] = useState<UserProfile | null>(null)
   const [adding, setAdding] = useState(false)
   const [form, setForm] = useState<{ username: string; email: string; password: string } | null>(null)
   const [saving, setSaving] = useState(false)
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
+  const [roleFilter, setRoleFilter] = useState<'all' | 'admin' | 'user'>('all')
+  const [search, setSearch] = useState('')
+  const [sortBy, setSortBy] = useState<'id' | 'username' | 'email'>('id')
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
+
+  const toggleActive = async (u: UserProfile) => {
+    try {
+      await userApi.activate(u.id, !u.isActive)
+      await load()
+    } catch (e: any) { alert('Ошибка: ' + (e?.response?.data?.message || e?.message)) }
+  }
 
   const saveEdit = async () => {
     if (!edit || !form) return; setSaving(true)
@@ -573,23 +587,41 @@ function UsersTab({ items, load }: { items: UserProfile[]; load: () => Promise<v
     } catch (e: any) { alert('Ошибка: ' + (e?.response?.data?.message || e?.message)) } finally { setSaving(false) }
   }
 
-  const toggleActive = async (u: UserProfile) => {
-    try {
-      await userApi.activate(u.id, !u.isActive)
-      await load()
-    } catch (e: any) { alert('Ошибка: ' + (e?.response?.data?.message || e?.message)) }
-  }
-
-  const deleteUser = async (u: UserProfile) => {
-    if (!confirm(`Вы уверены, что хотите деактивировать пользователя "${u.username}"?`)) return
-    try {
-      await userApi.remove(u.id)
-      await load()
-    } catch (e: any) { alert('Ошибка: ' + (e?.response?.data?.message || e?.message)) }
-  }
-
   const activeUsers = items.filter(u => u.isActive).length
   const inactiveUsers = items.length - activeUsers
+
+  const filtered = items
+    .filter(u => {
+      if (statusFilter === 'active') return u.isActive
+      if (statusFilter === 'inactive') return !u.isActive
+      return true
+    })
+    .filter(u => {
+      if (roleFilter === 'all') return true
+      const role = (u.role || '').toLowerCase()
+      return role === roleFilter
+    })
+    .filter(u => {
+      if (!search.trim()) return true
+      const q = search.toLowerCase()
+      return u.username.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)
+    })
+    .sort((a, b) => {
+      const dir = sortDir === 'asc' ? 1 : -1
+      if (sortBy === 'id') return (a.id - b.id) * dir
+      if (sortBy === 'username') return a.username.localeCompare(b.username) * dir
+      return a.email.localeCompare(b.email) * dir
+    })
+
+  const toggleSort = (col: typeof sortBy) => {
+    if (sortBy === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    else { setSortBy(col); setSortDir('asc') }
+  }
+
+  const sortArrow = (col: typeof sortBy) => {
+    if (sortBy !== col) return ''
+    return sortDir === 'asc' ? ' ▲' : ' ▼'
+  }
 
   return (
     <div className="admin-tab">
@@ -604,22 +636,64 @@ function UsersTab({ items, load }: { items: UserProfile[]; load: () => Promise<v
         <div className="stat-card"><h3>Неактивных</h3><p className="stat-number">{inactiveUsers}</p></div>
       </div>
 
+      <div className="users-toolbar">
+        <div className="users-search">
+          <span className="users-search-icon">🔍</span>
+          <input
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Поиск по имени или email..."
+            className="users-search-input"
+          />
+          {search && <button className="users-search-clear" onClick={() => setSearch('')}>✕</button>}
+        </div>
+        <select
+          value={statusFilter}
+          onChange={e => setStatusFilter(e.target.value as typeof statusFilter)}
+          className="users-filter-select"
+        >
+          <option value="all">Все статусы</option>
+          <option value="active">🟢 Активные</option>
+          <option value="inactive">🔴 Неактивные</option>
+        </select>
+        <select
+          value={roleFilter}
+          onChange={e => setRoleFilter(e.target.value as typeof roleFilter)}
+          className="users-filter-select"
+        >
+          <option value="all">Все роли</option>
+          <option value="admin">👑 Админ</option>
+          <option value="user">👤 Пользователь</option>
+        </select>
+      </div>
+
       <div className="items-table"><table>
-        <thead><tr><th>ID</th><th>Имя пользователя</th><th>Email</th><th>Статус</th><th>Действия</th></tr></thead>
-        <tbody>{items.map(u => <tr key={u.id}>
+        <thead><tr>
+          <th className="users-th-sortable" onClick={() => toggleSort('id')}>ID{sortArrow('id')}</th>
+          <th className="users-th-sortable" onClick={() => toggleSort('username')}>Имя{sortArrow('username')}</th>
+          <th className="users-th-sortable" onClick={() => toggleSort('email')}>Email{sortArrow('email')}</th>
+          <th>Статус</th>
+          <th>Роль</th>
+          <th>Действия</th>
+        </tr></thead>
+        <tbody>{filtered.map(u => <tr key={u.id} className={!u.isActive ? 'user-row-inactive' : ''}>
           <td>{u.id}</td>
           <td>{u.username}</td>
           <td>{u.email}</td>
-          <td><span className={`user-status ${u.isActive ? 'user-status-active' : 'user-status-inactive'}`}>{u.isActive ? '🟢 Активен' : '🔴 Неактивен'}</span></td>
+          <td><span className={`user-status-badge ${u.isActive ? 'user-status-badge-active' : 'user-status-badge-inactive'}`}>{u.isActive ? 'Активен' : 'Неактивен'}</span></td>
+          <td><span className={`user-status-badge ${u.role?.toLowerCase() === 'admin' ? 'user-status-badge-admin' : 'user-status-badge-user'}`}>{u.role?.toLowerCase() === 'admin' ? '👑 Админ' : '👤 Пользователь'}</span></td>
           <td className="action-cell">
-            <button className="btn-small btn-edit" onClick={() => { setEdit(u); setForm({ username: u.username, email: u.email, password: '' }) }}>✏️ Редакт.</button>
-            <button className={`btn-small ${u.isActive ? 'btn-warning' : 'btn-primary'}`} onClick={() => toggleActive(u)}>{u.isActive ? '🚫 Деактивировать' : '✅ Активировать'}</button>
-            <button className="btn-small btn-delete" onClick={() => deleteUser(u)}>🗑️ Деактивировать</button>
+            <button className="btn-small btn-edit" onClick={() => { setEdit(u); setForm({ username: u.username, email: u.email, password: '' }) }}>✏️</button>
+            <button className="btn-small btn-delete" onClick={() => del({ type: 'user', id: u.id, name: u.username })}>🗑️</button>
+            <button className={`btn-small ${u.isActive ? 'btn-warning' : 'btn-success'}`} onClick={() => toggleActive(u)}>{u.isActive ? '🚫 Деакт.' : '✅ Акт.'}</button>
           </td>
         </tr>)}
-        {items.length === 0 && <tr><td colSpan={5} style={{ textAlign: 'center', padding: 20, color: '#888' }}>Пользователей нет</td></tr>}
+        {filtered.length === 0 && <tr><td colSpan={6} style={{ textAlign: 'center', padding: 30, color: '#888' }}>Пользователи не найдены</td></tr>}
         </tbody>
       </table></div>
+
+      {filtered.length > 0 && <div className="users-count">Показано: {filtered.length} из {items.length}</div>}
 
       {(edit && form) && (
         <Modal title="✏️ Редактирование пользователя" onClose={() => { setEdit(null); setForm(null) }}>

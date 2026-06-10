@@ -5,6 +5,7 @@ export interface UserProfile {
   username: string
   email: string
   isActive: boolean
+  role?: string
 }
 
 export interface UserChangePasswordDTO {
