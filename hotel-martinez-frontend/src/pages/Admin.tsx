@@ -46,9 +46,16 @@ export default function Admin() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const [cat, p, r, d, a, u] = await Promise.all([categoryApi.getAll(), productApi.getAll(), roomApi.getAll(), dishApi.getAll(), attractionApi.getAll(), userApi.getAll()])
+      const [cat, p, r, d, a, u] = await Promise.all([
+        categoryApi.getAll().catch(e => { console.error('Failed to load categories:', e); return [] }),
+        productApi.getAll().catch(e => { console.error('Failed to load products:', e); return [] }),
+        roomApi.getAll().catch(e => { console.error('Failed to load rooms:', e); return [] }),
+        dishApi.getAll().catch(e => { console.error('Failed to load dishes:', e); return [] }),
+        attractionApi.getAll().catch(e => { console.error('Failed to load attractions:', e); return [] }),
+        userApi.getAll().catch(e => { console.error('Failed to load users:', e); return [] }),
+      ])
       setCats(cat ?? []); setProducts(p ?? []); setRooms(r ?? []); setDishes(d ?? []); setAttractions(a ?? []); setUsers(u ?? [])
-    } catch (e) { console.error(e) } finally { setLoading(false) }
+    } catch (e) { console.error('Unexpected error:', e) } finally { setLoading(false) }
   }, [])
   useEffect(() => { load() }, [load])
 
@@ -564,19 +571,19 @@ function UsersTab({ items, del, load }: { items: UserProfile[]; del: (c: Confirm
   const [sortBy, setSortBy] = useState<'id' | 'username' | 'email'>('id')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
 
-  const toggleActive = async (u: UserProfile) => {
-    try {
-      await userApi.activate(u.id, !u.isActive)
-      await load()
-    } catch (e: any) { alert('Ошибка: ' + (e?.response?.data?.message || e?.message)) }
-  }
-
   const saveEdit = async () => {
     if (!edit || !form) return; setSaving(true)
     try {
       await userApi.update(edit.id, { username: form.username, email: form.email, isActive: edit.isActive })
       await load(); setEdit(null); setForm(null)
     } catch (e: any) { alert('Ошибка: ' + (e?.response?.data?.message || e?.message)) } finally { setSaving(false) }
+  }
+
+  const toggleActive = async (u: UserProfile) => {
+    try {
+      await userApi.activate(u.id, !u.isActive)
+      await load()
+    } catch (e: any) { alert('Ошибка: ' + (e?.response?.data?.message || e?.message)) }
   }
 
   const create = async () => {
@@ -598,8 +605,11 @@ function UsersTab({ items, del, load }: { items: UserProfile[]; del: (c: Confirm
     })
     .filter(u => {
       if (roleFilter === 'all') return true
-      const role = (u.role || '').toLowerCase()
-      return role === roleFilter
+      const role = u.role
+      const roleStr = typeof role === 'number'
+        ? (role === 1 ? 'admin' : 'user')
+        : String(role ?? '').toLowerCase()
+      return roleStr === roleFilter
     })
     .filter(u => {
       if (!search.trim()) return true
@@ -682,11 +692,14 @@ function UsersTab({ items, del, load }: { items: UserProfile[]; del: (c: Confirm
           <td>{u.username}</td>
           <td>{u.email}</td>
           <td><span className={`user-status-badge ${u.isActive ? 'user-status-badge-active' : 'user-status-badge-inactive'}`}>{u.isActive ? 'Активен' : 'Неактивен'}</span></td>
-          <td><span className={`user-status-badge ${u.role?.toLowerCase() === 'admin' ? 'user-status-badge-admin' : 'user-status-badge-user'}`}>{u.role?.toLowerCase() === 'admin' ? '👑 Админ' : '👤 Пользователь'}</span></td>
+          <td><span className={`user-status-badge ${(typeof u.role === 'number' ? (u.role === 1 ? 'admin' : 'user') : String(u.role ?? '').toLowerCase()) === 'admin' ? 'user-status-badge-admin' : 'user-status-badge-user'}`}>{(typeof u.role === 'number' ? (u.role === 1 ? '👑 Админ' : '👤 Пользователь') : String(u.role ?? '').toLowerCase() === 'admin' ? '👑 Админ' : '👤 Пользователь')}</span></td>
           <td className="action-cell">
-            <button className="btn-small btn-edit" onClick={() => { setEdit(u); setForm({ username: u.username, email: u.email, password: '' }) }}>✏️</button>
-            <button className="btn-small btn-delete" onClick={() => del({ type: 'user', id: u.id, name: u.username })}>🗑️</button>
-            <button className={`btn-small ${u.isActive ? 'btn-warning' : 'btn-success'}`} onClick={() => toggleActive(u)}>{u.isActive ? '🚫 Деакт.' : '✅ Акт.'}</button>
+            <button className="btn-small btn-edit" onClick={() => { setEdit(u); setForm({ username: u.username, email: u.email, password: '' }) }}>✏️ Редакт.</button>
+            {u.isActive ? (
+              <button className="btn-small btn-delete" style={{ minWidth: '130px' }} onClick={() => toggleActive(u)}>🚫 Деакт.</button>
+            ) : (
+              <button className="btn-small btn-success" style={{ minWidth: '130px' }} onClick={() => toggleActive(u)}>✅ Акт.</button>
+            )}
           </td>
         </tr>)}
         {filtered.length === 0 && <tr><td colSpan={6} style={{ textAlign: 'center', padding: 30, color: '#888' }}>Пользователи не найдены</td></tr>}
