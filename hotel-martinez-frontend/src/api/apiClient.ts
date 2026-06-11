@@ -25,7 +25,6 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Log error details for debugging
     console.error('API Error:', {
       status: error.response?.status,
       data: error.response?.data,
@@ -33,7 +32,6 @@ apiClient.interceptors.response.use(
     })
 
     if (error.response?.status === 401) {
-      // Don't hard-redirect on invalid credentials during auth.
       const url: string = error.config?.url ?? ''
       const isAuthRequest = url.includes('/auth/login') || url.includes('/auth/register')
       const isOnAuthPage = window.location.pathname.startsWith('/auth')

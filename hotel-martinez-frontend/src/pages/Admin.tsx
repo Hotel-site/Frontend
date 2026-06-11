@@ -21,14 +21,6 @@ const MEAL_ORDER: MealType[] = ['Breakfast', 'Lunch', 'Dinner', 'Drinks', 'Desse
 const mealTypeLabels: Record<MealType, string> = { Breakfast: 'Завтрак', Lunch: 'Обед', Dinner: 'Ужин', Drinks: 'Напитки', Dessert: 'Десерты' }
 
 function toNum(s: string) { const n = parseFloat(s); return isNaN(n) ? 0 : n }
-function coordFilter(v: string, min: number, max: number, prev: number) {
-  const filtered = v.replace(/[^0-9.-]/g, '');
-  if (filtered === '' || filtered === '-') return 0;
-  const n = parseFloat(filtered);
-  if (isNaN(n)) return prev;
-  if (n < min || n > max) return prev;
-  return n;
-}
 
 export default function Admin() {
   const { user, logout } = useAuth()
@@ -560,7 +552,7 @@ function MenusTab({ items, del, load }: { items: Dish[]; del: (c: ConfirmDelete)
   )
 }
 
-function UsersTab({ items, del, load }: { items: UserProfile[]; del: (c: ConfirmDelete) => void; load: () => Promise<void> }) {
+function UsersTab({ items, load }: { items: UserProfile[]; del: (c: ConfirmDelete) => void; load: () => Promise<void> }) {
   const [edit, setEdit] = useState<UserProfile | null>(null)
   const [adding, setAdding] = useState(false)
   const [form, setForm] = useState<{ username: string; email: string; password: string } | null>(null)

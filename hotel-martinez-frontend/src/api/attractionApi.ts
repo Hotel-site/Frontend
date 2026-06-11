@@ -28,7 +28,7 @@ export interface AttractionBackendDto {
   shortDescription?: string
   description?: string
   category?: string
-  address: string  // Keep as string, not Location object
+  address: string
   distance: number
   price: number
   rating: number

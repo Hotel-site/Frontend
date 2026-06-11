@@ -5,7 +5,6 @@ type ProductImageDto = {
   url: string
 }
 
-// DTO coming from backend 
 export type ProductDto = {
   id: number
   name: string
