@@ -329,14 +329,18 @@ export default function Catalog({ favorites, onToggleFavorite, onAddToCart, onAd
                 const guestCount = parseInt(formData.get('guestCount') as string)
                 const notes = formData.get('notes') as string
 
-                onAddBookingToCart?.(bookingProduct, {
-                  dateTime,
-                  guestCount,
-                  notes,
-                })
+                try {
+                  onAddBookingToCart?.(bookingProduct, {
+                    dateTime,
+                    guestCount,
+                    notes,
+                  })
 
-                alert(`Спасибо за бронирование ${bookingProduct.title}!\nВаша бронь добавлена в корзину.`)
-                setBookingProduct(null)
+                  alert(`Спасибо за бронирование ${bookingProduct.title}!\nВаша бронь добавлена в корзину.`)
+                  setBookingProduct(null)
+                } catch (err) {
+                  console.error('Failed to add booking to cart:', err)
+                }
               }}
               className="booking-form"
             >

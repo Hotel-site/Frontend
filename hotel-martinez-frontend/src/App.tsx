@@ -92,11 +92,7 @@ function AppShell() {
   const onToggleFavorite = useCallback(
     async (id: number) => {
       if (!user?.id) {
-        setFavoriteProducts((prev) =>
-          prev.some((item) => item.productId === id)
-            ? prev.filter((item) => item.productId !== id)
-            : [...prev, { productId: id, favoriteId: id }]
-        )
+        alert('Необходимо авторизоваться, чтобы добавить в избранное')
         return
       }
 
@@ -129,7 +125,7 @@ function AppShell() {
     const userId = user?.id ? Number(user.id) : NaN
     if (!Number.isFinite(userId)) {
       alert('Необходимо авторизоваться, чтобы добавить товар в корзину')
-      return
+      throw new Error('Пользователь не авторизован')
     }
 
     const item: CartItem = { type: 'product', id: product.id, item: product }
@@ -159,7 +155,7 @@ function AppShell() {
     const userId = user?.id ? Number(user.id) : NaN
     if (!Number.isFinite(userId)) {
       alert('Необходимо авторизоваться, чтобы забронировать')
-      return
+      throw new Error('Пользователь не авторизован')
     }
 
     const item: CartItem = { 

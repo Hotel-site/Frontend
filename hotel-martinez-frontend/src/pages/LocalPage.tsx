@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import clsx from 'clsx'
 import AttractionCard from '../components/AttractionCard/AttractionCard'
 import DetailModal from '../components/DetailModal/DetailModal'
@@ -8,6 +8,7 @@ import SearchBar from '../components/SearchBar/SearchBar'
 import ErrorState from '../components/ErrorState/ErrorState'
 import LoadingState from '../components/LoadingState/LoadingState'
 import EmptyState from '../components/EmptyState/EmptyState'
+import { useAuth } from '../context/AuthContext'
 import { useAttractions } from '../hooks/useAttractions'
 import { fetchAttractionById, MAX_PRICE } from '../data/attractions'
 import { categoryApi, type CategoryDto } from '../api'
@@ -40,6 +41,16 @@ export default function LocalPage() {
     reload,
     setPageSize,
   } = useAttractions()
+
+  const { user } = useAuth()
+
+  const handleToggleFavorite = useCallback((id: string) => {
+    if (!user?.id) {
+      alert('Необходимо авторизоваться, чтобы добавить в избранное')
+      return
+    }
+    toggleFavorite(id)
+  }, [toggleFavorite, user?.id])
 
   const [selectedAttractionId, setSelectedAttractionId] = useState<string | null>(null)
   const [detailAttraction, setDetailAttraction] = useState<Attraction | null>(null)
@@ -164,7 +175,7 @@ export default function LocalPage() {
                         attraction={attraction}
                         viewMode={viewMode}
                         isFavorite={favoriteSet.has(attraction.id)}
-                        onToggleFavorite={toggleFavorite}
+                        onToggleFavorite={handleToggleFavorite}
                         onOpenDetails={(id) => void openDetails(id)}
                         cardRef={(node) => {
                           cardRefs.current[attraction.id] = node
