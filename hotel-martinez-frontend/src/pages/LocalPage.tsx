@@ -34,7 +34,6 @@ export default function LocalPage() {
     updateSortBy,
     toggleFavorite,
     reload,
-    setPageSize,
   } = useAttractions()
 
   const [detailAttraction, setDetailAttraction] = useState<Attraction | null>(null)

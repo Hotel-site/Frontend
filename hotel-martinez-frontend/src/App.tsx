@@ -38,7 +38,6 @@ const PRODUCT_ENTITY_TYPE = 1
 
 // Backend enum: OrderItemType { Product = 0, Room = 1 }
 const CART_ITEM_TYPE_PRODUCT = 0
-const CART_ITEM_TYPE_ROOM = 1
 
 function AppShell() {
   const { user } = useAuth()
@@ -92,11 +91,7 @@ function AppShell() {
   const onToggleFavorite = useCallback(
     async (id: number) => {
       if (!user?.id) {
-        setFavoriteProducts((prev) =>
-          prev.some((item) => item.productId === id)
-            ? prev.filter((item) => item.productId !== id)
-            : [...prev, { productId: id, favoriteId: id }]
-        )
+        alert('Необходимо авторизоваться, чтобы добавить в избранное')
         return
       }
 
@@ -129,7 +124,7 @@ function AppShell() {
     const userId = user?.id ? Number(user.id) : NaN
     if (!Number.isFinite(userId)) {
       alert('Необходимо авторизоваться, чтобы добавить товар в корзину')
-      return
+      throw new Error('Пользователь не авторизован')
     }
 
     const item: CartItem = { type: 'product', id: product.id, item: product }
@@ -159,7 +154,7 @@ function AppShell() {
     const userId = user?.id ? Number(user.id) : NaN
     if (!Number.isFinite(userId)) {
       alert('Необходимо авторизоваться, чтобы забронировать')
-      return
+      throw new Error('Пользователь не авторизован')
     }
 
     const item: CartItem = { 
@@ -189,17 +184,7 @@ function AppShell() {
       console.error('Failed to add booking to cart on server:', err)
     }
   }
-
-  const onRemoveFromCart = (itemToRemove: CartItem) => {
-    setCart((prev) => {
-      const index = prev.findIndex((item) => item.type === itemToRemove.type && item.id === itemToRemove.id)
-      if (index > -1) {
-        return prev.filter((_, i) => i !== index)
-      }
-      return prev
-    })
-  }
-
+  
   const onCheckout = () => {
     setCart([])
   }
