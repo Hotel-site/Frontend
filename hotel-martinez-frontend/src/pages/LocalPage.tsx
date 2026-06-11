@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import clsx from 'clsx'
 import AttractionCard from '../components/AttractionCard/AttractionCard'
 import DetailModal from '../components/DetailModal/DetailModal'
@@ -15,8 +15,6 @@ import type { Attraction } from '../types/local'
 import styles from '../styles/LocalPage.module.css'
 import { translate } from '../utils/i18n'
 
-const MapView = lazy(() => import('../components/MapView/MapView'))
-
 export default function LocalPage() {
   const {
     query,
@@ -25,9 +23,7 @@ export default function LocalPage() {
     totalPages,
     loading,
     error,
-    viewMode,
     favoriteSet,
-    setViewMode,
     setPage,
     updateSearch,
     updateCategory,
@@ -41,11 +37,8 @@ export default function LocalPage() {
     setPageSize,
   } = useAttractions()
 
-  const [selectedAttractionId, setSelectedAttractionId] = useState<string | null>(null)
   const [detailAttraction, setDetailAttraction] = useState<Attraction | null>(null)
   const [categoryOptions, setCategoryOptions] = useState<string[]>([])
-  const mapSectionRef = useRef<HTMLElement | null>(null)
-  const cardRefs = useRef<Record<string, HTMLLIElement | null>>({})
 
   // Load categories from API
   useEffect(() => {
@@ -67,23 +60,12 @@ export default function LocalPage() {
     }
   }, [])
 
-  const onMarkerSelect = (id: string) => {
-    setSelectedAttractionId(id)
-    cardRefs.current[id]?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-  }
-
   const openDetails = async (id: string) => {
     const attraction = await fetchAttractionById(id)
     setDetailAttraction(attraction)
   }
 
   const renderedItems = useMemo(() => items, [items])
-
-  useEffect(() => {
-    if (viewMode === 'grid') {
-      setPageSize(12)
-    }
-  }, [viewMode, setPageSize])
 
   return (
     <section className={styles.localPage}>
@@ -96,14 +78,6 @@ export default function LocalPage() {
 
       <div className={styles.controls}>
         <SearchBar value={query.search} onChange={updateSearch} />
-        <div className={styles.viewMode}>
-          <button type="button" aria-pressed={viewMode === 'grid'} onClick={() => setViewMode('grid')}>
-            ⊞ Сетка
-          </button>
-          <button type="button" aria-pressed={viewMode === 'map'} onClick={() => setViewMode('map')}>
-            🗺️ Карта
-          </button>
-        </div>
       </div>
 
       <div className={styles.layout}>
@@ -147,13 +121,6 @@ export default function LocalPage() {
                   actionText="Обновить"
                   onAction={() => void reload()}
                 />
-              ) : viewMode === 'map' ? (
-                <section ref={mapSectionRef} className={styles.mapInline} aria-label="Карта развлечений">
-                  <p className={styles.resultsInfo}>Найдено: {total}</p>
-                  <Suspense fallback={<div className={styles.mapFallback}>{translate('loadingMap')}</div>}>
-                    <MapView attractions={items} selectedId={selectedAttractionId} onMarkerSelect={onMarkerSelect} />
-                  </Suspense>
-                </section>
               ) : (
                 <>
                   <p className={styles.resultsInfo}>Найдено: {total}</p>
@@ -162,13 +129,10 @@ export default function LocalPage() {
                       <AttractionCard
                         key={attraction.id}
                         attraction={attraction}
-                        viewMode={viewMode}
+                        viewMode="grid"
                         isFavorite={favoriteSet.has(attraction.id)}
                         onToggleFavorite={toggleFavorite}
                         onOpenDetails={(id) => void openDetails(id)}
-                        cardRef={(node) => {
-                          cardRefs.current[attraction.id] = node
-                        }}
                       />
                     ))}
                   </ul>

@@ -1,6 +1,7 @@
 import clsx from 'clsx'
 import { useState } from 'react'
 import type { Attraction, ViewMode } from '../../types/local'
+import { useAuth } from '../../context/AuthContext'
 import styles from './AttractionCard.module.css'
 import { translate } from '../../utils/i18n'
 
@@ -23,6 +24,7 @@ export default function AttractionCard({
   onOpenDetails,
   cardRef,
 }: AttractionCardProps) {
+  const { isAuthenticated } = useAuth()
   const [isAddedToCart, setIsAddedToCart] = useState(false)
 
   const handleAddToCart = () => {
@@ -61,6 +63,10 @@ export default function AttractionCard({
             aria-label={isFavorite ? translate('removeFromFavorites') : translate('addToFavorites')}
             onClick={(e) => {
               e.stopPropagation()
+              if (!isAuthenticated) {
+                alert('Войдите в аккаунт, чтобы добавлять в избранное')
+                return
+              }
               onToggleFavorite(attraction.id)
             }}
           >
